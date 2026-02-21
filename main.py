@@ -13,12 +13,13 @@ class PersianSubtitleToolkit(ctk.CTk):
         super().__init__()
         self.lock = AppLock(APP_NAME)
         if not self.lock.acquire():
-            root = tk.Tk()
-            root.withdraw()
+            temp_root = tk.Tk()
+            temp_root.withdraw()
             messagebox.showwarning(
                 f"{APP_NAME} v{APP_VERSION}",
                 f"{APP_NAME} is already running.\nOnly one instance is allowed.",
             )
+            temp_root.destroy()
             sys.exit(0)
 
         self.lock.start_updater()
@@ -51,7 +52,7 @@ class PersianSubtitleToolkit(ctk.CTk):
         # Window Configuration
         self.protocol("WM_DELETE_WINDOW", self.on_close)
         self.update_idletasks()
-        width = 800
+        width = 1000
         height = 800
         screen_width = self.winfo_screenwidth()
         screen_height = self.winfo_screenheight()
@@ -60,6 +61,7 @@ class PersianSubtitleToolkit(ctk.CTk):
         self.geometry(f"{width}x{height}+{x}+{y}")
         self.resizable(False, False)
         ctk.set_appearance_mode("dark")
+        ctk.set_default_color_theme("dark-blue")
 
         # Grid Configuration for main window
         self.grid_rowconfigure(1, weight=3)
@@ -67,10 +69,19 @@ class PersianSubtitleToolkit(ctk.CTk):
         self.grid_rowconfigure(2, weight=1)
         self.grid_columnconfigure(0, weight=4, uniform="col")
         self.grid_columnconfigure(1, weight=1, uniform="col")
+        self.create_widget()
+
+        # Load config to overwrite default variable values
+        self.config_manager = ConfigManager(CONFIG_FILE, DEFAULT_CONFIG)
+        self.load_config()
+
+    def create_widget(self):
         font_bold = ctk.CTkFont(size=14, weight="bold")
 
         # Row 1: Entry + Browse Button
-        self.path_entry = ctk.CTkEntry(self, height=20, placeholder_text="Select Target Folder", font=font_bold)
+        self.path_entry = ctk.CTkEntry(
+            self, height=20, placeholder_text="Select Source Folder Which Contains Subtitles", font=font_bold
+        )
         self.path_entry.grid(row=0, column=0, padx=(10, 5), pady=10, sticky="nsew")
         self.path_entry.configure(state="readonly")
 
@@ -125,10 +136,6 @@ class PersianSubtitleToolkit(ctk.CTk):
         )
         self.reset_button.grid(row=0, column=2, padx=(5, 0), sticky="nsew")
 
-        # Load config to overwrite default variable values
-        self.config_manager = ConfigManager(CONFIG_FILE, DEFAULT_CONFIG)
-        self.load_config()
-
     def resource_path(self, relative_path):
         temp_dir = os.path.dirname(__file__)
         return os.path.join(temp_dir, relative_path)
@@ -169,14 +176,16 @@ class PersianSubtitleToolkit(ctk.CTk):
         if path:
             self.path_entry.insert(0, path)
         else:
-            self.path_entry.configure(placeholder_text="Select Target Folder")
+            self.path_entry.configure(placeholder_text="Select Source Folder Which Contains Subtitles")
         self.path_entry.configure(state="readonly")
 
     def browse_folder(self):
         initial_dir = (
             self.path_entry.get() if os.path.isdir(self.path_entry.get()) else os.path.expanduser("~/Documents")
         )
-        folder_selected = filedialog.askdirectory(initialdir=initial_dir, title="Select Target Folder")
+        folder_selected = filedialog.askdirectory(
+            initialdir=initial_dir, title="Select Source Folder Which Contains Subtitles"
+        )
         if folder_selected:
             self.path_entry.configure(state="normal")
             self.path_entry.delete(0, "end")
