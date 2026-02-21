@@ -8,7 +8,6 @@ from idlelib.tooltip import Hovertip
 import re
 import string
 import webbrowser
-import json
 
 
 class PersianSubtitleToolkit(ctk.CTk):
@@ -129,13 +128,12 @@ class PersianSubtitleToolkit(ctk.CTk):
         self.reset_button.grid(row=0, column=2, padx=(5, 0), sticky="nsew")
 
         # Load config to overwrite default variable values
+        self.config_manager = ConfigManager(CONFIG_FILE, DEFAULT_CONFIG)
         self.load_config()
 
-    def _reset_settings(self):
-        """Resets all configuration settings to their default values."""
-        self._apply_default_config()
-        self.save_config()
-        messagebox.showinfo("Settings Reset", "All settings have been reset to default values.")
+    def resource_path(self, relative_path):
+        temp_dir = os.path.dirname(__file__)
+        return os.path.join(temp_dir, relative_path)
 
     def on_close(self):
         """
@@ -147,61 +145,34 @@ class PersianSubtitleToolkit(ctk.CTk):
         self.lock.release()
         self.destroy()
 
-    def resource_path(self, relative_path):
-        temp_dir = os.path.dirname(__file__)
-        return os.path.join(temp_dir, relative_path)
-
     # --- Config Management Methods ---
     def load_config(self):
-        """Loads configuration from config.json or creates default config if missing."""
-        if not os.path.isfile(CONFIG_FILE):
-            # No config exists → create default
-            self._apply_default_config()
-            self.save_config()
-            return
-
-        try:
-            with open(CONFIG_FILE, "r", encoding="utf-8") as f:
-                config = json.load(f)
-        except Exception:
-            # Corrupted config → fallback to default
-            self._apply_default_config()
-            self.save_config()
-            return
-
-        # Load values safely
+        config = self.config_manager.load()
         folder_path = config.get("folder_path", "")
 
-        # Apply folder path
         if folder_path and os.path.isdir(folder_path):
-            self.path_entry.configure(state="normal")
-            self.path_entry.delete(0, "end")
-            self.path_entry.insert(0, folder_path)
-            self.path_entry.configure(state="readonly")
-
-    def _apply_default_config(self):
-        """Applies values from DEFAULT_CONFIG to UI."""
-        # Reset folder path
-        self.path_entry.configure(state="normal")
-        self.path_entry.delete(0, "end")
-        self.path_entry.configure(placeholder_text="Select Target Folder")
-        self.path_entry.configure(state="readonly")
+            self._update_path_entry(folder_path)
 
     def save_config(self):
-        """Saves current application settings to config.json."""
-        folder_path = self.path_entry.get()
+        current_path = self.path_entry.get()
+        self.config_manager.save(current_path)
 
-        config = {
-            "app_name": APP_NAME,
-            "app_version": APP_VERSION,
-            "folder_path": folder_path if os.path.isdir(folder_path) else "",
-        }
+    def _apply_default_config(self):
+        self._update_path_entry("")
 
-        try:
-            with open(CONFIG_FILE, "w", encoding="utf-8") as f:
-                json.dump(config, f, indent=4)
-        except Exception as e:
-            print(f"Failed to save config: {e}")
+    def _reset_settings(self):
+        self._apply_default_config()
+        self.save_config()
+        messagebox.showinfo("Settings Reset", "All settings have been reset to default values.")
+
+    def _update_path_entry(self, path):
+        self.path_entry.configure(state="normal")
+        self.path_entry.delete(0, "end")
+        if path:
+            self.path_entry.insert(0, path)
+        else:
+            self.path_entry.configure(placeholder_text="Select Target Folder")
+        self.path_entry.configure(state="readonly")
 
     def browse_folder(self):
         initial_dir = (

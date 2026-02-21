@@ -1,6 +1,7 @@
 from app_info import *
 import time
 import threading
+import json
 
 
 # --- Single Instance Logic START with Timeout ---
@@ -52,3 +53,31 @@ class AppLock:
 
 
 # --- Single Instance Logic END with Timeout ---
+
+
+class ConfigManager:
+    def __init__(self, config_file, default_config):
+        self.config_file = config_file
+        self.default_config = default_config
+        os.makedirs(os.path.dirname(self.config_file), exist_ok=True)
+
+    def load(self):
+        if not os.path.isfile(self.config_file):
+            self.save(self.default_config.get("folder_path", ""))
+            return self.default_config
+
+        try:
+            with open(self.config_file, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return self.default_config
+
+    def save(self, folder_path):
+        config = self.default_config.copy()
+        config["folder_path"] = folder_path if os.path.isdir(folder_path) else ""
+
+        try:
+            with open(self.config_file, "w", encoding="utf-8") as f:
+                json.dump(config, f, indent=4)
+        except Exception as e:
+            print(f"Failed to save config: {e}")
