@@ -64,31 +64,58 @@ class PersianSubtitleToolkit(ctk.CTk):
         ctk.set_default_color_theme("dark-blue")
 
         # Grid Configuration for main window
-        self.grid_rowconfigure(1, weight=3)
         self.grid_rowconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=3)
         self.grid_rowconfigure(2, weight=1)
-        self.grid_columnconfigure(0, weight=4, uniform="col")
-        self.grid_columnconfigure(1, weight=1, uniform="col")
+
+        self.grid_columnconfigure(0, weight=6)  # Path Entry
+        self.grid_columnconfigure(1, weight=1)  # Browse Button
+        self.grid_columnconfigure(2, weight=1)  # Theme Switch Frame
         self.create_widget()
 
         # Load config to overwrite default variable values
         self.config_manager = ConfigManager(CONFIG_FILE, DEFAULT_CONFIG)
         self.load_config()
 
+    def change_theme(self):
+        if self.theme_switch.get() == 1:
+            ctk.set_appearance_mode("dark")
+        else:
+            ctk.set_appearance_mode("light")
+            ctk.set_default_color_theme("blue")
+
     def create_widget(self):
         font_bold = ctk.CTkFont(size=14, weight="bold")
 
-        # Row 1: Entry + Browse Button
+        # Path Entry
         self.path_entry = ctk.CTkEntry(
             self, height=20, placeholder_text="Select Source Folder Which Contains Subtitles", font=font_bold
         )
         self.path_entry.grid(row=0, column=0, padx=(10, 5), pady=10, sticky="nsew")
         self.path_entry.configure(state="readonly")
 
-        self.browse_btn = ctk.CTkButton(self, text="Browse", height=20)
-        self.browse_btn.grid(row=0, column=1, padx=(5, 10), pady=10, sticky="nsew")
-        self.browse_btn.configure(font=font_bold)
+        # Browse Button
+        self.browse_btn = ctk.CTkButton(self, text="Browse", height=20, font=font_bold)
+        self.browse_btn.grid(row=0, column=1, padx=5, pady=10, sticky="nsew")
         self.browse_btn.configure(command=self.browse_folder)
+
+        # Theme Switch Frame (Revised)
+        self.theme_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.theme_frame.grid(row=0, column=2, padx=(5, 10), pady=10, sticky="nsew")
+        self.theme_frame.grid_columnconfigure(0, weight=1)  # Label column
+        self.theme_frame.grid_columnconfigure(1, weight=0)  # Switch column
+        self.theme_frame.grid_rowconfigure(0, weight=1)
+
+        # Separate Label for Text on the Left
+        self.theme_label = ctk.CTkLabel(self.theme_frame, text="Dark Mode", font=font_bold)
+        self.theme_label.grid(row=0, column=0, padx=(0, 10), sticky="e")
+
+        # Switch with NO text
+        self.theme_switch = ctk.CTkSwitch(
+            self.theme_frame, text="", command=self.change_theme, width=45  # Removed text from here
+        )
+        self.theme_switch.grid(row=0, column=1, sticky="w")
+        self.theme_switch.select()  # Default to Dark Mode
 
         # Row 3: Start + Donate Buttons (inside a local frame)
         button_frame = ctk.CTkFrame(self, fg_color="transparent")
