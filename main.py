@@ -1,12 +1,10 @@
-from utils import *
+from core import *
 import customtkinter as ctk
 from customtkinter import filedialog
 import tkinter as tk
 from tkinter import messagebox
 from PIL import ImageTk, Image
 from idlelib.tooltip import Hovertip
-import re
-import string
 import webbrowser
 
 
@@ -189,7 +187,13 @@ class PersianSubtitleToolkit(ctk.CTk):
         threading.Thread(target=self.start_process, daemon=True).start()
 
     def start_process(self):
-        pass
+        current_path = self.path_entry.get()
+        if not current_path:
+            messagebox.showwarning("Error", "Please select a folder first.")
+            return
+
+        processor = SubtitleProcessor(current_path)
+        processor.run()
 
     def donate(self):
         """Opens a donation window with options to support the project."""
