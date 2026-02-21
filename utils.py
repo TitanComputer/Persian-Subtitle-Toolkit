@@ -6,7 +6,7 @@ import json
 
 # --- Single Instance Logic START with Timeout ---
 class AppLock:
-    def __init__(self, app_name, timeout=60):
+    def __init__(self, app_name, timeout=2):
         self.app_name = app_name
         self.timeout = timeout
         self.lock_dir = os.path.join(os.getenv("LOCALAPPDATA", os.getenv("HOME", "/tmp")), app_name)
@@ -72,9 +72,10 @@ class ConfigManager:
         except Exception:
             return self.default_config
 
-    def save(self, folder_path):
+    def save(self, folder_path, theme_mode=1):
         config = self.default_config.copy()
         config["folder_path"] = folder_path if os.path.isdir(folder_path) else ""
+        config["theme_mode"] = theme_mode
 
         try:
             with open(self.config_file, "w", encoding="utf-8") as f:

@@ -60,8 +60,6 @@ class PersianSubtitleToolkit(ctk.CTk):
         y = (screen_height // 2) - (height // 2)
         self.geometry(f"{width}x{height}+{x}+{y}")
         self.resizable(False, False)
-        ctk.set_appearance_mode("dark")
-        ctk.set_default_color_theme("dark-blue")
 
         # Grid Configuration for main window
         self.grid_rowconfigure(0, weight=1)
@@ -80,9 +78,9 @@ class PersianSubtitleToolkit(ctk.CTk):
     def change_theme(self):
         if self.theme_switch.get() == 1:
             ctk.set_appearance_mode("dark")
+
         else:
             ctk.set_appearance_mode("light")
-            ctk.set_default_color_theme("blue")
 
     def create_widget(self):
         font_bold = ctk.CTkFont(size=14, weight="bold")
@@ -185,12 +183,24 @@ class PersianSubtitleToolkit(ctk.CTk):
         if folder_path and os.path.isdir(folder_path):
             self._update_path_entry(folder_path)
 
+        theme_mode = config.get("theme_mode", 1)
+        if theme_mode == 1:
+            self.theme_switch.select()
+            ctk.set_appearance_mode("dark")
+        else:
+            self.theme_switch.deselect()
+            ctk.set_appearance_mode("light")
+
     def save_config(self):
         current_path = self.path_entry.get()
-        self.config_manager.save(current_path)
+        theme_value = self.theme_switch.get()
+        self.config_manager.save(current_path, theme_value)
 
     def _apply_default_config(self):
         self._update_path_entry("")
+        if self.theme_switch.get() == 0:
+            self.theme_switch.select()
+            ctk.set_appearance_mode("dark")
 
     def _reset_settings(self):
         self._apply_default_config()

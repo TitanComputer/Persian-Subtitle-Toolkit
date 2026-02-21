@@ -10,6 +10,7 @@ DEFAULT_CONFIG = {
     "app_name": APP_NAME,
     "app_version": APP_VERSION,
     "folder_path": "",
+    "theme_mode": 1,
 }
 
 # Determine configuration directory based on OS
