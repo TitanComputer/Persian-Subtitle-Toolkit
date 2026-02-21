@@ -1,85 +1,31 @@
+from utils import *
 import customtkinter as ctk
 from customtkinter import filedialog
 import tkinter as tk
 from tkinter import messagebox
 from PIL import ImageTk, Image
 from idlelib.tooltip import Hovertip
-import os
-import threading
 import re
 import string
-import sys
-import time
 import webbrowser
 import json
-
-APP_VERSION = "1.0.0"
-APP_NAME = "Persian Subtitle Toolkit"
-CONFIG_FILENAME = "config.json"
-
-# Default configuration structure
-DEFAULT_CONFIG = {
-    "app_name": APP_NAME,
-    "app_version": APP_VERSION,
-    "folder_path": "",
-}
-
-# Determine configuration directory based on OS
-if sys.platform == "win32":
-    CONFIG_DIR = os.path.join(os.getenv("LOCALAPPDATA", "/tmp"), APP_NAME)
-else:
-    CONFIG_DIR = os.path.join(os.getenv("HOME", "/tmp"), f".{APP_NAME}")
-
-CONFIG_FILE = os.path.join(CONFIG_DIR, CONFIG_FILENAME)
-os.makedirs(CONFIG_DIR, exist_ok=True)
-
-# --- Single Instance Logic START with Timeout ---
-APP_LOCK_DIR = os.path.join(os.getenv("LOCALAPPDATA", os.getenv("HOME", "/tmp")), APP_NAME)
-LOCK_FILE = os.path.join(APP_LOCK_DIR, "app.lock")
-LOCK_TIMEOUT_SECONDS = 60
-
-os.makedirs(APP_LOCK_DIR, exist_ok=True)
-IS_LOCK_CREATED = False
-
-if os.path.exists(LOCK_FILE):
-    try:
-        lock_age = time.time() - os.path.getmtime(LOCK_FILE)
-
-        if lock_age > LOCK_TIMEOUT_SECONDS:
-            os.remove(LOCK_FILE)
-            print(f"Removed stale lock file (Age: {int(lock_age)}s).")
-        else:
-            try:
-                temp_root = tk.Tk()
-                temp_root.withdraw()
-                messagebox.showwarning(
-                    f"{APP_NAME} v{APP_VERSION}",
-                    f"{APP_NAME} is already running.\nOnly one instance is allowed.",
-                )
-                temp_root.destroy()
-            except Exception:
-                print("Application is already running.")
-
-            sys.exit(0)
-
-    except Exception as e:
-        print(f"Error checking lock file: {e}. Exiting.")
-        sys.exit(0)
-
-try:
-    with open(LOCK_FILE, "w") as f:
-        f.write(str(os.getpid()))
-    IS_LOCK_CREATED = True
-except Exception as e:
-    print(f"Could not create lock file: {e}")
-    sys.exit(1)
-
-# --- Single Instance Logic END with Timeout ---
 
 
 class PersianSubtitleToolkit(ctk.CTk):
     def __init__(self):
         super().__init__()
+        self.lock = AppLock(APP_NAME)
+        if not self.lock.acquire():
+            root = tk.Tk()
+            root.withdraw()
+            messagebox.showwarning(
+                f"{APP_NAME} v{APP_VERSION}",
+                f"{APP_NAME} is already running.\nOnly one instance is allowed.",
+            )
+            sys.exit(0)
+
+        self.lock.start_updater()
+
         self.title(f"{APP_NAME} v{APP_VERSION}")
 
         # Load assets safely (assuming 'assets' folder is alongside the script)
@@ -182,14 +128,6 @@ class PersianSubtitleToolkit(ctk.CTk):
         )
         self.reset_button.grid(row=0, column=2, padx=(5, 0), sticky="nsew")
 
-        # --- Lock Updater Control START ---
-        self.lock_refresh_active = True
-        if "IS_LOCK_CREATED" in globals() and IS_LOCK_CREATED:
-            self.lock_thread = threading.Thread(target=self._lock_updater, daemon=True)
-            self.lock_thread.start()
-            print("Started lock refresh thread.")
-        # --- Lock Updater Control END ---
-
         # Load config to overwrite default variable values
         self.load_config()
 
@@ -199,27 +137,6 @@ class PersianSubtitleToolkit(ctk.CTk):
         self.save_config()
         messagebox.showinfo("Settings Reset", "All settings have been reset to default values.")
 
-    def _lock_updater(self):
-        """
-        Periodically updates the lock file timestamp to keep the lock fresh.
-        Runs in a separate thread.
-        """
-        global IS_LOCK_CREATED
-        if not IS_LOCK_CREATED:
-            return
-
-        while self.lock_refresh_active:
-            try:
-                os.utime(LOCK_FILE, None)
-                print("Lock file timestamp updated.")
-            except Exception as e:
-                print(f"Error refreshing lock: {e}")
-                break
-
-            time.sleep(LOCK_TIMEOUT_SECONDS / 2)
-
-        print("Lock refresh thread stopped.")
-
     def on_close(self):
         """
         Handles application shutdown, cleans up the lock file, saves config,
@@ -227,19 +144,7 @@ class PersianSubtitleToolkit(ctk.CTk):
         """
         # Save settings on exit
         self.save_config()
-
-        # --- Single Instance Cleanup START ---
-        global IS_LOCK_CREATED
-        if "IS_LOCK_CREATED" in globals() and IS_LOCK_CREATED:
-            self.lock_refresh_active = False
-            try:
-                if self.lock_thread.is_alive():
-                    self.lock_thread.join(0.5)
-                os.remove(LOCK_FILE)
-            except Exception as e:
-                print(f"Could not remove lock file: {e}")
-        # --- Single Instance Cleanup END ---
-
+        self.lock.release()
         self.destroy()
 
     def resource_path(self, relative_path):
