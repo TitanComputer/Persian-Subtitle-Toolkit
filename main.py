@@ -75,12 +75,24 @@ class PersianSubtitleToolkit(ctk.CTk):
         self.config_manager = ConfigManager(CONFIG_FILE, DEFAULT_CONFIG)
         self.load_config()
 
-    def change_theme(self):
-        if self.theme_switch.get() == 1:
-            ctk.set_appearance_mode("dark")
+    def write_log(self, message):
+        folder = self.path_entry.get()
+        is_enabled = self.log_switch.get() == 1
+        Logger.log(message, folder, is_enabled)
 
+    def toggle_logs(self):
+        current_state = self.log_switch.get() == 1
+        if current_state:
+            messagebox.showinfo("Logs Enabled", "Logs will be saved in the selected folder under /logs directory.")
+            Logger.log("Logging enabled by user.", self.path_entry.get(), True)
         else:
-            ctk.set_appearance_mode("light")
+            Logger.log("Logging disabled by user.", self.path_entry.get(), True)
+        self.save_config()
+
+    def change_theme(self):
+        mode = "dark" if self.theme_switch.get() == 1 else "light"
+        ctk.set_appearance_mode(mode)
+        self.write_log(f"Appearance mode changed to {mode}")
 
     def create_widget(self):
         font_bold = ctk.CTkFont(size=14, weight="bold")
@@ -97,23 +109,27 @@ class PersianSubtitleToolkit(ctk.CTk):
         self.browse_btn.grid(row=0, column=1, padx=5, pady=10, sticky="nsew")
         self.browse_btn.configure(command=self.browse_folder)
 
-        # Theme Switch Frame (Revised)
+        # Theme & Log Switch Frame
         self.theme_frame = ctk.CTkFrame(self, fg_color="transparent")
         self.theme_frame.grid(row=0, column=2, padx=(5, 10), pady=10, sticky="nsew")
-        self.theme_frame.grid_columnconfigure(0, weight=1)  # Label column
-        self.theme_frame.grid_columnconfigure(1, weight=0)  # Switch column
+        self.theme_frame.grid_columnconfigure(0, weight=1)
+        self.theme_frame.grid_columnconfigure(1, weight=0)
         self.theme_frame.grid_rowconfigure(0, weight=1)
+        self.theme_frame.grid_rowconfigure(1, weight=1)
 
-        # Separate Label for Text on the Left
+        # Row 0: Dark Mode
         self.theme_label = ctk.CTkLabel(self.theme_frame, text="Dark Mode", font=font_bold)
         self.theme_label.grid(row=0, column=0, padx=(0, 10), sticky="e")
-
-        # Switch with NO text
-        self.theme_switch = ctk.CTkSwitch(
-            self.theme_frame, text="", command=self.change_theme, width=45  # Removed text from here
-        )
+        self.theme_switch = ctk.CTkSwitch(self.theme_frame, text="", command=self.change_theme, width=45)
         self.theme_switch.grid(row=0, column=1, sticky="w")
-        self.theme_switch.select()  # Default to Dark Mode
+        self.theme_switch.select()
+
+        # Row 1: Save Logs
+        self.log_label = ctk.CTkLabel(self.theme_frame, text="Save Logs", font=font_bold)
+        self.log_label.grid(row=1, column=0, padx=(0, 10), sticky="e")
+        self.log_switch = ctk.CTkSwitch(self.theme_frame, text="", command=self.toggle_logs, width=45)
+        self.log_switch.grid(row=1, column=1, sticky="w")
+        self.log_switch.configure(state="disabled")  # Initial state
 
         # Row 3: Start + Donate Buttons (inside a local frame)
         button_frame = ctk.CTkFrame(self, fg_color="transparent")
@@ -179,42 +195,64 @@ class PersianSubtitleToolkit(ctk.CTk):
     def load_config(self):
         config = self.config_manager.load()
         folder_path = config.get("folder_path", "")
-
         if folder_path and os.path.isdir(folder_path):
             self._update_path_entry(folder_path)
+            self.log_switch.configure(state="normal")  # Enable if path exists
 
         theme_mode = config.get("theme_mode", 1)
         if theme_mode == 1:
             self.theme_switch.select()
-            ctk.set_appearance_mode("dark")
         else:
             self.theme_switch.deselect()
-            ctk.set_appearance_mode("light")
+        ctk.set_appearance_mode("dark" if theme_mode == 1 else "light")
+
+        save_logs = config.get("save_logs", 0)
+        if save_logs == 1 and self.log_switch.cget("state") == "normal":
+            self.log_switch.select()
+
+        sys_info = Logger.get_system_info()
+        self.write_log(f"System Info: {sys_info}")
+        self.write_log("Application started and config loaded.")
 
     def save_config(self):
         current_path = self.path_entry.get()
-        theme_value = self.theme_switch.get()
-        self.config_manager.save(current_path, theme_value)
-
-    def _apply_default_config(self):
-        self._update_path_entry("")
-        if self.theme_switch.get() == 0:
-            self.theme_switch.select()
-            ctk.set_appearance_mode("dark")
-
-    def _reset_settings(self):
-        self._apply_default_config()
-        self.save_config()
-        messagebox.showinfo("Settings Reset", "All settings have been reset to default values.")
+        theme_val = self.theme_switch.get()
+        log_val = self.log_switch.get()
+        self.write_log("Config saved.")
+        self.config_manager.save(current_path, theme_val, log_val)
 
     def _update_path_entry(self, path):
         self.path_entry.configure(state="normal")
         self.path_entry.delete(0, "end")
-        if path:
+
+        if path and os.path.isdir(path):
             self.path_entry.insert(0, path)
+            self.log_switch.configure(state="normal")
         else:
             self.path_entry.configure(placeholder_text="Select Source Folder Which Contains Subtitles")
+            self.log_switch.deselect()
+            self.log_switch.configure(state="disabled")
+
         self.path_entry.configure(state="readonly")
+
+    def _apply_default_config(self):
+        self._update_path_entry("")
+        self.theme_switch.select()
+        ctk.set_appearance_mode("dark")
+        self.log_switch.deselect()
+        self.log_switch.configure(state="disabled")
+
+    def on_close(self):
+        self.write_log("Application closing.")
+        self.save_config()
+        self.lock.release()
+        self.destroy()
+
+    def _reset_settings(self):
+        self.write_log("Settings reset to default.")
+        self._apply_default_config()
+        self.save_config()
+        messagebox.showinfo("Settings Reset", "All settings have been reset to default values.")
 
     def browse_folder(self):
         initial_dir = (
@@ -223,11 +261,11 @@ class PersianSubtitleToolkit(ctk.CTk):
         folder_selected = filedialog.askdirectory(
             initialdir=initial_dir, title="Select Source Folder Which Contains Subtitles"
         )
+
         if folder_selected:
-            self.path_entry.configure(state="normal")
-            self.path_entry.delete(0, "end")
-            self.path_entry.insert(0, folder_selected)
-            self.path_entry.configure(state="readonly")
+            self.write_log(f"Target folder changing to: {folder_selected}")
+            self._update_path_entry(folder_selected)
+            self.write_log(f"Target folder successfully changed.")
 
     def start_process_threaded(self):
         threading.Thread(target=self.start_process, daemon=True).start()

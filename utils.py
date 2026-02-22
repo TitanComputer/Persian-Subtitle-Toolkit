@@ -2,6 +2,8 @@ from app_info import *
 import time
 import threading
 import json
+import datetime
+import platform
 
 
 # --- Single Instance Logic START with Timeout ---
@@ -55,6 +57,37 @@ class AppLock:
 # --- Single Instance Logic END with Timeout ---
 
 
+class Logger:
+    @staticmethod
+    def get_system_info():
+        info = (
+            f"OS: {platform.system()} {platform.release()} | "
+            f"Version: {platform.version()} | "
+            f"Machine: {platform.machine()} | "
+            f"Processor: {platform.processor()}"
+        )
+        return info
+
+    @staticmethod
+    def log(message, folder_path, enabled):
+        if not enabled and "disabled" not in message.lower():
+            return
+
+        if not folder_path or not os.path.isdir(folder_path):
+            return
+
+        log_dir = os.path.join(folder_path, "logs")
+        os.makedirs(log_dir, exist_ok=True)
+        log_file = os.path.join(log_dir, "general-logs.txt")
+
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        try:
+            with open(log_file, "a", encoding="utf-8") as f:
+                f.write(f"[{timestamp}] {message}\n")
+        except Exception as e:
+            print(f"Logging failed: {e}")
+
+
 class ConfigManager:
     def __init__(self, config_file, default_config):
         self.config_file = config_file
@@ -72,10 +105,11 @@ class ConfigManager:
         except Exception:
             return self.default_config
 
-    def save(self, folder_path, theme_mode=1):
+    def save(self, folder_path, theme_mode=1, save_logs=0):
         config = self.default_config.copy()
         config["folder_path"] = folder_path if os.path.isdir(folder_path) else ""
         config["theme_mode"] = theme_mode
+        config["save_logs"] = save_logs
 
         try:
             with open(self.config_file, "w", encoding="utf-8") as f:

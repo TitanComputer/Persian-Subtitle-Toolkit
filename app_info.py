@@ -11,6 +11,7 @@ DEFAULT_CONFIG = {
     "app_version": APP_VERSION,
     "folder_path": "",
     "theme_mode": 1,
+    "save_logs": 0,
 }
 
 # Determine configuration directory based on OS
