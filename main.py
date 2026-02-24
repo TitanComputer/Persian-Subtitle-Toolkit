@@ -62,99 +62,90 @@ class PersianSubtitleToolkit(ctk.CTk):
         self.resizable(False, False)
 
         # Grid Configuration for main window
-        self.grid_rowconfigure(0, weight=1)
-        self.grid_rowconfigure(1, weight=3)
-        self.grid_rowconfigure(2, weight=1)
+        self.grid_rowconfigure(0, weight=0)  # Top row (fixed height)
+        self.grid_rowconfigure(1, weight=1)  # Middle empty frame (expandable)
+        self.grid_rowconfigure(2, weight=0)  # Bottom row (fixed height)
 
-        self.grid_columnconfigure(0, weight=6)  # Path Entry
-        self.grid_columnconfigure(1, weight=1)  # Browse Button
-        self.grid_columnconfigure(2, weight=1)  # Theme Switch Frame
+        self.grid_columnconfigure(0, weight=1)
         self.create_widget()
 
         # Load config to overwrite default variable values
         self.config_manager = ConfigManager(CONFIG_FILE, DEFAULT_CONFIG)
         self.load_config()
 
-    def write_log(self, message):
-        folder = self.path_entry.get()
-        is_enabled = self.log_switch.get() == 1
-        Logger.log(message, folder, is_enabled)
-
-    def toggle_logs(self):
-        current_state = self.log_switch.get() == 1
-        if current_state:
-            messagebox.showinfo("Logs Enabled", "Logs will be saved in the selected folder under /logs directory.")
-            Logger.log("Logging enabled by user.", self.path_entry.get(), True)
-        else:
-            Logger.log("Logging disabled by user.", self.path_entry.get(), True)
-        self.save_config()
-
-    def change_theme(self):
-        mode = "dark" if self.theme_switch.get() == 1 else "light"
-        ctk.set_appearance_mode(mode)
-        self.write_log(f"Appearance mode changed to {mode}")
-
     def create_widget(self):
         font_bold = ctk.CTkFont(size=14, weight="bold")
 
-        # Path Entry
+        # --- Top Container (Row 0) ---
+        self.top_container = ctk.CTkFrame(self, fg_color="transparent")
+        self.top_container.grid(row=0, column=0, padx=10, pady=(10, 0), sticky="nsew")
+
+        self.top_container.grid_columnconfigure(0, weight=60)
+        self.top_container.grid_columnconfigure(1, weight=1)
+        self.top_container.grid_columnconfigure(2, weight=1)
+
+        # Path Entry (Inside Top Container)
         self.path_entry = ctk.CTkEntry(
-            self, height=20, placeholder_text="Select Source Folder Which Contains Subtitles", font=font_bold
+            self.top_container,
+            height=35,
+            placeholder_text="Select Source Folder Which Contains Subtitles",
+            font=font_bold,
         )
-        self.path_entry.grid(row=0, column=0, padx=(10, 5), pady=10, sticky="nsew")
+        self.path_entry.grid(row=0, column=0, padx=(0, 5), pady=5, sticky="ew")
         self.path_entry.configure(state="readonly")
 
-        # Browse Button
-        self.browse_btn = ctk.CTkButton(self, text="Browse", height=20, font=font_bold)
-        self.browse_btn.grid(row=0, column=1, padx=5, pady=10, sticky="nsew")
+        # Browse Button (Inside Top Container)
+        self.browse_btn = ctk.CTkButton(self.top_container, text="Browse", height=35, font=font_bold)
+        self.browse_btn.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
         self.browse_btn.configure(command=self.browse_folder)
 
-        # Theme & Log Switch Frame
-        self.theme_frame = ctk.CTkFrame(self, fg_color="transparent")
-        self.theme_frame.grid(row=0, column=2, padx=(5, 10), pady=10, sticky="nsew")
+        # Theme & Log Switch Frame (Inside Top Container)
+        self.theme_frame = ctk.CTkFrame(self.top_container, fg_color="transparent")
+        self.theme_frame.grid(row=0, column=2, padx=(5, 0), pady=0, sticky="nsew")
         self.theme_frame.grid_columnconfigure(0, weight=1)
-        self.theme_frame.grid_columnconfigure(1, weight=0)
         self.theme_frame.grid_rowconfigure(0, weight=1)
         self.theme_frame.grid_rowconfigure(1, weight=1)
 
-        # Row 0: Dark Mode
-        self.theme_label = ctk.CTkLabel(self.theme_frame, text="Dark Mode", font=font_bold)
-        self.theme_label.grid(row=0, column=0, padx=(0, 10), sticky="e")
+        self.theme_label = ctk.CTkLabel(self.theme_frame, text="Dark Mode", font=ctk.CTkFont(size=12, weight="bold"))
+        self.theme_label.grid(row=0, column=0, padx=(0, 5), sticky="e")
         self.theme_switch = ctk.CTkSwitch(self.theme_frame, text="", command=self.change_theme, width=45)
         self.theme_switch.grid(row=0, column=1, sticky="w")
         self.theme_switch.select()
 
-        # Row 1: Save Logs
-        self.log_label = ctk.CTkLabel(self.theme_frame, text="Save Logs", font=font_bold)
-        self.log_label.grid(row=1, column=0, padx=(0, 10), sticky="e")
+        self.log_label = ctk.CTkLabel(self.theme_frame, text="Save Logs", font=ctk.CTkFont(size=12, weight="bold"))
+        self.log_label.grid(row=1, column=0, padx=(0, 5), sticky="e")
         self.log_switch = ctk.CTkSwitch(self.theme_frame, text="", command=self.toggle_logs, width=45)
         self.log_switch.grid(row=1, column=1, sticky="w")
-        self.log_switch.configure(state="disabled")  # Initial state
+        self.log_switch.configure(state="disabled")
 
-        # Row 3: Start + Donate Buttons (inside a local frame)
-        button_frame = ctk.CTkFrame(self, fg_color="transparent")
-        button_frame.grid(row=2, column=0, columnspan=2, padx=10, pady=(0, 10), sticky="nsew")
-        button_frame.grid_propagate(False)
-        button_frame.configure(height=15)
-        # Local grid configuration (no changes to main layout)
-        button_frame.grid_columnconfigure(0, weight=5)
-        button_frame.grid_columnconfigure(1, weight=3)
-        button_frame.grid_columnconfigure(2, weight=2)
-        button_frame.grid_rowconfigure(0, weight=1)
+        # --- Middle Container (Row 1) ---
+        # This frame is currently empty and will hold the main logic UI later
+        self.middle_container = ctk.CTkFrame(self)
+        self.middle_container.grid(row=1, column=0, padx=10, pady=10, sticky="nsew")
+
+        # --- Bottom Container (Row 2) ---
+        self.bottom_container = ctk.CTkFrame(self, fg_color="transparent")
+        self.bottom_container.grid(row=2, column=0, padx=10, pady=(0, 10), sticky="nsew")
+
+        self.bottom_container.grid_columnconfigure(0, weight=5)
+        self.bottom_container.grid_columnconfigure(1, weight=3)
+        self.bottom_container.grid_columnconfigure(2, weight=2)
 
         # Start Button
         self.start_btn = ctk.CTkButton(
-            button_frame,
+            self.bottom_container,
             text="Start Process",
+            height=45,
             font=ctk.CTkFont(size=18, weight="bold"),
             command=self.start_process_threaded,
         )
-        self.start_btn.grid(row=0, column=0, padx=(0, 5), sticky="nsew")
+        self.start_btn.grid(row=0, column=0, padx=(0, 5), pady=5, sticky="ew")
 
         # Donate Button
         self.donate_button = ctk.CTkButton(
-            button_frame,
+            self.bottom_container,
             text="Donate",
+            height=45,
             image=self.heart_image,
             compound="right",
             fg_color="#FFD700",
@@ -163,19 +154,20 @@ class PersianSubtitleToolkit(ctk.CTk):
             font=ctk.CTkFont(size=18, weight="bold"),
             command=self.donate,
         )
-        self.donate_button.grid(row=0, column=1, padx=5, sticky="nsew")
+        self.donate_button.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
 
         # Reset Button
         self.reset_button = ctk.CTkButton(
-            button_frame,
+            self.bottom_container,
             text="Reset Settings",
-            fg_color="#A9A9A9",  # Dark Gray
-            hover_color="#808080",  # Gray
+            height=45,
+            fg_color="#A9A9A9",
+            hover_color="#808080",
             text_color="#000000",
             font=ctk.CTkFont(size=18, weight="bold"),
             command=self._reset_settings,
         )
-        self.reset_button.grid(row=0, column=2, padx=(5, 0), sticky="nsew")
+        self.reset_button.grid(row=0, column=2, padx=(5, 0), pady=5, sticky="ew")
 
     def resource_path(self, relative_path):
         temp_dir = os.path.dirname(__file__)
@@ -266,6 +258,25 @@ class PersianSubtitleToolkit(ctk.CTk):
             self.write_log(f"Target folder changing to: {folder_selected}")
             self._update_path_entry(folder_selected)
             self.write_log(f"Target folder successfully changed.")
+
+    def write_log(self, message):
+        folder = self.path_entry.get()
+        is_enabled = self.log_switch.get() == 1
+        Logger.log(message, folder, is_enabled)
+
+    def toggle_logs(self):
+        current_state = self.log_switch.get() == 1
+        if current_state:
+            messagebox.showinfo("Logs Enabled", "Logs will be saved in the selected folder under /logs directory.")
+            Logger.log("Logging enabled by user.", self.path_entry.get(), True)
+        else:
+            Logger.log("Logging disabled by user.", self.path_entry.get(), True)
+        self.save_config()
+
+    def change_theme(self):
+        mode = "dark" if self.theme_switch.get() == 1 else "light"
+        ctk.set_appearance_mode(mode)
+        self.write_log(f"Appearance mode changed to {mode}")
 
     def start_process_threaded(self):
         threading.Thread(target=self.start_process, daemon=True).start()
