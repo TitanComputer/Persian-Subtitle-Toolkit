@@ -107,15 +107,15 @@ class PersianSubtitleToolkit(ctk.CTk):
         self.theme_frame.grid_rowconfigure(1, weight=1)
 
         self.theme_label = ctk.CTkLabel(self.theme_frame, text="Dark Mode", font=ctk.CTkFont(size=12, weight="bold"))
-        self.theme_label.grid(row=0, column=0, padx=(0, 5), sticky="e")
+        self.theme_label.grid(row=0, column=0, padx=(0, 5), sticky="ew")
         self.theme_switch = ctk.CTkSwitch(self.theme_frame, text="", command=self.change_theme, width=45)
-        self.theme_switch.grid(row=0, column=1, sticky="w")
+        self.theme_switch.grid(row=0, column=1, sticky="ew")
         self.theme_switch.select()
 
         self.log_label = ctk.CTkLabel(self.theme_frame, text="Save Logs", font=ctk.CTkFont(size=12, weight="bold"))
-        self.log_label.grid(row=1, column=0, padx=(0, 5), sticky="e")
+        self.log_label.grid(row=1, column=0, padx=(0, 5), sticky="ew")
         self.log_switch = ctk.CTkSwitch(self.theme_frame, text="", command=self.toggle_logs, width=45)
-        self.log_switch.grid(row=1, column=1, sticky="w")
+        self.log_switch.grid(row=1, column=1, sticky="ew")
         self.log_switch.configure(state="disabled")
 
         # --- Middle Container (Row 1) ---
@@ -156,6 +156,31 @@ class PersianSubtitleToolkit(ctk.CTk):
         )
         self.donate_button.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
 
+        # Import Settings Button
+        self.import_btn = ctk.CTkButton(
+            self.bottom_container,
+            text="Import Settings",
+            height=45,
+            fg_color="#b434db",
+            hover_color="#9b2bb8",
+            text_color="#FFFFFF",
+            font=ctk.CTkFont(size=15, weight="bold"),
+            command=self.import_settings,
+        )
+        self.import_btn.grid(row=0, column=2, padx=5, pady=5, sticky="ew")
+
+        # Export Settings Button
+        self.export_btn = ctk.CTkButton(
+            self.bottom_container,
+            text="Export Settings",
+            height=45,
+            fg_color="#27ae60",
+            hover_color="#186d3b",
+            text_color="#FFFFFF",
+            font=ctk.CTkFont(size=15, weight="bold"),
+            command=self.export_settings,
+        )
+        self.export_btn.grid(row=0, column=3, padx=5, pady=5, sticky="ew")
         # Reset Button
         self.reset_button = ctk.CTkButton(
             self.bottom_container,
@@ -167,7 +192,7 @@ class PersianSubtitleToolkit(ctk.CTk):
             font=ctk.CTkFont(size=18, weight="bold"),
             command=self._reset_settings,
         )
-        self.reset_button.grid(row=0, column=2, padx=(5, 0), pady=5, sticky="ew")
+        self.reset_button.grid(row=0, column=4, padx=(5, 0), pady=5, sticky="ew")
 
     def resource_path(self, relative_path):
         temp_dir = os.path.dirname(__file__)
@@ -186,25 +211,36 @@ class PersianSubtitleToolkit(ctk.CTk):
     # --- Config Management Methods ---
     def load_config(self):
         config = self.config_manager.load()
-        folder_path = config.get("folder_path", "")
-        if folder_path and os.path.isdir(folder_path):
-            self._update_path_entry(folder_path)
-            self.log_switch.configure(state="normal")  # Enable if path exists
 
+        # 1. Update Path Entry first (this enables/disables the log switch state)
+        folder_path = config.get("folder_path", "")
+        self._update_path_entry(folder_path)
+
+        # 2. Update Theme
         theme_mode = config.get("theme_mode", 1)
         if theme_mode == 1:
             self.theme_switch.select()
+            ctk.set_appearance_mode("dark")
         else:
             self.theme_switch.deselect()
-        ctk.set_appearance_mode("dark" if theme_mode == 1 else "light")
+            ctk.set_appearance_mode("light")
 
+        # 3. Update Save Logs Toggle
+        # Important: Check if the switch is not disabled by _update_path_entry
         save_logs = config.get("save_logs", 0)
-        if save_logs == 1 and self.log_switch.cget("state") == "normal":
-            self.log_switch.select()
+        if self.log_switch.cget("state") == "normal":
+            if save_logs == 1:
+                self.log_switch.select()
+            else:
+                self.log_switch.deselect()
+        else:
+            # If path is invalid, force deselect regardless of config
+            self.log_switch.deselect()
 
+        # 4. Final Logs
         sys_info = Logger.get_system_info()
         self.write_log(f"System Info: {sys_info}")
-        self.write_log("Application started and config loaded.")
+        self.write_log("Application config loaded/reloaded.")
 
     def save_config(self):
         current_path = self.path_entry.get()
@@ -233,6 +269,75 @@ class PersianSubtitleToolkit(ctk.CTk):
         ctk.set_appearance_mode("dark")
         self.log_switch.deselect()
         self.log_switch.configure(state="disabled")
+
+    def import_settings(self):
+        file_path = filedialog.askopenfilename(title="Select Configuration File", filetypes=[("JSON files", "*.json")])
+
+        if not file_path:
+            return
+
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                imported_config = json.load(f)
+
+            # Validate app name
+            if imported_config.get("app_name") != APP_NAME:
+                messagebox.showerror("Error", "Invalid configuration file for this application.")
+                return
+
+            # Update only valid existing keys (excluding identity keys)
+            excluded_keys = ["app_name", "app_version"]
+            current_config = self.config_manager.load()
+
+            updated_count = 0
+            for key, value in imported_config.items():
+                if key in current_config and key not in excluded_keys:
+                    current_config[key] = value
+                    updated_count += 1
+
+            if updated_count > 0:
+                # Save the new config and reload UI
+                self.config_manager.save(
+                    current_config.get("folder_path", ""),
+                    current_config.get("theme_mode", 1),
+                    current_config.get("save_logs", 0),
+                )
+                self.load_config()
+                self.write_log(f"Settings imported successfully from: {file_path}")
+                messagebox.showinfo("Success", "Settings have been imported and applied successfully.")
+
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to import settings: {str(e)}")
+
+    def export_settings(self):
+        # Generate unique filename
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
+        default_filename = f"PST-{timestamp}.json"
+
+        file_path = filedialog.asksaveasfilename(
+            title="Export Settings",
+            initialfile=default_filename,
+            defaultextension=".json",
+            filetypes=[("JSON files", "*.json")],
+        )
+
+        if not file_path:
+            return
+
+        try:
+            # Save current state first
+            self.save_config()
+            # Get latest config from file
+            config_data = self.config_manager.load()
+
+            with open(file_path, "w", encoding="utf-8") as f:
+                json.dump(config_data, f, indent=4)
+
+            self.write_log(f"Settings exported successfully to: {file_path}")
+            messagebox.showinfo("Success", f"Settings exported to:\n{file_path}")
+
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to export settings: {str(e)}")
 
     def on_close(self):
         self.write_log("Application closing.")
@@ -277,6 +382,7 @@ class PersianSubtitleToolkit(ctk.CTk):
         mode = "dark" if self.theme_switch.get() == 1 else "light"
         ctk.set_appearance_mode(mode)
         self.write_log(f"Appearance mode changed to {mode}")
+        self.save_config()
 
     def start_process_threaded(self):
         threading.Thread(target=self.start_process, daemon=True).start()
