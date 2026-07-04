@@ -128,7 +128,7 @@ class PersianSubtitleToolkit(ctk.CTk):
 
         # Main Tabview Structure
         self.tabview = ctk.CTkTabview(self.middle_container)
-        self.tabview.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")
+        self.tabview.grid(row=0, column=0, padx=5, pady=0, sticky="nsew")
 
         # Add designated tabs first
         self.tab_preprocess = self.tabview.add("Pre-Process")
@@ -139,10 +139,8 @@ class PersianSubtitleToolkit(ctk.CTk):
         # Safely configure font and internal text padding on the inner segmented button
         self.tabview._segmented_button.configure(font=ctk.CTkFont(size=15, weight="bold"))
         self.tabview._segmented_button.grid(
-            row=0,  # Ensures it targets the first row inside tabview
-            column=0,  # Targets the first column
-            padx=15,
-            pady=(0, 5),  # 0 padding from top, 5 padding from bottom to create separation
+            padx=0,
+            pady=0,
             ipadx=5,
             ipady=5,
             sticky="nsew",  # Sticks to all 4 sides
@@ -159,7 +157,7 @@ class PersianSubtitleToolkit(ctk.CTk):
         self.chk_trim_spaces = ctk.CTkCheckBox(
             self.preprocess_inner_frame, text="Trim spaces from beginning and end of lines", font=font_bold
         )
-        self.chk_trim_spaces.grid(row=0, column=0, padx=5, pady=(0, 5), sticky="w")
+        self.chk_trim_spaces.grid(row=0, column=0, padx=5, pady=5, sticky="w")
 
         # --- Add components inside Extra Options Tab ---
         self.extra_inner_frame = ctk.CTkFrame(self.tab_extra, fg_color="transparent")
@@ -168,12 +166,12 @@ class PersianSubtitleToolkit(ctk.CTk):
         self.chk_delete_original = ctk.CTkCheckBox(
             self.extra_inner_frame, text="Delete original subtitle file after successful process", font=font_bold
         )
-        self.chk_delete_original.grid(row=0, column=0, padx=5, pady=(0, 5), sticky="w")
+        self.chk_delete_original.grid(row=0, column=0, padx=5, pady=5, sticky="w")
 
         self.chk_detailed_logs = ctk.CTkCheckBox(
             self.extra_inner_frame, text="Create individual changelog file for each subtitle", font=font_bold
         )
-        self.chk_detailed_logs.grid(row=1, column=0, padx=5, pady=(0, 5), sticky="w")
+        self.chk_detailed_logs.grid(row=1, column=0, padx=5, pady=5, sticky="w")
 
         # --- Bottom Container (Row 2) ---
         self.bottom_container = ctk.CTkFrame(self, fg_color="transparent")
@@ -475,6 +473,8 @@ class PersianSubtitleToolkit(ctk.CTk):
             messagebox.showwarning("Error", "Please select a folder first.")
             return
 
+        self.attributes("-disabled", True)
+
         # Save settings on triggering task execution
         self.save_config()
 
@@ -495,13 +495,27 @@ class PersianSubtitleToolkit(ctk.CTk):
             f"Subtitle processing has completed.\n\n"
             f"Total files discovered: {total}\n"
             f"Successfully processed: {successful}\n"
-            f"Failed / Skipped: {failed}"
+            f"Failed / Skipped: {failed}\n\n"
+            f"Output files are located in the 'Outputs' folder within the selected directory."
         )
 
-        if failed > 0:
-            self.after(0, lambda: messagebox.showwarning("Process Completed with Warnings", summary_message))
-        else:
-            self.after(0, lambda: messagebox.showinfo("Process Completed", summary_message))
+        def finish():
+            if failed > 0:
+                messagebox.showwarning(
+                    "Process Completed with Warnings",
+                    summary_message,
+                )
+            else:
+                messagebox.showinfo(
+                    "Process Completed",
+                    summary_message,
+                )
+
+            self.attributes("-disabled", False)
+            self.lift()
+            self.focus_force()
+
+        self.after(0, finish)
 
     def donate(self):
         """Opens a donation window with options to support the project."""

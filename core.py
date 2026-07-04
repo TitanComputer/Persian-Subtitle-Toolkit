@@ -5,6 +5,8 @@ class SubtitleProcessor:
     def __init__(self, folder_path, options=None):
         self.folder_path = folder_path
         self.options = options if options else {}
+        self.successful_count = 0
+        self.failed_count = 0
 
     def run(self):
         if not self.folder_path or not os.path.isdir(self.folder_path):
@@ -58,7 +60,7 @@ class SubtitleProcessor:
                     if current_line != original_line:
                         file_has_changes = True
                         if self.options.get("detailed_subtitle_logs", 1):
-                            log_msg = f"Line {index} modified | Option: Trim Spaces | Before: '{original_line.rstrip("\n")}' -> After: '{current_line.rstrip("\n")}'"
+                            log_msg = f"Line {index} modified | Option: Trim Spaces | Before: '{original_line.rstrip()}' -> After: '{current_line.rstrip()}'"
                             Logger.log_subtitle_change(self.folder_path, filename, log_msg)
 
                     processed_lines.append(current_line)
@@ -82,7 +84,12 @@ class SubtitleProcessor:
                     os.remove(file_path)
                     Logger.log_process(f"Original file deleted by request: {filename}", self.folder_path)
 
+                # Increment successful tracking counter
+                self.successful_count += 1
+
             except Exception as e:
                 Logger.log_process(f"Failed to process file {filename} due to: {str(e)}", self.folder_path)
+                # Increment failed tracking counter
+                self.failed_count += 1
 
         Logger.log_process("All tasks completed inside process pipeline.", self.folder_path)
