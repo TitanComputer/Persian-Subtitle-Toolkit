@@ -1,4 +1,6 @@
 customtkinter==5.2.2
 darkdetect==0.8.0
+ImageIO==2.37.3
+numpy==2.5.0
 packaging==26.0
 pillow==12.1.1
