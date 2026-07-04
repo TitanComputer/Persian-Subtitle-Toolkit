@@ -130,11 +130,23 @@ class PersianSubtitleToolkit(ctk.CTk):
         self.tabview = ctk.CTkTabview(self.middle_container)
         self.tabview.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")
 
-        # Add designated tabs
+        # Add designated tabs first
         self.tab_preprocess = self.tabview.add("Pre-Process")
         self.tab_process = self.tabview.add("Process")
         self.tab_postprocess = self.tabview.add("Post-Process")
         self.tab_extra = self.tabview.add("Extra Options")
+
+        # Safely configure font and internal text padding on the inner segmented button
+        self.tabview._segmented_button.configure(font=ctk.CTkFont(size=15, weight="bold"))
+        self.tabview._segmented_button.grid(
+            row=0,  # Ensures it targets the first row inside tabview
+            column=0,  # Targets the first column
+            padx=15,
+            pady=(0, 5),  # 0 padding from top, 5 padding from bottom to create separation
+            ipadx=5,
+            ipady=5,
+            sticky="nsew",  # Sticks to all 4 sides
+        )
 
         # Configure tab inner layout managers for future tool additions
         for tab in [self.tab_preprocess, self.tab_process, self.tab_postprocess, self.tab_extra]:
