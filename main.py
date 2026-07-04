@@ -118,10 +118,28 @@ class PersianSubtitleToolkit(ctk.CTk):
         self.log_switch.grid(row=1, column=1, sticky="ew")
         self.log_switch.configure(state="disabled")
 
-        # --- Middle Container (Row 1) ---
-        # This frame is currently empty and will hold the main logic UI later
+        # --- Middle Container (Row 1) with CTkTabview ---
         self.middle_container = ctk.CTkFrame(self)
         self.middle_container.grid(row=1, column=0, padx=10, pady=10, sticky="nsew")
+
+        # Configure middle container grid layout to expand tabview fully
+        self.middle_container.grid_rowconfigure(0, weight=1)
+        self.middle_container.grid_columnconfigure(0, weight=1)
+
+        # Main Tabview Structure
+        self.tabview = ctk.CTkTabview(self.middle_container)
+        self.tabview.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")
+
+        # Add designated tabs
+        self.tab_preprocess = self.tabview.add("Pre-Process")
+        self.tab_process = self.tabview.add("Process")
+        self.tab_postprocess = self.tabview.add("Post-Process")
+        self.tab_extra = self.tabview.add("Extra Options")
+
+        # Configure tab inner layout managers for future tool additions
+        for tab in [self.tab_preprocess, self.tab_process, self.tab_postprocess, self.tab_extra]:
+            tab.grid_columnconfigure(0, weight=1)
+            tab.grid_rowconfigure(0, weight=1)
 
         # --- Bottom Container (Row 2) ---
         self.bottom_container = ctk.CTkFrame(self, fg_color="transparent")
