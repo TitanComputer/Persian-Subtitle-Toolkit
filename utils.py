@@ -76,7 +76,7 @@ class Logger:
         if not folder_path or not os.path.isdir(folder_path):
             return
 
-        log_dir = os.path.join(folder_path, "logs")
+        log_dir = os.path.join(folder_path, "Logs")
         os.makedirs(log_dir, exist_ok=True)
         log_file = os.path.join(log_dir, "general-logs.txt")
 
@@ -87,6 +87,38 @@ class Logger:
         except Exception as e:
             print(f"Logging failed: {e}")
 
+    @staticmethod
+    def log_process(message, folder_path):
+        if not folder_path or not os.path.isdir(folder_path):
+            return
+
+        log_dir = os.path.join(folder_path, "Logs")
+        os.makedirs(log_dir, exist_ok=True)
+        log_file = os.path.join(log_dir, "process-logs.txt")
+
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        try:
+            with open(log_file, "a", encoding="utf-8") as f:
+                f.write(f"[{timestamp}] {message}\n")
+        except Exception as e:
+            print(f"Process logging failed: {e}")
+
+    @staticmethod
+    def log_subtitle_change(folder_path, filename, message):
+        if not folder_path or not os.path.isdir(folder_path):
+            return
+
+        log_dir = os.path.join(folder_path, "Logs", "Subtitle-Logs")
+        os.makedirs(log_dir, exist_ok=True)
+        log_file = os.path.join(log_dir, f"{filename}-changelogs.txt")
+
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        try:
+            with open(log_file, "a", encoding="utf-8") as f:
+                f.write(f"[{timestamp}] {message}\n")
+        except Exception as e:
+            print(f"Subtitle detailed logging failed: {e}")
+
 
 class ConfigManager:
     def __init__(self, config_file, default_config):
@@ -96,7 +128,14 @@ class ConfigManager:
 
     def load(self):
         if not os.path.isfile(self.config_file):
-            self.save(self.default_config.get("folder_path", ""))
+            self.save(
+                self.default_config.get("folder_path", ""),
+                self.default_config.get("theme_mode", 1),
+                self.default_config.get("save_logs", 0),
+                self.default_config.get("trim_spaces", 1),
+                self.default_config.get("delete_original", 0),
+                self.default_config.get("detailed_subtitle_logs", 1),
+            )
             return self.default_config
 
         try:
@@ -105,11 +144,14 @@ class ConfigManager:
         except Exception:
             return self.default_config
 
-    def save(self, folder_path, theme_mode=1, save_logs=0):
+    def save(self, folder_path, theme_mode=1, save_logs=0, trim_spaces=1, delete_original=0, detailed_subtitle_logs=1):
         config = self.default_config.copy()
         config["folder_path"] = folder_path if os.path.isdir(folder_path) else ""
         config["theme_mode"] = theme_mode
         config["save_logs"] = save_logs
+        config["trim_spaces"] = trim_spaces
+        config["delete_original"] = delete_original
+        config["detailed_subtitle_logs"] = detailed_subtitle_logs
 
         try:
             with open(self.config_file, "w", encoding="utf-8") as f:

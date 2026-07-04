@@ -120,7 +120,7 @@ class PersianSubtitleToolkit(ctk.CTk):
 
         # --- Middle Container (Row 1) with CTkTabview ---
         self.middle_container = ctk.CTkFrame(self)
-        self.middle_container.grid(row=1, column=0, padx=10, pady=10, sticky="nsew")
+        self.middle_container.grid(row=1, column=0, padx=10, pady=5, sticky="nsew")
 
         # Configure middle container grid layout to expand tabview fully
         self.middle_container.grid_rowconfigure(0, weight=1)
@@ -152,6 +152,28 @@ class PersianSubtitleToolkit(ctk.CTk):
         for tab in [self.tab_preprocess, self.tab_process, self.tab_postprocess, self.tab_extra]:
             tab.grid_columnconfigure(0, weight=1)
             tab.grid_rowconfigure(0, weight=1)
+
+        # --- Add components inside Pre-Process Tab ---
+        self.preprocess_inner_frame = ctk.CTkFrame(self.tab_preprocess, fg_color="transparent")
+        self.preprocess_inner_frame.grid(row=0, column=0, padx=0, pady=0, sticky="nsew")
+        self.chk_trim_spaces = ctk.CTkCheckBox(
+            self.preprocess_inner_frame, text="Trim spaces from beginning and end of lines", font=font_bold
+        )
+        self.chk_trim_spaces.grid(row=0, column=0, padx=5, pady=(0, 5), sticky="w")
+
+        # --- Add components inside Extra Options Tab ---
+        self.extra_inner_frame = ctk.CTkFrame(self.tab_extra, fg_color="transparent")
+        self.extra_inner_frame.grid(row=0, column=0, padx=0, pady=0, sticky="nsew")
+
+        self.chk_delete_original = ctk.CTkCheckBox(
+            self.extra_inner_frame, text="Delete original subtitle file after successful process", font=font_bold
+        )
+        self.chk_delete_original.grid(row=0, column=0, padx=5, pady=(0, 5), sticky="w")
+
+        self.chk_detailed_logs = ctk.CTkCheckBox(
+            self.extra_inner_frame, text="Create individual changelog file for each subtitle", font=font_bold
+        )
+        self.chk_detailed_logs.grid(row=1, column=0, padx=5, pady=(0, 5), sticky="w")
 
         # --- Bottom Container (Row 2) ---
         self.bottom_container = ctk.CTkFrame(self, fg_color="transparent")
@@ -267,7 +289,23 @@ class PersianSubtitleToolkit(ctk.CTk):
             # If path is invalid, force deselect regardless of config
             self.log_switch.deselect()
 
-        # 4. Final Logs
+        # 4. Load Tab Configuration Checkboxes States
+        if config.get("trim_spaces", 1) == 1:
+            self.chk_trim_spaces.select()
+        else:
+            self.chk_trim_spaces.deselect()
+
+        if config.get("delete_original", 0) == 1:
+            self.chk_delete_original.select()
+        else:
+            self.chk_delete_original.deselect()
+
+        if config.get("detailed_subtitle_logs", 1) == 1:
+            self.chk_detailed_logs.select()
+        else:
+            self.chk_detailed_logs.deselect()
+
+        # 5. Final Logs
         sys_info = Logger.get_system_info()
         self.write_log(f"System Info: {sys_info}")
         self.write_log("Application config loaded/reloaded.")
@@ -276,8 +314,15 @@ class PersianSubtitleToolkit(ctk.CTk):
         current_path = self.path_entry.get()
         theme_val = self.theme_switch.get()
         log_val = self.log_switch.get()
+
+        trim_spaces_val = self.chk_trim_spaces.get()
+        delete_original_val = self.chk_delete_original.get()
+        detailed_logs_val = self.chk_detailed_logs.get()
+
         self.write_log("Config saved.")
-        self.config_manager.save(current_path, theme_val, log_val)
+        self.config_manager.save(
+            current_path, theme_val, log_val, trim_spaces_val, delete_original_val, detailed_logs_val
+        )
 
     def _update_path_entry(self, path):
         self.path_entry.configure(state="normal")
@@ -299,6 +344,10 @@ class PersianSubtitleToolkit(ctk.CTk):
         ctk.set_appearance_mode("dark")
         self.log_switch.deselect()
         self.log_switch.configure(state="disabled")
+        # Apply configurations defaults checkboxes to widgets
+        self.chk_trim_spaces.select()
+        self.chk_delete_original.deselect()
+        self.chk_detailed_logs.select()
 
     def import_settings(self):
         file_path = filedialog.askopenfilename(title="Select Configuration File", filetypes=[("JSON files", "*.json")])
@@ -331,6 +380,9 @@ class PersianSubtitleToolkit(ctk.CTk):
                     current_config.get("folder_path", ""),
                     current_config.get("theme_mode", 1),
                     current_config.get("save_logs", 0),
+                    current_config.get("trim_spaces", 1),
+                    current_config.get("delete_original", 0),
+                    current_config.get("detailed_subtitle_logs", 1),
                 )
                 self.load_config()
                 self.write_log(f"Settings imported successfully from: {file_path}")
@@ -402,7 +454,7 @@ class PersianSubtitleToolkit(ctk.CTk):
     def toggle_logs(self):
         current_state = self.log_switch.get() == 1
         if current_state:
-            messagebox.showinfo("Logs Enabled", "Logs will be saved in the selected folder under /logs directory.")
+            messagebox.showinfo("Logs Enabled", "Logs will be saved in the selected folder under /Logs directory.")
             Logger.log("Logging enabled by user.", self.path_entry.get(), True)
         else:
             Logger.log("Logging disabled by user.", self.path_entry.get(), True)
@@ -423,8 +475,33 @@ class PersianSubtitleToolkit(ctk.CTk):
             messagebox.showwarning("Error", "Please select a folder first.")
             return
 
-        processor = SubtitleProcessor(current_path)
+        # Save settings on triggering task execution
+        self.save_config()
+
+        # Capture dynamic variables from checkbox elements
+        run_options = {
+            "trim_spaces": self.chk_trim_spaces.get(),
+            "delete_original": self.chk_delete_original.get(),
+            "detailed_subtitle_logs": self.chk_detailed_logs.get(),
+        }
+
+        processor = SubtitleProcessor(current_path, options=run_options)
         processor.run()
+        successful = getattr(processor, "successful_count", 0)
+        failed = getattr(processor, "failed_count", 0)
+        total = successful + failed
+
+        summary_message = (
+            f"Subtitle processing has completed.\n\n"
+            f"Total files discovered: {total}\n"
+            f"Successfully processed: {successful}\n"
+            f"Failed / Skipped: {failed}"
+        )
+
+        if failed > 0:
+            self.after(0, lambda: messagebox.showwarning("Process Completed with Warnings", summary_message))
+        else:
+            self.after(0, lambda: messagebox.showinfo("Process Completed", summary_message))
 
     def donate(self):
         """Opens a donation window with options to support the project."""
