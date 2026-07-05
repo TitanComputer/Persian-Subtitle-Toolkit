@@ -1,4 +1,19 @@
 from utils import *
+import os
+import re
+
+
+def build_flexible_regex(word):
+    """
+    Creates a regex pattern that ignores spaces, dots, zero-width non-joiners (\u200c)
+    and kashida (ـ) between the characters of the provided word.
+    """
+    clean_word = re.sub(r"[\s\.\u200cـ]", "", word)
+    if not clean_word:
+        return None
+    # Escape characters safely and join with optional ignored characters pattern
+    pattern = r"[\s\.\u200cـ]*".join(re.escape(c) for c in clean_word)
+    return re.compile(pattern)
 
 
 class SubtitleProcessor:
@@ -25,6 +40,18 @@ class SubtitleProcessor:
             return
 
         Logger.log_process(f"Process started. Found {len(srt_files)} file(s).", self.folder_path)
+
+        # Extract Process configuration variables
+        bypass_enabled = self.options.get("bypass_enabled", 1)
+        bypass_list = [w.strip() for w in self.options.get("bypass_list", "").split("\n") if w.strip()]
+
+        remove_enabled = self.options.get("remove_enabled", 1)
+        remove_list = [w.strip() for w in self.options.get("remove_list", "").split("\n") if w.strip()]
+
+        replace_enabled = self.options.get("replace_enabled", 1)
+        replace_list = [w.strip() for w in self.options.get("replace_list", "").split("\n") if w.strip()]
+
+        post_trim_spaces = self.options.get("post_trim_spaces", 1)
 
         for filename in srt_files:
             file_path = os.path.join(self.folder_path, filename)
@@ -56,14 +83,79 @@ class SubtitleProcessor:
                         else:
                             current_line = stripped
 
-                    # Check if line was modified to log details
+                    # Log Pre-Process Changes
                     if current_line != original_line:
                         file_has_changes = True
                         if self.options.get("detailed_subtitle_logs", 1):
-                            log_msg = f"Line {index} modified | Option: Trim Spaces | Before: '{original_line.rstrip()}' -> After: '{current_line.rstrip()}'"
+                            log_msg = f"Line {index} modified | Option: Pre-Process Trim Spaces | Before: '{original_line.rstrip("\n")}' -> After: '{current_line.rstrip("\n")}'"
                             Logger.log_subtitle_change(self.folder_path, filename, log_msg)
 
-                    processed_lines.append(current_line)
+                    # --- Process Options ---
+                    is_bypassed = False
+                    if bypass_enabled:
+                        for word in bypass_list:
+                            reg = build_flexible_regex(word)
+                            if reg and reg.search(current_line):
+                                is_bypassed = True
+                                if self.options.get("detailed_subtitle_logs", 1):
+                                    log_msg = f"Line {index} bypassed | Matched '{word}' in Bypass List. No further process changes applied."
+                                    Logger.log_subtitle_change(self.folder_path, filename, log_msg)
+                                break
+
+                    if not is_bypassed:
+                        is_removed = False
+
+                        # Process Option: Remove List
+                        if remove_enabled:
+                            for word in remove_list:
+                                reg = build_flexible_regex(word)
+                                if reg and reg.search(current_line):
+                                    is_removed = True
+                                    file_has_changes = True
+                                    if self.options.get("detailed_subtitle_logs", 1):
+                                        log_msg = f"Line {index} removed | Matched '{word}' in Remove List. Entire line deleted. The line was: '{current_line.rstrip("\n")}'"
+                                        Logger.log_subtitle_change(self.folder_path, filename, log_msg)
+                                    current_line = None
+                                    break
+
+                        # If removed, skip remaining processing steps and do not append this line
+                        if is_removed:
+                            continue
+
+                        # Process Option: Replace List
+                        if replace_enabled and current_line:
+                            for word in replace_list:
+                                reg = build_flexible_regex(word)
+                                if reg and reg.search(current_line):
+                                    before_replace = current_line
+                                    current_line = reg.sub("", current_line)
+                                    if current_line != before_replace:
+                                        file_has_changes = True
+                                        if self.options.get("detailed_subtitle_logs", 1):
+                                            log_msg = f"Line {index} modified | Option: Replace List (Matched '{word}') | Before: '{before_replace.rstrip("\n")}' -> After: '{current_line.rstrip("\n")}'"
+                                            Logger.log_subtitle_change(self.folder_path, filename, log_msg)
+
+                        # --- Post-Process Options ---
+                        # Apply Post-Process Option: Trim Spaces
+                        if post_trim_spaces and current_line:
+                            before_post = current_line
+                            stripped = current_line.strip()
+                            if current_line.endswith("\n"):
+                                current_line = stripped + "\n"
+                            elif current_line.endswith("\r\n"):
+                                current_line = stripped + "\r\n"
+                            else:
+                                current_line = stripped
+
+                            if current_line != before_post:
+                                file_has_changes = True
+                                if self.options.get("detailed_subtitle_logs", 1):
+                                    log_msg = f"Line {index} modified | Option: Post-Process Trim Spaces | Before: '{before_post.rstrip("\n")}' -> After: '{current_line.rstrip("\n")}'"
+                                    Logger.log_subtitle_change(self.folder_path, filename, log_msg)
+
+                    # Finally, append the line if it wasn't removed completely
+                    if current_line is not None:
+                        processed_lines.append(current_line)
 
                 # Construct output file path structure
                 name_part, ext_part = os.path.splitext(filename)

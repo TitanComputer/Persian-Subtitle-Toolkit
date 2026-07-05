@@ -151,17 +151,72 @@ class PersianSubtitleToolkit(ctk.CTk):
             tab.grid_columnconfigure(0, weight=1)
             tab.grid_rowconfigure(0, weight=1)
 
-        # --- Add components inside Pre-Process Tab ---
-        self.preprocess_inner_frame = ctk.CTkFrame(self.tab_preprocess, fg_color="transparent")
+            # --- Pre-Process Tab ---
+        self.preprocess_inner_frame = ctk.CTkScrollableFrame(self.tab_preprocess)
         self.preprocess_inner_frame.grid(row=0, column=0, padx=0, pady=0, sticky="nsew")
+        self.preprocess_inner_frame.grid_columnconfigure(0, weight=1)
+
         self.chk_trim_spaces = ctk.CTkCheckBox(
-            self.preprocess_inner_frame, text="Trim spaces from beginning and end of lines", font=font_bold
+            self.preprocess_inner_frame,
+            text="Trim spaces from beginning and end of lines (Pre-Process)",
+            font=font_bold,
         )
         self.chk_trim_spaces.grid(row=0, column=0, padx=5, pady=5, sticky="w")
 
-        # --- Add components inside Extra Options Tab ---
-        self.extra_inner_frame = ctk.CTkFrame(self.tab_extra, fg_color="transparent")
+        # --- Process Tab ---
+        self.process_inner_frame = ctk.CTkScrollableFrame(self.tab_process)
+        self.process_inner_frame.grid(row=0, column=0, padx=0, pady=0, sticky="nsew")
+        self.process_inner_frame.grid_columnconfigure(0, weight=1)
+
+        # Bypass List
+        self.chk_bypass = ctk.CTkCheckBox(
+            self.process_inner_frame,
+            text="Bypass List (Skip lines matching these words)",
+            font=font_bold,
+            command=self.toggle_bypass,
+        )
+        self.chk_bypass.grid(row=0, column=0, padx=5, pady=(5, 0), sticky="w")
+        self.txt_bypass = ctk.CTkTextbox(self.process_inner_frame, height=80)
+        self.txt_bypass.grid(row=1, column=0, padx=5, pady=5, sticky="ew")
+
+        # Remove List
+        self.chk_remove = ctk.CTkCheckBox(
+            self.process_inner_frame,
+            text="Remove List (Delete entire line if matching these words)",
+            font=font_bold,
+            command=self.toggle_remove,
+        )
+        self.chk_remove.grid(row=2, column=0, padx=5, pady=(15, 0), sticky="w")
+        self.txt_remove = ctk.CTkTextbox(self.process_inner_frame, height=80)
+        self.txt_remove.grid(row=3, column=0, padx=5, pady=5, sticky="ew")
+
+        # Replace List
+        self.chk_replace = ctk.CTkCheckBox(
+            self.process_inner_frame,
+            text="Replace List (Remove these specific words from matching lines)",
+            font=font_bold,
+            command=self.toggle_replace,
+        )
+        self.chk_replace.grid(row=4, column=0, padx=5, pady=(15, 0), sticky="w")
+        self.txt_replace = ctk.CTkTextbox(self.process_inner_frame, height=80)
+        self.txt_replace.grid(row=5, column=0, padx=5, pady=5, sticky="ew")
+
+        # --- Post-Process Tab ---
+        self.postprocess_inner_frame = ctk.CTkScrollableFrame(self.tab_postprocess)
+        self.postprocess_inner_frame.grid(row=0, column=0, padx=0, pady=0, sticky="nsew")
+        self.postprocess_inner_frame.grid_columnconfigure(0, weight=1)
+
+        self.chk_post_trim_spaces = ctk.CTkCheckBox(
+            self.postprocess_inner_frame,
+            text="Trim spaces from beginning and end of lines (Post-Process)",
+            font=font_bold,
+        )
+        self.chk_post_trim_spaces.grid(row=0, column=0, padx=5, pady=5, sticky="w")
+
+        # --- Extra Options Tab ---
+        self.extra_inner_frame = ctk.CTkScrollableFrame(self.tab_extra)
         self.extra_inner_frame.grid(row=0, column=0, padx=0, pady=0, sticky="nsew")
+        self.extra_inner_frame.grid_columnconfigure(0, weight=1)
 
         self.chk_delete_original = ctk.CTkCheckBox(
             self.extra_inner_frame, text="Delete original subtitle file after successful process", font=font_bold
@@ -169,7 +224,9 @@ class PersianSubtitleToolkit(ctk.CTk):
         self.chk_delete_original.grid(row=0, column=0, padx=5, pady=5, sticky="w")
 
         self.chk_detailed_logs = ctk.CTkCheckBox(
-            self.extra_inner_frame, text="Create individual changelog file for each subtitle", font=font_bold
+            self.extra_inner_frame,
+            text="Create individual changelog file for each subtitle (Log files will be saved in '/Logs/Subtitle-Logs/' folder)",
+            font=font_bold,
         )
         self.chk_detailed_logs.grid(row=1, column=0, padx=5, pady=5, sticky="w")
 
@@ -244,6 +301,25 @@ class PersianSubtitleToolkit(ctk.CTk):
         )
         self.reset_button.grid(row=0, column=4, padx=(5, 0), pady=5, sticky="ew")
 
+    # --- Widget Toggles ---
+    def toggle_bypass(self):
+        if self.chk_bypass.get() == 1:
+            self.txt_bypass.configure(state="normal")
+        else:
+            self.txt_bypass.configure(state="disabled")
+
+    def toggle_remove(self):
+        if self.chk_remove.get() == 1:
+            self.txt_remove.configure(state="normal")
+        else:
+            self.txt_remove.configure(state="disabled")
+
+    def toggle_replace(self):
+        if self.chk_replace.get() == 1:
+            self.txt_replace.configure(state="normal")
+        else:
+            self.txt_replace.configure(state="disabled")
+
     def resource_path(self, relative_path):
         temp_dir = os.path.dirname(__file__)
         return os.path.join(temp_dir, relative_path)
@@ -292,7 +368,53 @@ class PersianSubtitleToolkit(ctk.CTk):
             self.chk_trim_spaces.select()
         else:
             self.chk_trim_spaces.deselect()
+        # Process Tab Loading
+        if config.get("bypass_enabled", 1) == 1:
+            self.chk_bypass.select()
+            self.txt_bypass.configure(state="normal")
+        else:
+            self.chk_bypass.deselect()
+            self.txt_bypass.configure(state="disabled")
 
+        self.txt_bypass.configure(state="normal")
+        self.txt_bypass.delete("1.0", "end")
+        self.txt_bypass.insert("1.0", config.get("bypass_list", ""))
+        if config.get("bypass_enabled", 1) == 0:
+            self.txt_bypass.configure(state="disabled")
+
+        if config.get("remove_enabled", 1) == 1:
+            self.chk_remove.select()
+            self.txt_remove.configure(state="normal")
+        else:
+            self.chk_remove.deselect()
+            self.txt_remove.configure(state="disabled")
+
+        self.txt_remove.configure(state="normal")
+        self.txt_remove.delete("1.0", "end")
+        self.txt_remove.insert("1.0", config.get("remove_list", ""))
+        if config.get("remove_enabled", 1) == 0:
+            self.txt_remove.configure(state="disabled")
+
+        if config.get("replace_enabled", 1) == 1:
+            self.chk_replace.select()
+            self.txt_replace.configure(state="normal")
+        else:
+            self.chk_replace.deselect()
+            self.txt_replace.configure(state="disabled")
+
+        self.txt_replace.configure(state="normal")
+        self.txt_replace.delete("1.0", "end")
+        self.txt_replace.insert("1.0", config.get("replace_list", ""))
+        if config.get("replace_enabled", 1) == 0:
+            self.txt_replace.configure(state="disabled")
+
+        # Post-Process Tab Loading
+        if config.get("post_trim_spaces", 1) == 1:
+            self.chk_post_trim_spaces.select()
+        else:
+            self.chk_post_trim_spaces.deselect()
+
+        # Extra Options Loading
         if config.get("delete_original", 0) == 1:
             self.chk_delete_original.select()
         else:
@@ -309,18 +431,25 @@ class PersianSubtitleToolkit(ctk.CTk):
         self.write_log("Application config loaded/reloaded.")
 
     def save_config(self):
-        current_path = self.path_entry.get()
-        theme_val = self.theme_switch.get()
-        log_val = self.log_switch.get()
-
-        trim_spaces_val = self.chk_trim_spaces.get()
-        delete_original_val = self.chk_delete_original.get()
-        detailed_logs_val = self.chk_detailed_logs.get()
-
+        config_data = {
+            "app_name": APP_NAME,
+            "app_version": APP_VERSION,
+            "folder_path": self.path_entry.get(),
+            "theme_mode": self.theme_switch.get(),
+            "save_logs": self.log_switch.get(),
+            "trim_spaces": self.chk_trim_spaces.get(),
+            "bypass_enabled": self.chk_bypass.get(),
+            "bypass_list": self.txt_bypass.get("1.0", "end-1c"),
+            "remove_enabled": self.chk_remove.get(),
+            "remove_list": self.txt_remove.get("1.0", "end-1c"),
+            "replace_enabled": self.chk_replace.get(),
+            "replace_list": self.txt_replace.get("1.0", "end-1c"),
+            "post_trim_spaces": self.chk_post_trim_spaces.get(),
+            "delete_original": self.chk_delete_original.get(),
+            "detailed_subtitle_logs": self.chk_detailed_logs.get(),
+        }
+        self.config_manager.save(config_data)
         self.write_log("Config saved.")
-        self.config_manager.save(
-            current_path, theme_val, log_val, trim_spaces_val, delete_original_val, detailed_logs_val
-        )
 
     def _update_path_entry(self, path):
         self.path_entry.configure(state="normal")
@@ -342,8 +471,23 @@ class PersianSubtitleToolkit(ctk.CTk):
         ctk.set_appearance_mode("dark")
         self.log_switch.deselect()
         self.log_switch.configure(state="disabled")
-        # Apply configurations defaults checkboxes to widgets
+
         self.chk_trim_spaces.select()
+
+        self.chk_bypass.select()
+        self.txt_bypass.configure(state="normal")
+        self.txt_bypass.delete("1.0", "end")
+
+        self.chk_remove.select()
+        self.txt_remove.configure(state="normal")
+        self.txt_remove.delete("1.0", "end")
+
+        self.chk_replace.select()
+        self.txt_replace.configure(state="normal")
+        self.txt_replace.delete("1.0", "end")
+
+        self.chk_post_trim_spaces.select()
+
         self.chk_delete_original.deselect()
         self.chk_detailed_logs.select()
 
@@ -374,14 +518,7 @@ class PersianSubtitleToolkit(ctk.CTk):
 
             if updated_count > 0:
                 # Save the new config and reload UI
-                self.config_manager.save(
-                    current_config.get("folder_path", ""),
-                    current_config.get("theme_mode", 1),
-                    current_config.get("save_logs", 0),
-                    current_config.get("trim_spaces", 1),
-                    current_config.get("delete_original", 0),
-                    current_config.get("detailed_subtitle_logs", 1),
-                )
+                self.config_manager.save(current_config)
                 self.load_config()
                 self.write_log(f"Settings imported successfully from: {file_path}")
                 messagebox.showinfo("Success", "Settings have been imported and applied successfully.")
@@ -481,6 +618,13 @@ class PersianSubtitleToolkit(ctk.CTk):
         # Capture dynamic variables from checkbox elements
         run_options = {
             "trim_spaces": self.chk_trim_spaces.get(),
+            "bypass_enabled": self.chk_bypass.get(),
+            "bypass_list": self.txt_bypass.get("1.0", "end-1c") if self.chk_bypass.get() else "",
+            "remove_enabled": self.chk_remove.get(),
+            "remove_list": self.txt_remove.get("1.0", "end-1c") if self.chk_remove.get() else "",
+            "replace_enabled": self.chk_replace.get(),
+            "replace_list": self.txt_replace.get("1.0", "end-1c") if self.chk_replace.get() else "",
+            "post_trim_spaces": self.chk_post_trim_spaces.get(),
             "delete_original": self.chk_delete_original.get(),
             "detailed_subtitle_logs": self.chk_detailed_logs.get(),
         }

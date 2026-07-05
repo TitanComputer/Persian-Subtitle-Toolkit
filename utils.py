@@ -128,30 +128,22 @@ class ConfigManager:
 
     def load(self):
         if not os.path.isfile(self.config_file):
-            self.save(
-                self.default_config.get("folder_path", ""),
-                self.default_config.get("theme_mode", 1),
-                self.default_config.get("save_logs", 0),
-                self.default_config.get("trim_spaces", 1),
-                self.default_config.get("delete_original", 0),
-                self.default_config.get("detailed_subtitle_logs", 1),
-            )
-            return self.default_config
+            self.save(self.default_config)
+            return self.default_config.copy()
 
         try:
             with open(self.config_file, "r", encoding="utf-8") as f:
-                return json.load(f)
+                data = json.load(f)
+                config = self.default_config.copy()
+                config.update(data)
+                return config
         except Exception:
-            return self.default_config
+            return self.default_config.copy()
 
-    def save(self, folder_path, theme_mode=1, save_logs=0, trim_spaces=1, delete_original=0, detailed_subtitle_logs=1):
+    def save(self, config_data):
         config = self.default_config.copy()
-        config["folder_path"] = folder_path if os.path.isdir(folder_path) else ""
-        config["theme_mode"] = theme_mode
-        config["save_logs"] = save_logs
-        config["trim_spaces"] = trim_spaces
-        config["delete_original"] = delete_original
-        config["detailed_subtitle_logs"] = detailed_subtitle_logs
+        config.update(config_data)
+        config["folder_path"] = config["folder_path"] if os.path.isdir(config.get("folder_path", "")) else ""
 
         try:
             with open(self.config_file, "w", encoding="utf-8") as f:
