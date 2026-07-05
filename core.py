@@ -8,11 +8,11 @@ def build_flexible_regex(word):
     Creates a regex pattern that ignores spaces, dots, zero-width non-joiners (\u200c)
     and kashida (ـ) between the characters of the provided word.
     """
-    clean_word = re.sub(r"[\s\.\u200cـ]", "", word)
+    clean_word = re.sub(r"[\s\.\u200cـ\u064b-\u0652]", "", word)
     if not clean_word:
         return None
     # Escape characters safely and join with optional ignored characters pattern
-    pattern = r"[\s\.\u200cـ]*".join(re.escape(c) for c in clean_word)
+    pattern = r"[\s\.\u200cـ\u064b-\u0652]*".join(re.escape(c) for c in clean_word)
     return re.compile(pattern)
 
 
