@@ -77,8 +77,6 @@ jobs:
             --enable-plugin=multiprocessing \
             --lto=yes \
             --enable-plugin=tk-inter \
-            --include-package-data=customtkinter \
-            --include-package=idlelib \
             --windows-console-mode=disable \
             --follow-imports \
             --windows-icon-from-ico="assets/icon.png" \
