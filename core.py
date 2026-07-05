@@ -11,8 +11,22 @@ def build_flexible_regex(word):
     clean_word = re.sub(r"[\s\.\u200cـ\u064b-\u0652]", "", word)
     if not clean_word:
         return None
+
     # Escape characters safely and join with optional ignored characters pattern
-    pattern = r"[\s\.\u200cـ\u064b-\u0652]*".join(re.escape(c) for c in clean_word)
+    char_patterns = []
+    for c in clean_word:
+        if c in ("ی", "ي", "ى"):
+            char_patterns.append(r"[ییى]")
+        elif c in ("ک", "ك"):
+            char_patterns.append(r"[کك]")
+        elif c in ("ا", "آ", "أ", "إ"):
+            char_patterns.append(r"[اآأإ]")
+        elif c in ("ه", "ة"):
+            char_patterns.append(r"[هة]")
+        else:
+            char_patterns.append(re.escape(c))
+
+    pattern = r"[\s\.\u200cـ\u064b-\u0652]*".join(char_patterns)
     return re.compile(pattern)
 
 
