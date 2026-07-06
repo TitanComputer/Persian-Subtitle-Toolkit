@@ -94,27 +94,28 @@ def textbox_select_all(textbox):
 
 
 def setup_enhanced_textbox(textbox):
-    """Enable undo/redo, add left-aligned right-click context menu, and bind shortcuts/RTL handling."""
+    """Enable undo/redo, add beautifully formatted right-click context menu, and bind shortcuts."""
     textbox._textbox.configure(undo=True)
 
-    # Creating the context menu and specifying tearoff=0
-    menu = tk.Menu(textbox, tearoff=0)
+    # Context menu configuration with explicit left alignment for text commands
+    menu = tk.Menu(textbox, tearoff=0, background="white", foreground="black")
 
-    # Added Redo option and aligned all text items left using standard menu approach
-    menu.add_command(label="Undo (Ctrl + Z)", command=lambda: textbox_undo(textbox))
-    menu.add_command(label="Redo (Ctrl + Y)", command=lambda: textbox_redo(textbox))
+    # Adding a clean tab spacing (\t\t) inside the label instead of relying purely on accelerator
+    # This creates a perfect padding and aligns the shortcuts exactly to the right side with space.
+    menu.add_command(label="Undo\t\t", accelerator="Ctrl+Z", command=lambda: textbox_undo(textbox))
+    menu.add_command(label="Redo\t\t", accelerator="Ctrl+Y", command=lambda: textbox_redo(textbox))
     menu.add_separator()
-    menu.add_command(label="Cut (Ctrl + X)", command=lambda: textbox_cut(textbox))
-    menu.add_command(label="Copy (Ctrl + C)", command=lambda: textbox_copy(textbox))
-    menu.add_command(label="Paste (Ctrl + V)", command=lambda: textbox_paste(textbox))
-    menu.add_command(label="Delete (Delete)", command=lambda: textbox_delete_selection(textbox))
+    menu.add_command(label="Cut\t\t", accelerator="Ctrl+X", command=lambda: textbox_cut(textbox))
+    menu.add_command(label="Copy\t\t", accelerator="Ctrl+C", command=lambda: textbox_copy(textbox))
+    menu.add_command(label="Paste\t\t", accelerator="Ctrl+V", command=lambda: textbox_paste(textbox))
+    menu.add_command(label="Delete\t\t", accelerator="Delete", command=lambda: textbox_delete_selection(textbox))
     menu.add_separator()
-    menu.add_command(label="Select All (Ctrl + A)", command=lambda: textbox_select_all(textbox))
+    menu.add_command(label="Select All\t\t", accelerator="Ctrl+A", command=lambda: textbox_select_all(textbox))
 
     def show_menu(event):
         menu.tk_popup(event.x_root, event.y_root)
 
-    # Bindings for mouse and keyboard shortcuts (including standard Ctrl+Y and Ctrl+Z re-checks)
+    # Shortcut and mouse bindings
     textbox._textbox.bind("<Button-3>", show_menu)
     textbox._textbox.bind("<Control-a>", lambda e: textbox_select_all(textbox))
     textbox._textbox.bind("<Control-A>", lambda e: textbox_select_all(textbox))
@@ -122,6 +123,8 @@ def setup_enhanced_textbox(textbox):
     textbox._textbox.bind("<Control-Y>", lambda e: [textbox_redo(textbox), "break"][1])
     textbox._textbox.bind("<Control-z>", lambda e: [textbox_undo(textbox), "break"][1])
     textbox._textbox.bind("<Control-Z>", lambda e: [textbox_undo(textbox), "break"][1])
+
+    # Check alignment dynamically on key releases safely
     textbox._textbox.bind("<KeyRelease>", lambda e: check_and_apply_rtl(e.widget))
 
     check_and_apply_rtl(textbox._textbox)
