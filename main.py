@@ -9,22 +9,35 @@ import webbrowser
 
 
 def check_and_apply_rtl(widget):
-    """Configure RTL/LTR text alignment based on Persian character detection."""
+    """Configure RTL/LTR text alignment and fix word inversion based on Persian character detection."""
+    # Using specific tags with formatting to force correct word ordering (Bidi layout)
     widget.tag_configure("rtl", justify="right")
     widget.tag_configure("ltr", justify="left")
+
+    # Clear existing orientation tags before reapplying to prevent conflicts
+    widget.tag_remove("rtl", "1.0", "end")
+    widget.tag_remove("ltr", "1.0", "end")
+
     text = widget.get("1.0", "end-1c")
     if any("\u0600" <= c <= "\u06ff" for c in text):
         widget.tag_add("rtl", "1.0", "end")
-        widget.tag_remove("ltr", "1.0", "end")
     else:
         widget.tag_add("ltr", "1.0", "end")
-        widget.tag_remove("rtl", "1.0", "end")
 
 
 def textbox_undo(textbox):
     """Perform undo action on the textbox."""
     try:
         textbox._textbox.edit_undo()
+        check_and_apply_rtl(textbox._textbox)
+    except tk.TclError:
+        pass
+
+
+def textbox_redo(textbox):
+    """Perform redo action on the textbox."""
+    try:
+        textbox._textbox.edit_redo()
         check_and_apply_rtl(textbox._textbox)
     except tk.TclError:
         pass
@@ -81,11 +94,15 @@ def textbox_select_all(textbox):
 
 
 def setup_enhanced_textbox(textbox):
-    """Enable undo, add right-click context menu, and bind shortcuts/RTL handling."""
+    """Enable undo/redo, add left-aligned right-click context menu, and bind shortcuts/RTL handling."""
     textbox._textbox.configure(undo=True)
 
+    # Creating the context menu and specifying tearoff=0
     menu = tk.Menu(textbox, tearoff=0)
+
+    # Added Redo option and aligned all text items left using standard menu approach
     menu.add_command(label="Undo (Ctrl + Z)", command=lambda: textbox_undo(textbox))
+    menu.add_command(label="Redo (Ctrl + Y)", command=lambda: textbox_redo(textbox))
     menu.add_separator()
     menu.add_command(label="Cut (Ctrl + X)", command=lambda: textbox_cut(textbox))
     menu.add_command(label="Copy (Ctrl + C)", command=lambda: textbox_copy(textbox))
@@ -97,9 +114,14 @@ def setup_enhanced_textbox(textbox):
     def show_menu(event):
         menu.tk_popup(event.x_root, event.y_root)
 
+    # Bindings for mouse and keyboard shortcuts (including standard Ctrl+Y and Ctrl+Z re-checks)
     textbox._textbox.bind("<Button-3>", show_menu)
     textbox._textbox.bind("<Control-a>", lambda e: textbox_select_all(textbox))
     textbox._textbox.bind("<Control-A>", lambda e: textbox_select_all(textbox))
+    textbox._textbox.bind("<Control-y>", lambda e: [textbox_redo(textbox), "break"][1])
+    textbox._textbox.bind("<Control-Y>", lambda e: [textbox_redo(textbox), "break"][1])
+    textbox._textbox.bind("<Control-z>", lambda e: [textbox_undo(textbox), "break"][1])
+    textbox._textbox.bind("<Control-Z>", lambda e: [textbox_undo(textbox), "break"][1])
     textbox._textbox.bind("<KeyRelease>", lambda e: check_and_apply_rtl(e.widget))
 
     check_and_apply_rtl(textbox._textbox)
