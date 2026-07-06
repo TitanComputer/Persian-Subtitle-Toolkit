@@ -58,7 +58,7 @@ jobs:
       - name: Download UPX
         shell: powershell
         run: |
-          $UPX_VERSION = "5.0.2"
+          $UPX_VERSION = "5.2.0"
           $zip = "$env:RUNNER_TEMP\upx.zip"
           $dst = "C:\UPX"
           Invoke-WebRequest -Uri "https://github.com/upx/upx/releases/download/v$UPX_VERSION/upx-$UPX_VERSION-win64.zip" -OutFile $zip
