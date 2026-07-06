@@ -169,6 +169,9 @@ def setup_enhanced_textbox(textbox):
     widget = textbox._textbox
     textbox._original_text = ""
 
+    def textbox_mouse_leave(textbox):
+        textbox.master.focus_set()
+
     widget.bind(
         "<FocusIn>",
         lambda event, tb=textbox: textbox_focus_in(tb),
@@ -178,6 +181,12 @@ def setup_enhanced_textbox(textbox):
     widget.bind(
         "<FocusOut>",
         lambda event, tb=textbox: textbox_focus_out(tb),
+        add="+",
+    )
+
+    widget.bind(
+        "<Leave>",
+        lambda event, tb=textbox: textbox_mouse_leave(tb),
         add="+",
     )
     # Force right-to-left typing behavior for Persian text
@@ -712,16 +721,19 @@ class PersianSubtitleToolkit(ctk.CTk):
         self.chk_bypass.select()
         self.txt_bypass.configure(state="normal")
         self.txt_bypass.delete("1.0", "end")
+        self.txt_bypass._original_text = ""
         check_and_apply_rtl(self.txt_bypass._textbox)
 
         self.chk_remove.select()
         self.txt_remove.configure(state="normal")
         self.txt_remove.delete("1.0", "end")
+        self.txt_remove._original_text = ""
         check_and_apply_rtl(self.txt_remove._textbox)
 
         self.chk_replace.select()
         self.txt_replace.configure(state="normal")
         self.txt_replace.delete("1.0", "end")
+        self.txt_replace._original_text = ""
         check_and_apply_rtl(self.txt_replace._textbox)
 
         self.chk_post_trim_spaces.select()
