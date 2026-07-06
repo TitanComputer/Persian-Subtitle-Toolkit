@@ -102,7 +102,9 @@ class SubtitleProcessor:
                     if current_line != original_line:
                         file_has_changes = True
                         if self.options.get("detailed_subtitle_logs", 1):
-                            log_msg = f"Line {index} modified | Option: Pre-Process Trim Spaces | Before: '{original_line.rstrip("\n")}' -> After: '{current_line.rstrip("\n")}'"
+                            orig_clean = original_line.rstrip("\n")
+                            curr_clean = current_line.rstrip("\n")
+                            log_msg = f'Line {index} modified | Option: Pre-Process Trim Spaces | Before: "{orig_clean}" -> After: "{curr_clean}"'
                             Logger.log_subtitle_change(self.folder_path, filename, log_msg)
 
                     # --- Process Options ---
@@ -113,7 +115,7 @@ class SubtitleProcessor:
                             if reg and reg.search(current_line):
                                 is_bypassed = True
                                 if self.options.get("detailed_subtitle_logs", 1):
-                                    log_msg = f"Line {index} bypassed | Matched '{word}' in Bypass List. No further process changes applied."
+                                    log_msg = f'Line {index} bypassed | Matched "{word}" in Bypass List. No further process changes applied.'
                                     Logger.log_subtitle_change(self.folder_path, filename, log_msg)
                                 break
 
@@ -128,7 +130,8 @@ class SubtitleProcessor:
                                     is_removed = True
                                     file_has_changes = True
                                     if self.options.get("detailed_subtitle_logs", 1):
-                                        log_msg = f"Line {index} removed | Matched '{word}' in Remove List. Entire line deleted. The line was: '{current_line.rstrip("\n")}'"
+                                        curr_clean = current_line.rstrip("\n")
+                                        log_msg = f'Line {index} removed | Matched "{word}" in Remove List. Entire line deleted. The line was: "{curr_clean}"'
                                         Logger.log_subtitle_change(self.folder_path, filename, log_msg)
                                     current_line = None
                                     break
@@ -147,7 +150,9 @@ class SubtitleProcessor:
                                     if current_line != before_replace:
                                         file_has_changes = True
                                         if self.options.get("detailed_subtitle_logs", 1):
-                                            log_msg = f"Line {index} modified | Option: Replace List (Matched '{word}') | Before: '{before_replace.rstrip("\n")}' -> After: '{current_line.rstrip("\n")}'"
+                                            before_clean = before_replace.rstrip("\n")
+                                            curr_clean = current_line.rstrip("\n")
+                                            log_msg = f'Line {index} modified | Option: Replace List (Matched "{word}") | Before: "{before_clean}" -> After: "{curr_clean}"'
                                             Logger.log_subtitle_change(self.folder_path, filename, log_msg)
 
                         # --- Post-Process Options ---
@@ -165,7 +170,9 @@ class SubtitleProcessor:
                             if current_line != before_post:
                                 file_has_changes = True
                                 if self.options.get("detailed_subtitle_logs", 1):
-                                    log_msg = f"Line {index} modified | Option: Post-Process Trim Spaces | Before: '{before_post.rstrip("\n")}' -> After: '{current_line.rstrip("\n")}'"
+                                    before_clean = before_post.rstrip("\n")
+                                    curr_clean = current_line.rstrip("\n")
+                                    log_msg = f'Line {index} modified | Option: Post-Process Trim Spaces | Before: "{before_clean}" -> After: "{curr_clean}"'
                                     Logger.log_subtitle_change(self.folder_path, filename, log_msg)
 
                     # Finally, append the line if it wasn't removed completely
