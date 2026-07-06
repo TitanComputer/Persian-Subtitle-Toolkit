@@ -116,26 +116,34 @@ def setup_enhanced_textbox(textbox):
         menu.tk_popup(event.x_root, event.y_root)
 
     widget = textbox._textbox
-
     widget.bind("<Button-3>", show_menu, add="+")
 
-    widget.bind("<Control-a>", lambda e: textbox_select_all(textbox), add="+")
-    widget.bind("<Control-A>", lambda e: textbox_select_all(textbox), add="+")
+    def handle_ctrl_key(event):
+        # event.state & 0x0004 checks if Ctrl is pressed
+        if event.state & 0x0004:
+            code = event.keycode
+            if code == 65:  # A
+                textbox_select_all(textbox)
+                return "break"
+            elif code == 90:  # Z
+                textbox_undo(textbox)
+                return "break"
+            elif code == 89:  # Y
+                textbox_redo(textbox)
+                return "break"
+            elif code == 67:  # C
+                textbox_copy(textbox)
+                return "break"
+            elif code == 88:  # X
+                textbox_cut(textbox)
+                return "break"
+            elif code == 86:  # V
+                textbox_paste(textbox)
+                return "break"
+        return None
 
-    widget.bind("<Control-z>", lambda e: (textbox_undo(textbox), "break")[1], add="+")
-    widget.bind("<Control-Z>", lambda e: (textbox_undo(textbox), "break")[1], add="+")
-
-    widget.bind("<Control-y>", lambda e: (textbox_redo(textbox), "break")[1], add="+")
-    widget.bind("<Control-Y>", lambda e: (textbox_redo(textbox), "break")[1], add="+")
-
-    widget.bind("<Control-c>", lambda e: (textbox_copy(textbox), "break")[1], add="+")
-    widget.bind("<Control-C>", lambda e: (textbox_copy(textbox), "break")[1], add="+")
-
-    widget.bind("<Control-x>", lambda e: (textbox_cut(textbox), "break")[1], add="+")
-    widget.bind("<Control-X>", lambda e: (textbox_cut(textbox), "break")[1], add="+")
-
-    widget.bind("<Control-v>", lambda e: (textbox_paste(textbox), "break")[1], add="+")
-    widget.bind("<Control-V>", lambda e: (textbox_paste(textbox), "break")[1], add="+")
+    # Bind to KeyPress to catch events regardless of keyboard layout
+    widget.bind("<KeyPress>", handle_ctrl_key, add="+")
 
 
 class PersianSubtitleToolkit(ctk.CTk):
