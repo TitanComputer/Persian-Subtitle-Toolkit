@@ -9,7 +9,7 @@ def build_flexible_regex(word):
     and kashida (ـ) between the characters of the provided word.
     Compiles with re.IGNORECASE to support case-insensitive English matching.
     """
-    clean_word = re.sub(r"[\s\.\u200cـ\u064b-\u0652]", "", word)
+    clean_word = re.sub(r"[\s\.\u200cـ\u064b-\u0652\u200b-\u200f\u202a-\u202e]", "", word)
     if not clean_word:
         return None
 
@@ -17,7 +17,7 @@ def build_flexible_regex(word):
     char_patterns = []
     for c in clean_word:
         if c in ("ی", "ي", "ى"):
-            char_patterns.append(r"[ییى]")
+            char_patterns.append(r"[یيى]")
         elif c in ("ک", "ك"):
             char_patterns.append(r"[کك]")
         elif c in ("ا", "آ", "أ", "إ"):
@@ -27,7 +27,7 @@ def build_flexible_regex(word):
         else:
             char_patterns.append(re.escape(c))
 
-    pattern = r"[\s\.\u200cـ\u064b-\u0652]*".join(char_patterns)
+    pattern = r"[\s\.\u200cـ\u064b-\u0652\u200b-\u200f\u202a-\u202e]*".join(char_patterns)
     return re.compile(pattern, re.IGNORECASE)
 
 
