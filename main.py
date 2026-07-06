@@ -8,6 +8,103 @@ from idlelib.tooltip import Hovertip
 import webbrowser
 
 
+def check_and_apply_rtl(widget):
+    """Configure RTL/LTR text alignment based on Persian character detection."""
+    widget.tag_configure("rtl", justify="right")
+    widget.tag_configure("ltr", justify="left")
+    text = widget.get("1.0", "end-1c")
+    if any("\u0600" <= c <= "\u06ff" for c in text):
+        widget.tag_add("rtl", "1.0", "end")
+        widget.tag_remove("ltr", "1.0", "end")
+    else:
+        widget.tag_add("ltr", "1.0", "end")
+        widget.tag_remove("rtl", "1.0", "end")
+
+
+def textbox_undo(textbox):
+    """Perform undo action on the textbox."""
+    try:
+        textbox._textbox.edit_undo()
+        check_and_apply_rtl(textbox._textbox)
+    except tk.TclError:
+        pass
+
+
+def textbox_cut(textbox):
+    """Perform cut action on the textbox."""
+    try:
+        if textbox._textbox.tag_ranges("sel"):
+            textbox_copy(textbox)
+            textbox._textbox.delete("sel.first", "sel.last")
+            check_and_apply_rtl(textbox._textbox)
+    except tk.TclError:
+        pass
+
+
+def textbox_copy(textbox):
+    """Perform copy action on the textbox."""
+    try:
+        if textbox._textbox.tag_ranges("sel"):
+            text = textbox._textbox.get("sel.first", "sel.last")
+            textbox.clipboard_clear()
+            textbox.clipboard_append(text)
+    except tk.TclError:
+        pass
+
+
+def textbox_paste(textbox):
+    """Perform paste action on the textbox."""
+    try:
+        text = textbox.clipboard_get()
+        if textbox._textbox.tag_ranges("sel"):
+            textbox._textbox.delete("sel.first", "sel.last")
+        textbox._textbox.insert("insert", text)
+        check_and_apply_rtl(textbox._textbox)
+    except tk.TclError:
+        pass
+
+
+def textbox_delete_selection(textbox):
+    """Perform delete action on the selection."""
+    try:
+        if textbox._textbox.tag_ranges("sel"):
+            textbox._textbox.delete("sel.first", "sel.last")
+        check_and_apply_rtl(textbox._textbox)
+    except tk.TclError:
+        pass
+
+
+def textbox_select_all(textbox):
+    """Select all text in the textbox."""
+    textbox._textbox.tag_add("sel", "1.0", "end-1c")
+    return "break"
+
+
+def setup_enhanced_textbox(textbox):
+    """Enable undo, add right-click context menu, and bind shortcuts/RTL handling."""
+    textbox._textbox.configure(undo=True)
+
+    menu = tk.Menu(textbox, tearoff=0)
+    menu.add_command(label="Undo (Ctrl + Z)", command=lambda: textbox_undo(textbox))
+    menu.add_separator()
+    menu.add_command(label="Cut (Ctrl + X)", command=lambda: textbox_cut(textbox))
+    menu.add_command(label="Copy (Ctrl + C)", command=lambda: textbox_copy(textbox))
+    menu.add_command(label="Paste (Ctrl + V)", command=lambda: textbox_paste(textbox))
+    menu.add_command(label="Delete (Delete)", command=lambda: textbox_delete_selection(textbox))
+    menu.add_separator()
+    menu.add_command(label="Select All (Ctrl + A)", command=lambda: textbox_select_all(textbox))
+
+    def show_menu(event):
+        menu.tk_popup(event.x_root, event.y_root)
+
+    textbox._textbox.bind("<Button-3>", show_menu)
+    textbox._textbox.bind("<Control-a>", lambda e: textbox_select_all(textbox))
+    textbox._textbox.bind("<Control-A>", lambda e: textbox_select_all(textbox))
+    textbox._textbox.bind("<KeyRelease>", lambda e: check_and_apply_rtl(e.widget))
+
+    check_and_apply_rtl(textbox._textbox)
+
+
 class PersianSubtitleToolkit(ctk.CTk):
     def __init__(self):
         super().__init__()
@@ -178,6 +275,7 @@ class PersianSubtitleToolkit(ctk.CTk):
         self.chk_bypass.grid(row=0, column=0, padx=5, pady=(5, 0), sticky="w")
         self.txt_bypass = ctk.CTkTextbox(self.process_inner_frame, height=80)
         self.txt_bypass.grid(row=1, column=0, padx=5, pady=5, sticky="ew")
+        setup_enhanced_textbox(self.txt_bypass)
 
         # Remove List
         self.chk_remove = ctk.CTkCheckBox(
@@ -189,6 +287,7 @@ class PersianSubtitleToolkit(ctk.CTk):
         self.chk_remove.grid(row=2, column=0, padx=5, pady=(15, 0), sticky="w")
         self.txt_remove = ctk.CTkTextbox(self.process_inner_frame, height=80)
         self.txt_remove.grid(row=3, column=0, padx=5, pady=5, sticky="ew")
+        setup_enhanced_textbox(self.txt_remove)
 
         # Replace List
         self.chk_replace = ctk.CTkCheckBox(
@@ -200,6 +299,7 @@ class PersianSubtitleToolkit(ctk.CTk):
         self.chk_replace.grid(row=4, column=0, padx=5, pady=(15, 0), sticky="w")
         self.txt_replace = ctk.CTkTextbox(self.process_inner_frame, height=80)
         self.txt_replace.grid(row=5, column=0, padx=5, pady=5, sticky="ew")
+        setup_enhanced_textbox(self.txt_replace)
 
         # --- Post-Process Tab ---
         self.postprocess_inner_frame = ctk.CTkScrollableFrame(self.tab_postprocess)
@@ -383,6 +483,7 @@ class PersianSubtitleToolkit(ctk.CTk):
         self.txt_bypass.configure(state="normal")
         self.txt_bypass.delete("1.0", "end")
         self.txt_bypass.insert("1.0", config.get("bypass_list", ""))
+        check_and_apply_rtl(self.txt_bypass._textbox)
         if config.get("bypass_enabled", 1) == 0:
             self.txt_bypass.configure(state="disabled")
 
@@ -396,6 +497,7 @@ class PersianSubtitleToolkit(ctk.CTk):
         self.txt_remove.configure(state="normal")
         self.txt_remove.delete("1.0", "end")
         self.txt_remove.insert("1.0", config.get("remove_list", ""))
+        check_and_apply_rtl(self.txt_remove._textbox)
         if config.get("remove_enabled", 1) == 0:
             self.txt_remove.configure(state="disabled")
 
@@ -409,6 +511,7 @@ class PersianSubtitleToolkit(ctk.CTk):
         self.txt_replace.configure(state="normal")
         self.txt_replace.delete("1.0", "end")
         self.txt_replace.insert("1.0", config.get("replace_list", ""))
+        check_and_apply_rtl(self.txt_replace._textbox)
         if config.get("replace_enabled", 1) == 0:
             self.txt_replace.configure(state="disabled")
 
@@ -481,17 +584,19 @@ class PersianSubtitleToolkit(ctk.CTk):
         self.chk_bypass.select()
         self.txt_bypass.configure(state="normal")
         self.txt_bypass.delete("1.0", "end")
+        check_and_apply_rtl(self.txt_bypass._textbox)
 
         self.chk_remove.select()
         self.txt_remove.configure(state="normal")
         self.txt_remove.delete("1.0", "end")
+        check_and_apply_rtl(self.txt_remove._textbox)
 
         self.chk_replace.select()
         self.txt_replace.configure(state="normal")
         self.txt_replace.delete("1.0", "end")
+        check_and_apply_rtl(self.txt_replace._textbox)
 
         self.chk_post_trim_spaces.select()
-
         self.chk_delete_original.deselect()
         self.chk_detailed_logs.select()
 
