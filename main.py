@@ -6,6 +6,8 @@ from tkinter import messagebox
 from PIL import ImageTk, Image
 from idlelib.tooltip import Hovertip
 import webbrowser
+import arabic_reshaper
+from bidi.algorithm import get_display
 
 
 def check_and_apply_rtl(widget):
@@ -97,6 +99,55 @@ def textbox_select_all(textbox):
     return "break"
 
 
+def reshape_persian_text(text):
+    lines = text.split("\n")
+    result = []
+
+    for line in lines:
+        if any("\u0600" <= c <= "\u06ff" for c in line):
+            result.append(get_display(arabic_reshaper.reshape(line)))
+        else:
+            result.append(line)
+
+    return "\n".join(result)
+
+
+def textbox_focus_in(textbox):
+    if hasattr(textbox, "_original_text"):
+        textbox.delete("1.0", "end")
+        textbox.insert("1.0", textbox._original_text)
+
+        widget = textbox._textbox
+
+        widget.tag_remove("rtl", "1.0", "end")
+        widget.tag_remove("ltr", "1.0", "end")
+
+        check_and_apply_rtl(widget)
+
+
+def textbox_focus_out(textbox):
+    original_text = textbox.get("1.0", "end-1c")
+
+    textbox._original_text = original_text
+
+    display_text = reshape_persian_text(original_text)
+
+    textbox.delete("1.0", "end")
+    textbox.insert("1.0", display_text)
+
+    widget = textbox._textbox
+
+    widget.tag_remove("rtl", "1.0", "end")
+    widget.tag_remove("ltr", "1.0", "end")
+
+    if any("\u0600" <= c <= "\u06ff" for c in original_text):
+        widget.tag_configure("rtl", justify="right")
+        widget.tag_add("rtl", "1.0", "end")
+    else:
+        widget.tag_configure("ltr", justify="left")
+        widget.tag_add("ltr", "1.0", "end")
+
+
 def setup_enhanced_textbox(textbox):
     textbox._textbox.configure(undo=True)
 
@@ -116,6 +167,30 @@ def setup_enhanced_textbox(textbox):
         menu.tk_popup(event.x_root, event.y_root)
 
     widget = textbox._textbox
+    textbox._original_text = ""
+
+    widget.bind(
+        "<FocusIn>",
+        lambda event, tb=textbox: textbox_focus_in(tb),
+        add="+",
+    )
+
+    widget.bind(
+        "<FocusOut>",
+        lambda event, tb=textbox: textbox_focus_out(tb),
+        add="+",
+    )
+    # Force right-to-left typing behavior for Persian text
+    widget.configure(wrap="word")
+
+    def on_key_release(event):
+        check_and_apply_rtl(widget)
+
+        text = widget.get("1.0", "end-1c")
+        if any("\u0600" <= c <= "\u06ff" for c in text):
+            widget.mark_set("insert", "end-1c")
+
+    widget.bind("<KeyRelease>", on_key_release, add="+")
     widget.bind("<Button-3>", show_menu, add="+")
 
     def handle_ctrl_key(event):
@@ -210,6 +285,11 @@ class PersianSubtitleToolkit(ctk.CTk):
         # Load config to overwrite default variable values
         self.config_manager = ConfigManager(CONFIG_FILE, DEFAULT_CONFIG)
         self.load_config()
+        self.after(100, lambda: self.start_btn.focus_set())
+
+    def on_tab_changed(self):
+        if self.tabview.get() == "Process":
+            self.after(10, lambda: self.start_btn.focus_set())
 
     def create_widget(self):
         font_bold = ctk.CTkFont(size=14, weight="bold")
@@ -267,6 +347,7 @@ class PersianSubtitleToolkit(ctk.CTk):
         # Main Tabview Structure
         self.tabview = ctk.CTkTabview(self.middle_container)
         self.tabview.grid(row=0, column=0, padx=5, pady=0, sticky="nsew")
+        self.tabview.configure(command=self.on_tab_changed)
 
         # Add designated tabs first
         self.tab_preprocess = self.tabview.add("Pre-Process")
@@ -524,7 +605,8 @@ class PersianSubtitleToolkit(ctk.CTk):
         self.txt_bypass.configure(state="normal")
         self.txt_bypass.delete("1.0", "end")
         self.txt_bypass.insert("1.0", config.get("bypass_list", ""))
-        check_and_apply_rtl(self.txt_bypass._textbox)
+        self.txt_bypass._original_text = config.get("bypass_list", "")
+        textbox_focus_out(self.txt_bypass)
         if config.get("bypass_enabled", 1) == 0:
             self.txt_bypass.configure(state="disabled")
 
@@ -538,7 +620,8 @@ class PersianSubtitleToolkit(ctk.CTk):
         self.txt_remove.configure(state="normal")
         self.txt_remove.delete("1.0", "end")
         self.txt_remove.insert("1.0", config.get("remove_list", ""))
-        check_and_apply_rtl(self.txt_remove._textbox)
+        self.txt_remove._original_text = config.get("remove_list", "")
+        textbox_focus_out(self.txt_remove)
         if config.get("remove_enabled", 1) == 0:
             self.txt_remove.configure(state="disabled")
 
@@ -552,7 +635,8 @@ class PersianSubtitleToolkit(ctk.CTk):
         self.txt_replace.configure(state="normal")
         self.txt_replace.delete("1.0", "end")
         self.txt_replace.insert("1.0", config.get("replace_list", ""))
-        check_and_apply_rtl(self.txt_replace._textbox)
+        self.txt_replace._original_text = config.get("replace_list", "")
+        textbox_focus_out(self.txt_replace)
         if config.get("replace_enabled", 1) == 0:
             self.txt_replace.configure(state="disabled")
 
@@ -579,6 +663,9 @@ class PersianSubtitleToolkit(ctk.CTk):
         self.write_log("Application config loaded/reloaded.")
 
     def save_config(self):
+        self.start_btn.focus_set()
+        self.update_idletasks()
+        self.update()
         config_data = {
             "app_name": APP_NAME,
             "app_version": APP_VERSION,
@@ -587,11 +674,11 @@ class PersianSubtitleToolkit(ctk.CTk):
             "save_logs": self.log_switch.get(),
             "trim_spaces": self.chk_trim_spaces.get(),
             "bypass_enabled": self.chk_bypass.get(),
-            "bypass_list": self.txt_bypass.get("1.0", "end-1c"),
+            "bypass_list": getattr(self.txt_bypass, "_original_text", ""),
             "remove_enabled": self.chk_remove.get(),
-            "remove_list": self.txt_remove.get("1.0", "end-1c"),
+            "remove_list": getattr(self.txt_remove, "_original_text", ""),
             "replace_enabled": self.chk_replace.get(),
-            "replace_list": self.txt_replace.get("1.0", "end-1c"),
+            "replace_list": getattr(self.txt_replace, "_original_text", ""),
             "post_trim_spaces": self.chk_post_trim_spaces.get(),
             "delete_original": self.chk_delete_original.get(),
             "detailed_subtitle_logs": self.chk_detailed_logs.get(),
@@ -763,11 +850,11 @@ class PersianSubtitleToolkit(ctk.CTk):
         run_options = {
             "trim_spaces": self.chk_trim_spaces.get(),
             "bypass_enabled": self.chk_bypass.get(),
-            "bypass_list": self.txt_bypass.get("1.0", "end-1c") if self.chk_bypass.get() else "",
+            "bypass_list": getattr(self.txt_bypass, "_original_text", ""),
             "remove_enabled": self.chk_remove.get(),
-            "remove_list": self.txt_remove.get("1.0", "end-1c") if self.chk_remove.get() else "",
+            "remove_list": getattr(self.txt_remove, "_original_text", ""),
             "replace_enabled": self.chk_replace.get(),
-            "replace_list": self.txt_replace.get("1.0", "end-1c") if self.chk_replace.get() else "",
+            "replace_list": getattr(self.txt_replace, "_original_text", ""),
             "post_trim_spaces": self.chk_post_trim_spaces.get(),
             "delete_original": self.chk_delete_original.get(),
             "detailed_subtitle_logs": self.chk_detailed_logs.get(),
