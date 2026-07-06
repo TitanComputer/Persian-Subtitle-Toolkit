@@ -110,7 +110,7 @@ class Logger:
 
         log_dir = os.path.join(folder_path, "Logs", "Subtitle-Logs")
         os.makedirs(log_dir, exist_ok=True)
-        log_file = os.path.join(log_dir, f"{filename}-changelogs.txt")
+        log_file = os.path.join(log_dir, f"{filename}_changelogs.txt")
 
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         try:

@@ -307,18 +307,21 @@ class PersianSubtitleToolkit(ctk.CTk):
             self.txt_bypass.configure(state="normal")
         else:
             self.txt_bypass.configure(state="disabled")
+        self.save_config()
 
     def toggle_remove(self):
         if self.chk_remove.get() == 1:
             self.txt_remove.configure(state="normal")
         else:
             self.txt_remove.configure(state="disabled")
+        self.save_config()
 
     def toggle_replace(self):
         if self.chk_replace.get() == 1:
             self.txt_replace.configure(state="normal")
         else:
             self.txt_replace.configure(state="disabled")
+        self.save_config()
 
     def resource_path(self, relative_path):
         temp_dir = os.path.dirname(__file__)
@@ -329,6 +332,7 @@ class PersianSubtitleToolkit(ctk.CTk):
         Handles application shutdown, cleans up the lock file, saves config,
         and checks if a process is running before exiting.
         """
+        self.write_log("Application closing.")
         # Save settings on exit
         self.save_config()
         self.lock.release()
@@ -555,12 +559,6 @@ class PersianSubtitleToolkit(ctk.CTk):
 
         except Exception as e:
             messagebox.showerror("Error", f"Failed to export settings: {str(e)}")
-
-    def on_close(self):
-        self.write_log("Application closing.")
-        self.save_config()
-        self.lock.release()
-        self.destroy()
 
     def _reset_settings(self):
         self.write_log("Settings reset to default.")

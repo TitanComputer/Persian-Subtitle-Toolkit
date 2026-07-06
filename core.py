@@ -7,6 +7,7 @@ def build_flexible_regex(word):
     """
     Creates a regex pattern that ignores spaces, dots, zero-width non-joiners (\u200c)
     and kashida (ـ) between the characters of the provided word.
+    Compiles with re.IGNORECASE to support case-insensitive English matching.
     """
     clean_word = re.sub(r"[\s\.\u200cـ\u064b-\u0652]", "", word)
     if not clean_word:
@@ -27,7 +28,7 @@ def build_flexible_regex(word):
             char_patterns.append(re.escape(c))
 
     pattern = r"[\s\.\u200cـ\u064b-\u0652]*".join(char_patterns)
-    return re.compile(pattern)
+    return re.compile(pattern, re.IGNORECASE)
 
 
 class SubtitleProcessor:
