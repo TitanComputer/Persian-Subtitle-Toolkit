@@ -1,7 +1,7 @@
 import os
 import sys
 
-APP_VERSION = "0.5.7"
+APP_VERSION = "0.6.0"
 APP_NAME = "Persian Subtitle Toolkit"
 CONFIG_FILENAME = "config.json"
 
@@ -11,6 +11,8 @@ DEFAULT_CONFIG = {
     "app_version": APP_VERSION,
     "folder_path": "",
     "theme_mode": 1,
+    "window_width": 800,
+    "window_height": 600,
     "save_logs": 0,
     "trim_spaces": 1,
     "bypass_enabled": 1,

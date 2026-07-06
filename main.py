@@ -274,14 +274,10 @@ class PersianSubtitleToolkit(ctk.CTk):
         # Window Configuration
         self.protocol("WM_DELETE_WINDOW", self.on_close)
         self.update_idletasks()
-        width = 1000
-        height = 800
-        screen_width = self.winfo_screenwidth()
-        screen_height = self.winfo_screenheight()
-        x = (screen_width // 2) - (width // 2)
-        y = (screen_height // 2) - (height // 2)
-        self.geometry(f"{width}x{height}+{x}+{y}")
-        self.resizable(False, False)
+
+        # Make the window resizable and set minimum size for stability
+        self.resizable(True, True)
+        self.minsize(800, 600)
 
         # Grid Configuration for main window
         self.grid_rowconfigure(0, weight=0)  # Top row (fixed height)
@@ -330,6 +326,7 @@ class PersianSubtitleToolkit(ctk.CTk):
         self.theme_frame = ctk.CTkFrame(self.top_container, fg_color="transparent")
         self.theme_frame.grid(row=0, column=2, padx=(5, 0), pady=0, sticky="nsew")
         self.theme_frame.grid_columnconfigure(0, weight=1)
+        self.theme_frame.grid_columnconfigure(1, weight=1)
         self.theme_frame.grid_rowconfigure(0, weight=1)
         self.theme_frame.grid_rowconfigure(1, weight=1)
 
@@ -395,6 +392,9 @@ class PersianSubtitleToolkit(ctk.CTk):
         self.process_inner_frame = ctk.CTkScrollableFrame(self.tab_process)
         self.process_inner_frame.grid(row=0, column=0, padx=0, pady=0, sticky="nsew")
         self.process_inner_frame.grid_columnconfigure(0, weight=1)
+        self.process_inner_frame.grid_rowconfigure(1, weight=1)
+        self.process_inner_frame.grid_rowconfigure(3, weight=1)
+        self.process_inner_frame.grid_rowconfigure(5, weight=1)
 
         # Bypass List
         self.chk_bypass = ctk.CTkCheckBox(
@@ -405,7 +405,7 @@ class PersianSubtitleToolkit(ctk.CTk):
         )
         self.chk_bypass.grid(row=0, column=0, padx=5, pady=(5, 0), sticky="w")
         self.txt_bypass = ctk.CTkTextbox(self.process_inner_frame, height=80)
-        self.txt_bypass.grid(row=1, column=0, padx=5, pady=5, sticky="ew")
+        self.txt_bypass.grid(row=1, column=0, padx=5, pady=5, sticky="nsew")
         setup_enhanced_textbox(self.txt_bypass)
 
         # Remove List
@@ -417,7 +417,7 @@ class PersianSubtitleToolkit(ctk.CTk):
         )
         self.chk_remove.grid(row=2, column=0, padx=5, pady=(15, 0), sticky="w")
         self.txt_remove = ctk.CTkTextbox(self.process_inner_frame, height=80)
-        self.txt_remove.grid(row=3, column=0, padx=5, pady=5, sticky="ew")
+        self.txt_remove.grid(row=3, column=0, padx=5, pady=5, sticky="nsew")
         setup_enhanced_textbox(self.txt_remove)
 
         # Replace List
@@ -429,7 +429,7 @@ class PersianSubtitleToolkit(ctk.CTk):
         )
         self.chk_replace.grid(row=4, column=0, padx=5, pady=(15, 0), sticky="w")
         self.txt_replace = ctk.CTkTextbox(self.process_inner_frame, height=80)
-        self.txt_replace.grid(row=5, column=0, padx=5, pady=5, sticky="ew")
+        self.txt_replace.grid(row=5, column=0, padx=5, pady=5, sticky="nsew")
         setup_enhanced_textbox(self.txt_replace)
 
         # --- Post-Process Tab ---
@@ -468,6 +468,8 @@ class PersianSubtitleToolkit(ctk.CTk):
         self.bottom_container.grid_columnconfigure(0, weight=5)
         self.bottom_container.grid_columnconfigure(1, weight=3)
         self.bottom_container.grid_columnconfigure(2, weight=2)
+        self.bottom_container.grid_columnconfigure(3, weight=2)
+        self.bottom_container.grid_columnconfigure(4, weight=2)
 
         # Start Button
         self.start_btn = ctk.CTkButton(
@@ -573,6 +575,15 @@ class PersianSubtitleToolkit(ctk.CTk):
     def load_config(self):
         config = self.config_manager.load()
 
+        # Apply saved geometry dimensions dynamically
+        w = config.get("window_width", 800)
+        h = config.get("window_height", 600)
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+        x = (screen_width // 2) - (w // 2)
+        y = (screen_height // 2) - (h // 2)
+        self.geometry(f"{w}x{h}+{x}+{y}")
+
         # 1. Update Path Entry first (this enables/disables the log switch state)
         folder_path = config.get("folder_path", "")
         self._update_path_entry(folder_path)
@@ -675,11 +686,23 @@ class PersianSubtitleToolkit(ctk.CTk):
         self.start_btn.focus_set()
         self.update_idletasks()
         self.update()
+
+        # Dynamically record window dimensions safely
+        current_width = self.winfo_width()
+        current_height = self.winfo_height()
+
+        # Ensure minimized or unmapped windows do not overwrite dimensions
+        if current_width < 100 or current_height < 100:
+            current_width = self.config_manager.load().get("window_width", 800)
+            current_height = self.config_manager.load().get("window_height", 600)
+
         config_data = {
             "app_name": APP_NAME,
             "app_version": APP_VERSION,
             "folder_path": self.path_entry.get(),
             "theme_mode": self.theme_switch.get(),
+            "window_width": current_width,
+            "window_height": current_height,
             "save_logs": self.log_switch.get(),
             "trim_spaces": self.chk_trim_spaces.get(),
             "bypass_enabled": self.chk_bypass.get(),
@@ -713,6 +736,10 @@ class PersianSubtitleToolkit(ctk.CTk):
         self._update_path_entry("")
         self.theme_switch.select()
         ctk.set_appearance_mode("dark")
+
+        # Reset geometry back to default settings
+        self.geometry("800x600")
+
         self.log_switch.deselect()
         self.log_switch.configure(state="disabled")
 
