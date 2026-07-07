@@ -474,21 +474,35 @@ class PersianSubtitleToolkit(ctk.CTk):
         self.bottom_container = ctk.CTkFrame(self, fg_color="transparent")
         self.bottom_container.grid(row=2, column=0, padx=10, pady=(0, 10), sticky="nsew")
 
-        self.bottom_container.grid_columnconfigure(0, weight=5)
+        # Adjusted columns to fit the new button properly via Grid
+        self.bottom_container.grid_columnconfigure(0, weight=3)
         self.bottom_container.grid_columnconfigure(1, weight=3)
         self.bottom_container.grid_columnconfigure(2, weight=2)
         self.bottom_container.grid_columnconfigure(3, weight=2)
         self.bottom_container.grid_columnconfigure(4, weight=2)
+        self.bottom_container.grid_columnconfigure(5, weight=2)
 
-        # Start Button
+        # Folder Process Button
         self.start_btn = ctk.CTkButton(
             self.bottom_container,
-            text="Start Process",
+            text="Folder Process",
             height=45,
-            font=ctk.CTkFont(size=18, weight="bold"),
+            font=ctk.CTkFont(size=15, weight="bold"),
             command=self.start_process_threaded,
         )
         self.start_btn.grid(row=0, column=0, padx=(0, 5), pady=5, sticky="ew")
+
+        # Single File Process Button
+        self.single_process_btn = ctk.CTkButton(
+            self.bottom_container,
+            text="File Process",
+            height=45,
+            fg_color="#e2700d",
+            hover_color="#9c3f00",
+            font=ctk.CTkFont(size=16, weight="bold"),
+            command=self.start_single_process_threaded,
+        )
+        self.single_process_btn.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
 
         # Donate Button
         self.donate_button = ctk.CTkButton(
@@ -503,7 +517,7 @@ class PersianSubtitleToolkit(ctk.CTk):
             font=ctk.CTkFont(size=18, weight="bold"),
             command=self.donate,
         )
-        self.donate_button.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
+        self.donate_button.grid(row=0, column=2, padx=5, pady=5, sticky="ew")
 
         # Import Settings Button
         self.import_btn = ctk.CTkButton(
@@ -513,10 +527,10 @@ class PersianSubtitleToolkit(ctk.CTk):
             fg_color="#b434db",
             hover_color="#9b2bb8",
             text_color="#FFFFFF",
-            font=ctk.CTkFont(size=15, weight="bold"),
+            font=ctk.CTkFont(size=16, weight="bold"),
             command=self.import_settings,
         )
-        self.import_btn.grid(row=0, column=2, padx=5, pady=5, sticky="ew")
+        self.import_btn.grid(row=0, column=3, padx=5, pady=5, sticky="ew")
 
         # Export Settings Button
         self.export_btn = ctk.CTkButton(
@@ -526,10 +540,11 @@ class PersianSubtitleToolkit(ctk.CTk):
             fg_color="#27ae60",
             hover_color="#186d3b",
             text_color="#FFFFFF",
-            font=ctk.CTkFont(size=15, weight="bold"),
+            font=ctk.CTkFont(size=16, weight="bold"),
             command=self.export_settings,
         )
-        self.export_btn.grid(row=0, column=3, padx=5, pady=5, sticky="ew")
+        self.export_btn.grid(row=0, column=4, padx=5, pady=5, sticky="ew")
+
         # Reset Button
         self.reset_button = ctk.CTkButton(
             self.bottom_container,
@@ -538,10 +553,10 @@ class PersianSubtitleToolkit(ctk.CTk):
             fg_color="#A9A9A9",
             hover_color="#808080",
             text_color="#000000",
-            font=ctk.CTkFont(size=18, weight="bold"),
+            font=ctk.CTkFont(size=16, weight="bold"),
             command=self._reset_settings,
         )
-        self.reset_button.grid(row=0, column=4, padx=(5, 0), pady=5, sticky="ew")
+        self.reset_button.grid(row=0, column=5, padx=(5, 0), pady=5, sticky="ew")
 
     # --- Widget Toggles ---
     def toggle_bypass(self):
@@ -955,6 +970,71 @@ class PersianSubtitleToolkit(ctk.CTk):
                     "Process Completed",
                     summary_message,
                 )
+
+            self.attributes("-disabled", False)
+            self.lift()
+            self.focus_force()
+
+        self.after(0, finish)
+
+    # Adding thread logic for processing single files smoothly without freezing the UI
+    def start_single_process_threaded(self):
+        import threading
+
+        threading.Thread(target=self.start_single_process, daemon=True).start()
+
+    # The actual method handling single file selection and processing
+    def start_single_process(self):
+        selected_files = filedialog.askopenfilenames(title="Select SRT Files", filetypes=[("Subtitle Files", "*.srt")])
+
+        if not selected_files:
+            return
+
+        count = len(selected_files)
+        confirm = messagebox.askyesno(
+            "Confirm Process", f"Do you want to process {count} selected file(s) with the current settings?"
+        )
+
+        if not confirm:
+            return
+
+        self.attributes("-disabled", True)
+        self.save_config()
+
+        run_options = {
+            "trim_spaces": self.chk_trim_spaces.get(),
+            "bypass_enabled": self.chk_bypass.get(),
+            "bypass_list": getattr(self.txt_bypass, "_original_text", ""),
+            "remove_enabled": self.chk_remove.get(),
+            "remove_list": getattr(self.txt_remove, "_original_text", ""),
+            "replace_enabled": self.chk_replace.get(),
+            "replace_list": getattr(self.txt_replace, "_original_text", ""),
+            "post_trim_spaces": self.chk_post_trim_spaces.get(),
+            "delete_original": self.chk_delete_original.get(),
+            "detailed_subtitle_logs": self.chk_detailed_logs.get(),
+        }
+
+        # Empty string for folder path, passing target_files explicitly
+        processor = SubtitleProcessor("", options=run_options, target_files=selected_files)
+        processor.run()
+
+        successful = getattr(processor, "successful_count", 0)
+        failed = getattr(processor, "failed_count", 0)
+        total = successful + failed
+
+        summary_message = (
+            f"Single file processing has completed.\n\n"
+            f"Total files selected: {total}\n"
+            f"Successfully processed: {successful}\n"
+            f"Failed / Skipped: {failed}\n\n"
+            f"Output files and logs are located in the respective file directories."
+        )
+
+        def finish():
+            if failed > 0:
+                messagebox.showwarning("Process Completed with Warnings", summary_message)
+            else:
+                messagebox.showinfo("Process Completed", summary_message)
 
             self.attributes("-disabled", False)
             self.lift()
