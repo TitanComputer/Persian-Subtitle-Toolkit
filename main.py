@@ -233,6 +233,10 @@ def setup_enhanced_textbox(textbox):
 class PersianSubtitleToolkit(ctk.CTk):
     def __init__(self):
         super().__init__()
+
+        # Hide window rendering visually using alpha transparency to prevent flickering
+        self.attributes("-alpha", 0.0)
+
         self.lock = AppLock(APP_NAME)
         if not self.lock.acquire():
             temp_root = tk.Tk()
@@ -289,8 +293,13 @@ class PersianSubtitleToolkit(ctk.CTk):
 
         # Load config to overwrite default variable values
         self.config_manager = ConfigManager(CONFIG_FILE, DEFAULT_CONFIG)
+        # Load configuration, adjust dimensions, and state logic
         self.load_config()
+
         self.after(100, lambda: self.start_btn.focus_set())
+
+        # Safely reveal the window after states are established
+        self.after(200, lambda: self.attributes("-alpha", 1.0))
 
     def on_tab_changed(self):
         if self.tabview.get() == "Process":
@@ -575,14 +584,22 @@ class PersianSubtitleToolkit(ctk.CTk):
     def load_config(self):
         config = self.config_manager.load()
 
-        # Apply saved geometry dimensions dynamically
-        w = config.get("window_width", 800)
-        h = config.get("window_height", 600)
+        w = int(config.get("window_width", 800))
+        h = int(config.get("window_height", 600))
+
         screen_width = self.winfo_screenwidth()
         screen_height = self.winfo_screenheight()
-        x = (screen_width // 2) - (w // 2)
-        y = (screen_height // 2) - (h // 2)
+
+        x = int((screen_width / 2) - (w / 2))
+        y = int((screen_height / 2) - (h / 2))
+
         self.geometry(f"{w}x{h}+{x}+{y}")
+
+        # Applying maximized state after rendering with a small delay for Tkinter stability
+        if config.get("is_maximized", 0) == 1:
+            self.after(50, lambda: self.state("zoomed"))
+        else:
+            self.after(50, lambda: self.state("normal"))
 
         # 1. Update Path Entry first (this enables/disables the log switch state)
         folder_path = config.get("folder_path", "")
@@ -687,14 +704,19 @@ class PersianSubtitleToolkit(ctk.CTk):
         self.update_idletasks()
         self.update()
 
-        # Dynamically record window dimensions safely
+        try:
+            is_max = 1 if self.state() == "zoomed" else 0
+        except Exception:
+            is_max = 0
+
         current_width = self.winfo_width()
         current_height = self.winfo_height()
 
-        # Ensure minimized or unmapped windows do not overwrite dimensions
-        if current_width < 100 or current_height < 100:
-            current_width = self.config_manager.load().get("window_width", 800)
-            current_height = self.config_manager.load().get("window_height", 600)
+        # Protect default dimensions if window is maximized or incorrectly sized
+        if is_max == 1 or current_width < 100 or current_height < 100:
+            loaded_config = self.config_manager.load()
+            current_width = int(loaded_config.get("window_width", 800))
+            current_height = int(loaded_config.get("window_height", 600))
 
         config_data = {
             "app_name": APP_NAME,
@@ -703,6 +725,7 @@ class PersianSubtitleToolkit(ctk.CTk):
             "theme_mode": self.theme_switch.get(),
             "window_width": current_width,
             "window_height": current_height,
+            "is_maximized": is_max,
             "save_logs": self.log_switch.get(),
             "trim_spaces": self.chk_trim_spaces.get(),
             "bypass_enabled": self.chk_bypass.get(),
@@ -737,8 +760,16 @@ class PersianSubtitleToolkit(ctk.CTk):
         self.theme_switch.select()
         ctk.set_appearance_mode("dark")
 
-        # Reset geometry back to default settings
-        self.geometry("800x600")
+        try:
+            self.state("normal")
+        except Exception:
+            pass
+
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+        x = int((screen_width / 2) - (800 / 2))
+        y = int((screen_height / 2) - (600 / 2))
+        self.geometry(f"800x600+{x}+{y}")
 
         self.log_switch.deselect()
         self.log_switch.configure(state="disabled")
