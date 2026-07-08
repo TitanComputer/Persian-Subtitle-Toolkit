@@ -312,12 +312,37 @@ class PersianSubtitleToolkit(ctk.CTk):
         # Safely reveal the window after states are established
         self.after(200, lambda: self.attributes("-alpha", 1.0))
 
+        # Bind the configure event to the main window to detect size changes for fonts
+        self.bind("<Configure>", self.adjust_button_fonts, add="+")
+
+    def adjust_button_fonts(self, event):
+        """Dynamically scale button fonts based on window width."""
+        # Only process if the event is from the main window itself to avoid lag
+        if event.widget == self:
+            base_width = 800
+            current_width = event.width
+
+            # Calculate scale factor (min: 1.0 to keep base size, max: 1.3 to prevent overflow)
+            scale = max(1.0, min(1.3, current_width / base_width))
+
+            # Update all custom dynamic CTkFont objects
+            self.btn_font_14.configure(size=int(14 * scale))
+            self.btn_font_15.configure(size=int(15 * scale))
+            self.btn_font_16.configure(size=int(16 * scale))
+            self.btn_font_18.configure(size=int(18 * scale))
+
     def on_tab_changed(self):
         if self.tabview.get() == "Process":
             self.after(10, lambda: self.start_btn.focus_set())
 
     def create_widget(self):
         font_bold = ctk.CTkFont(size=14, weight="bold")
+
+        # Base fonts for dynamic resizing mechanism for buttons
+        self.btn_font_14 = ctk.CTkFont(size=14, weight="bold")
+        self.btn_font_15 = ctk.CTkFont(size=15, weight="bold")
+        self.btn_font_16 = ctk.CTkFont(size=16, weight="bold")
+        self.btn_font_18 = ctk.CTkFont(size=18, weight="bold")
 
         # --- Top Container (Row 0) ---
         self.top_container = ctk.CTkFrame(self, fg_color="transparent")
@@ -338,7 +363,7 @@ class PersianSubtitleToolkit(ctk.CTk):
         self.path_entry.configure(state="readonly")
 
         # Browse Button (Inside Top Container)
-        self.browse_btn = ctk.CTkButton(self.top_container, text="Browse", height=35, font=font_bold)
+        self.browse_btn = ctk.CTkButton(self.top_container, text="Browse", height=35, font=self.btn_font_14)
         self.browse_btn.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
         self.browse_btn.configure(command=self.browse_folder)
 
@@ -498,7 +523,7 @@ class PersianSubtitleToolkit(ctk.CTk):
             self.bottom_container,
             text="Folder Process",
             height=45,
-            font=ctk.CTkFont(size=15, weight="bold"),
+            font=self.btn_font_15,
             command=self.start_process_threaded,
         )
         self.start_btn.grid(row=0, column=0, padx=(0, 5), pady=5, sticky="ew")
@@ -510,7 +535,7 @@ class PersianSubtitleToolkit(ctk.CTk):
             height=45,
             fg_color="#e2700d",
             hover_color="#9c3f00",
-            font=ctk.CTkFont(size=16, weight="bold"),
+            font=self.btn_font_16,
             command=self.start_single_process_threaded,
         )
         self.single_process_btn.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
@@ -525,7 +550,7 @@ class PersianSubtitleToolkit(ctk.CTk):
             fg_color="#FFD700",
             hover_color="#FFC400",
             text_color="#000000",
-            font=ctk.CTkFont(size=18, weight="bold"),
+            font=self.btn_font_18,
             command=self.donate,
         )
         self.donate_button.grid(row=0, column=2, padx=5, pady=5, sticky="ew")
@@ -538,7 +563,7 @@ class PersianSubtitleToolkit(ctk.CTk):
             fg_color="#b434db",
             hover_color="#9b2bb8",
             text_color="#FFFFFF",
-            font=ctk.CTkFont(size=16, weight="bold"),
+            font=self.btn_font_16,
             command=self.import_settings,
         )
         self.import_btn.grid(row=0, column=3, padx=5, pady=5, sticky="ew")
@@ -551,7 +576,7 @@ class PersianSubtitleToolkit(ctk.CTk):
             fg_color="#27ae60",
             hover_color="#186d3b",
             text_color="#FFFFFF",
-            font=ctk.CTkFont(size=16, weight="bold"),
+            font=self.btn_font_16,
             command=self.export_settings,
         )
         self.export_btn.grid(row=0, column=4, padx=5, pady=5, sticky="ew")
@@ -564,7 +589,7 @@ class PersianSubtitleToolkit(ctk.CTk):
             fg_color="#A9A9A9",
             hover_color="#808080",
             text_color="#000000",
-            font=ctk.CTkFont(size=16, weight="bold"),
+            font=self.btn_font_16,
             command=self._reset_settings,
         )
         self.reset_button.grid(row=0, column=5, padx=(5, 0), pady=5, sticky="ew")
