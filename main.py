@@ -170,6 +170,17 @@ def setup_enhanced_textbox(textbox):
     textbox._original_text = ""
 
     def textbox_mouse_leave(textbox):
+        current_focus = textbox.focus_get()
+
+        if current_focus == textbox or current_focus == textbox._textbox:
+            return
+
+        try:
+            if textbox._textbox.tag_ranges("sel"):
+                return
+        except Exception:
+            pass
+
         textbox.master.focus_set()
 
     widget.bind(
@@ -413,7 +424,7 @@ class PersianSubtitleToolkit(ctk.CTk):
             command=self.toggle_bypass,
         )
         self.chk_bypass.grid(row=0, column=0, padx=5, pady=(5, 0), sticky="w")
-        self.txt_bypass = ctk.CTkTextbox(self.process_inner_frame, height=80)
+        self.txt_bypass = ctk.CTkTextbox(self.process_inner_frame, height=160)
         self.txt_bypass.grid(row=1, column=0, padx=5, pady=5, sticky="nsew")
         setup_enhanced_textbox(self.txt_bypass)
 
@@ -425,7 +436,7 @@ class PersianSubtitleToolkit(ctk.CTk):
             command=self.toggle_remove,
         )
         self.chk_remove.grid(row=2, column=0, padx=5, pady=(15, 0), sticky="w")
-        self.txt_remove = ctk.CTkTextbox(self.process_inner_frame, height=80)
+        self.txt_remove = ctk.CTkTextbox(self.process_inner_frame, height=160)
         self.txt_remove.grid(row=3, column=0, padx=5, pady=5, sticky="nsew")
         setup_enhanced_textbox(self.txt_remove)
 
@@ -437,7 +448,7 @@ class PersianSubtitleToolkit(ctk.CTk):
             command=self.toggle_replace,
         )
         self.chk_replace.grid(row=4, column=0, padx=5, pady=(15, 0), sticky="w")
-        self.txt_replace = ctk.CTkTextbox(self.process_inner_frame, height=80)
+        self.txt_replace = ctk.CTkTextbox(self.process_inner_frame, height=160)
         self.txt_replace.grid(row=5, column=0, padx=5, pady=5, sticky="nsew")
         setup_enhanced_textbox(self.txt_replace)
 
