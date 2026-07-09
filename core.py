@@ -5,11 +5,15 @@ import re
 
 def build_flexible_regex(word):
     """
-    Creates a regex pattern that ignores spaces, dots, zero-width non-joiners (\u200c)
-    and kashida (ـ) between the characters of the provided word.
+    Creates a regex pattern that ignores spaces, dots, zero-width non-joiners (\u200c),
+    kashida (ـ), and various dashes/underscores between the characters of the provided word.
     Compiles with re.IGNORECASE to support case-insensitive English matching.
     """
-    clean_word = re.sub(r"[\s\.\u200cـ\u064b-\u0652\u200b-\u200f\u202a-\u202e]", "", word)
+    # Consolidated ignored characters into a single variable to avoid duplication
+    # Added _, -, \u2013 (en-dash), and \u2014 (em-dash) to catch all line stretching variations
+    ignored_chars = r"[\s\.\u200cـ\u064b-\u0652\u200b-\u200f\u202a-\u202e_\-\u2013\u2014]"
+
+    clean_word = re.sub(ignored_chars, "", word)
     if not clean_word:
         return None
 
@@ -27,7 +31,7 @@ def build_flexible_regex(word):
         else:
             char_patterns.append(re.escape(c))
 
-    pattern = r"[\s\.\u200cـ\u064b-\u0652\u200b-\u200f\u202a-\u202e]*".join(char_patterns)
+    pattern = f"{ignored_chars}*".join(char_patterns)
     return re.compile(pattern, re.IGNORECASE)
 
 
