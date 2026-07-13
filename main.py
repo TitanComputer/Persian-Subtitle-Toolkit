@@ -1033,39 +1033,8 @@ class PersianSubtitleToolkit(ctk.CTk):
         self.write_log(f"Appearance mode changed to {mode}")
         self.save_config()
 
-    def start_process_threaded(self):
-        threading.Thread(target=self.start_process, daemon=True).start()
-
-    def start_process(self):
-        current_path = self.path_entry.get()
-        if not current_path:
-            messagebox.showwarning("Error", "Please select a folder first.")
-            return
-
-        self.attributes("-disabled", True)
-
-        # Save settings on triggering task execution
-        self.save_config()
-
-        # Capture dynamic variables from checkbox elements
-        run_options = {
-            "trim_spaces": self.chk_trim_spaces.get(),
-            "arabic_char_to_persian": self.chk_arabic_char.get(),
-            "arabic_num_to_persian": self.chk_arabic_num.get(),
-            "english_num_to_persian": self.chk_english_num.get(),
-            "bypass_enabled": self.chk_bypass.get(),
-            "bypass_list": getattr(self.txt_bypass, "_original_text", ""),
-            "remove_enabled": self.chk_remove.get(),
-            "remove_list": getattr(self.txt_remove, "_original_text", ""),
-            "replace_enabled": self.chk_replace.get(),
-            "replace_list": getattr(self.txt_replace, "_original_text", ""),
-            "post_trim_spaces": self.chk_post_trim_spaces.get(),
-            "encode_utf8": self.chk_encode_utf8.get(),
-            "delete_original": self.chk_delete_original.get(),
-            "detailed_subtitle_logs": self.chk_detailed_logs.get(),
-        }
-
-        processor = SubtitleProcessor(current_path, options=run_options)
+    def _run_processing_pipeline(self, processor, is_single_file=False):
+        # Executes the common processing and reporting logic
         processor.run()
         successful = getattr(processor, "successful_count", 0)
         failed = getattr(processor, "failed_count", 0)
@@ -1074,14 +1043,24 @@ class PersianSubtitleToolkit(ctk.CTk):
         lines_proc = getattr(processor, "total_lines_processed", 0)
         lines_per_sec = lines_proc / elapsed if elapsed > 0 else 0
 
-        summary_message = (
-            f"Subtitle processing has completed.\n\n"
-            f"Processed {lines_proc} lines in {elapsed:.2f} seconds ({lines_per_sec:.2f} lines/sec).\n\n"
-            f"Total files discovered: {total}\n"
-            f"Successfully processed: {successful}\n"
-            f"Failed / Skipped: {failed}\n\n"
-            f"Output files are located in the 'Outputs' folder within the selected directory."
-        )
+        if not is_single_file:
+            summary_message = (
+                f"Subtitle processing has completed.\n\n"
+                f"Processed {lines_proc} lines in {elapsed:.2f} seconds ({lines_per_sec:.2f} lines/sec).\n\n"
+                f"Total files discovered: {total}\n"
+                f"Successfully processed: {successful}\n"
+                f"Failed / Skipped: {failed}\n\n"
+                f"Output files are located in the 'Outputs' folder within the selected directory."
+            )
+        else:
+            summary_message = (
+                f"Single file processing has completed.\n\n"
+                f"Processed {lines_proc} lines in {elapsed:.2f} seconds ({lines_per_sec:.2f} lines/sec).\n\n"
+                f"Total files selected: {total}\n"
+                f"Successfully processed: {successful}\n"
+                f"Failed / Skipped: {failed}\n\n"
+                f"Output files and logs are located in the respective file directories."
+            )
 
         def finish():
             if failed > 0:
@@ -1100,6 +1079,44 @@ class PersianSubtitleToolkit(ctk.CTk):
             self.focus_force()
 
         self.after(0, finish)
+
+    def _get_run_options(self):
+        # Helper to collect options dictionary
+        return {
+            "trim_spaces": self.chk_trim_spaces.get(),
+            "arabic_char_to_persian": self.chk_arabic_char.get(),
+            "arabic_num_to_persian": self.chk_arabic_num.get(),
+            "english_num_to_persian": self.chk_english_num.get(),
+            "bypass_enabled": self.chk_bypass.get(),
+            "bypass_list": getattr(self.txt_bypass, "_original_text", ""),
+            "remove_enabled": self.chk_remove.get(),
+            "remove_list": getattr(self.txt_remove, "_original_text", ""),
+            "replace_enabled": self.chk_replace.get(),
+            "replace_list": getattr(self.txt_replace, "_original_text", ""),
+            "post_trim_spaces": self.chk_post_trim_spaces.get(),
+            "encode_utf8": self.chk_encode_utf8.get(),
+            "delete_original": self.chk_delete_original.get(),
+            "detailed_subtitle_logs": self.chk_detailed_logs.get(),
+        }
+
+    def start_process_threaded(self):
+        threading.Thread(target=self.start_process, daemon=True).start()
+
+    def start_process(self):
+        current_path = self.path_entry.get()
+        if not current_path:
+            messagebox.showwarning("Error", "Please select a folder first.")
+            return
+
+        self.attributes("-disabled", True)
+
+        # Save settings on triggering task execution
+        self.save_config()
+
+        run_options = self._get_run_options()
+
+        processor = SubtitleProcessor(current_path, options=run_options)
+        self._run_processing_pipeline(processor, is_single_file=False)
 
     # Adding thread logic for processing single files smoothly without freezing the UI
     def start_single_process_threaded(self):
@@ -1123,55 +1140,11 @@ class PersianSubtitleToolkit(ctk.CTk):
         self.attributes("-disabled", True)
         self.save_config()
 
-        run_options = {
-            "trim_spaces": self.chk_trim_spaces.get(),
-            "arabic_char_to_persian": self.chk_arabic_char.get(),
-            "arabic_num_to_persian": self.chk_arabic_num.get(),
-            "english_num_to_persian": self.chk_english_num.get(),
-            "bypass_enabled": self.chk_bypass.get(),
-            "bypass_list": getattr(self.txt_bypass, "_original_text", ""),
-            "remove_enabled": self.chk_remove.get(),
-            "remove_list": getattr(self.txt_remove, "_original_text", ""),
-            "replace_enabled": self.chk_replace.get(),
-            "replace_list": getattr(self.txt_replace, "_original_text", ""),
-            "post_trim_spaces": self.chk_post_trim_spaces.get(),
-            "encode_utf8": self.chk_encode_utf8.get(),
-            "delete_original": self.chk_delete_original.get(),
-            "detailed_subtitle_logs": self.chk_detailed_logs.get(),
-        }
+        run_options = self._get_run_options()
 
         # Empty string for folder path, passing target_files explicitly
         processor = SubtitleProcessor("", options=run_options, target_files=selected_files)
-        processor.run()
-
-        successful = getattr(processor, "successful_count", 0)
-        failed = getattr(processor, "failed_count", 0)
-        total = successful + failed
-
-        elapsed = getattr(processor, "elapsed_time", 0)
-        lines_proc = getattr(processor, "total_lines_processed", 0)
-        lines_per_sec = lines_proc / elapsed if elapsed > 0 else 0
-
-        summary_message = (
-            f"Single file processing has completed.\n\n"
-            f"Processed {lines_proc} lines in {elapsed:.2f} seconds ({lines_per_sec:.2f} lines/sec).\n\n"
-            f"Total files selected: {total}\n"
-            f"Successfully processed: {successful}\n"
-            f"Failed / Skipped: {failed}\n\n"
-            f"Output files and logs are located in the respective file directories."
-        )
-
-        def finish():
-            if failed > 0:
-                messagebox.showwarning("Process Completed with Warnings", summary_message)
-            else:
-                messagebox.showinfo("Process Completed", summary_message)
-
-            self.attributes("-disabled", False)
-            self.lift()
-            self.focus_force()
-
-        self.after(0, finish)
+        self._run_processing_pipeline(processor, is_single_file=True)
 
     def donate(self):
         """Opens a donation window with options to support the project."""
