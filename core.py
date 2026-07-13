@@ -76,6 +76,37 @@ class SubtitleProcessor:
 
         post_trim_spaces = self.options.get("post_trim_spaces", 1)
 
+        # Dictionaries for character and number conversion
+        arabic_to_persian_chars = {"ي": "ی", "ك": "ک", "ة": "ه", "ؤ": "و", "إ": "ا", "أ": "ا"}
+        arabic_numerals = {
+            "٠": "۰",
+            "١": "۱",
+            "٢": "۲",
+            "٣": "۳",
+            "٤": "۴",
+            "٥": "۵",
+            "٦": "۶",
+            "٧": "۷",
+            "٨": "۸",
+            "٩": "۹",
+        }
+        english_numerals = {
+            "0": "۰",
+            "1": "۱",
+            "2": "۲",
+            "3": "۳",
+            "4": "۴",
+            "5": "۵",
+            "6": "۶",
+            "7": "۷",
+            "8": "۸",
+            "9": "۹",
+        }
+
+        # Regex patterns to identify timecodes and index lines accurately
+        timecode_pattern = re.compile(r"^\d{2}:\d{2}:\d{2},\d{3}\s*-->\s*\d{2}:\d{2}:\d{2},\d{3}")
+        index_pattern = re.compile(r"^\d+\s*$")
+
         for file_path in srt_files_paths:
             filename = os.path.basename(file_path)
             current_file_dir = os.path.dirname(file_path)
@@ -87,9 +118,15 @@ class SubtitleProcessor:
             Logger.log_process(f"Identified file: {filename}", current_file_dir)
 
             try:
-                # Read original file contents content safely
-                with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
-                    lines = f.readlines()
+                # Smart encoding reader. Tries UTF-8 first, falls back to cp1256 (Windows Arabic)
+                file_encoding = "utf-8"
+                try:
+                    with open(file_path, "r", encoding="utf-8") as f:
+                        lines = f.readlines()
+                except UnicodeDecodeError:
+                    file_encoding = "cp1256"
+                    with open(file_path, "r", encoding="cp1256", errors="ignore") as f:
+                        lines = f.readlines()
 
                 processed_lines = []
                 file_has_changes = False
@@ -100,6 +137,11 @@ class SubtitleProcessor:
                 for index, line in enumerate(lines, start=1):
                     original_line = line
                     current_line = original_line
+
+                    # Check if line is standard subtitle timecode or index number
+                    is_timecode_or_index = bool(
+                        timecode_pattern.match(current_line) or index_pattern.match(current_line)
+                    )
 
                     # Apply Pre-Process Option: Trim Spaces
                     if self.options.get("trim_spaces", 1):
@@ -120,6 +162,55 @@ class SubtitleProcessor:
                             curr_clean = current_line.rstrip("\n")
                             log_msg = f'Line {index} modified | Option: Pre-Process Trim Spaces | Before: "{orig_clean}" -> After: "{curr_clean}"'
                             Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+
+                    # 1. Convert Arabic Characters to Persian
+                    if self.options.get("arabic_char_to_persian", 1):
+                        before_char = current_line
+                        for k, v in arabic_to_persian_chars.items():
+                            current_line = current_line.replace(k, v)
+                        if current_line != before_char:
+                            file_has_changes = True
+                            if self.options.get("detailed_subtitle_logs", 1):
+                                b_clean = before_char.rstrip("\n")
+                                c_clean = current_line.rstrip("\n")
+                                log_msg = f'Line {index} modified | Option: Pre-Process Arabic Chars | Before: "{b_clean}" -> After: "{c_clean}"'
+                                Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+
+                    # 2. Convert Arabic Numerals to Persian Numerals
+                    if self.options.get("arabic_num_to_persian", 1):
+                        before_anum = current_line
+                        for k, v in arabic_numerals.items():
+                            current_line = current_line.replace(k, v)
+                        if current_line != before_anum:
+                            file_has_changes = True
+                            if self.options.get("detailed_subtitle_logs", 1):
+                                b_clean = before_anum.rstrip("\n")
+                                c_clean = current_line.rstrip("\n")
+                                log_msg = f'Line {index} modified | Option: Pre-Process Arabic Numerals | Before: "{b_clean}" -> After: "{c_clean}"'
+                                Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+
+                    # 3. Convert English Numerals to Persian Numerals conditionally
+                    if self.options.get("english_num_to_persian", 1) and not is_timecode_or_index:
+                        before_enum = current_line
+
+                        def replace_eng_num(match):
+                            return "".join(english_numerals.get(char, char) for char in match.group(1))
+
+                        # Split text by HTML tags to preserve numbers inside tags (e.g. font size, colors)
+                        parts = re.split(r"(<[^>]+>)", current_line)
+                        for i in range(len(parts)):
+                            if not parts[i].startswith("<"):
+                                # Lookbehind/Lookahead to ensure numbers are not attached to english letters
+                                parts[i] = re.sub(r"(?<![a-zA-Z])(\d+)(?![a-zA-Z])", replace_eng_num, parts[i])
+
+                        current_line = "".join(parts)
+                        if current_line != before_enum:
+                            file_has_changes = True
+                            if self.options.get("detailed_subtitle_logs", 1):
+                                b_clean = before_enum.rstrip("\n")
+                                c_clean = current_line.rstrip("\n")
+                                log_msg = f'Line {index} modified | Option: Pre-Process English Numerals | Before: "{b_clean}" -> After: "{c_clean}"'
+                                Logger.log_subtitle_change(current_file_dir, filename, log_msg)
 
                     # --- Process Options ---
                     is_bypassed = False
@@ -198,7 +289,10 @@ class SubtitleProcessor:
                 output_filename = f"{name_part}_Edited{ext_part}"
                 output_file_path = os.path.join(output_dir, output_filename)
 
-                with open(output_file_path, "w", encoding="utf-8") as f:
+                # Use explicit UTF-8 if setting is enabled, otherwise use original detected encoding
+                out_encoding = "utf-8" if self.options.get("encode_utf8", 1) else file_encoding
+
+                with open(output_file_path, "w", encoding=out_encoding) as f:
                     f.writelines(processed_lines)
 
                 Logger.log_process(f"Processed and saved successfully: {output_filename}", current_file_dir)

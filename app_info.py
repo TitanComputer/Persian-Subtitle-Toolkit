@@ -1,7 +1,7 @@
 import os
 import sys
 
-APP_VERSION = "0.7.3"
+APP_VERSION = "0.8.0"
 APP_NAME = "Persian Subtitle Toolkit"
 CONFIG_FILENAME = "config.json"
 
@@ -16,6 +16,9 @@ DEFAULT_CONFIG = {
     "is_maximized": 0,
     "save_logs": 0,
     "trim_spaces": 1,
+    "arabic_char_to_persian": 1,
+    "arabic_num_to_persian": 1,
+    "english_num_to_persian": 1,
     "bypass_enabled": 1,
     "bypass_list": "",
     "remove_enabled": 1,
@@ -23,6 +26,7 @@ DEFAULT_CONFIG = {
     "replace_enabled": 1,
     "replace_list": "",
     "post_trim_spaces": 1,
+    "encode_utf8": 1,
     "delete_original": 0,
     "detailed_subtitle_logs": 1,
 }

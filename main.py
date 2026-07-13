@@ -421,7 +421,7 @@ class PersianSubtitleToolkit(ctk.CTk):
             tab.grid_columnconfigure(0, weight=1)
             tab.grid_rowconfigure(0, weight=1)
 
-            # --- Pre-Process Tab ---
+        # --- Pre-Process Tab ---
         self.preprocess_inner_frame = ctk.CTkScrollableFrame(self.tab_preprocess)
         self.preprocess_inner_frame.grid(row=0, column=0, padx=0, pady=0, sticky="nsew")
         self.preprocess_inner_frame.grid_columnconfigure(0, weight=1)
@@ -432,6 +432,33 @@ class PersianSubtitleToolkit(ctk.CTk):
             font=font_bold,
         )
         self.chk_trim_spaces.grid(row=0, column=0, padx=5, pady=5, sticky="w")
+
+        # Checkbox for Arabic characters to Persian conversion
+        self.chk_arabic_char = ctk.CTkCheckBox(
+            self.preprocess_inner_frame,
+            text="Convert Arabic Characters to Persian (e.g., ي to ی) - Triggers Post-Process UTF-8",
+            font=font_bold,
+            command=self.on_preprocess_dependency_toggle,
+        )
+        self.chk_arabic_char.grid(row=1, column=0, padx=5, pady=5, sticky="w")
+
+        # Checkbox for Arabic numerals to Persian numerals conversion
+        self.chk_arabic_num = ctk.CTkCheckBox(
+            self.preprocess_inner_frame,
+            text="Convert Arabic Numerals to Persian Numerals (e.g., ٤ to ۴) - Triggers Post-Process UTF-8",
+            font=font_bold,
+            command=self.on_preprocess_dependency_toggle,
+        )
+        self.chk_arabic_num.grid(row=2, column=0, padx=5, pady=5, sticky="w")
+
+        # Checkbox for English numerals conditionally
+        self.chk_english_num = ctk.CTkCheckBox(
+            self.preprocess_inner_frame,
+            text="Convert English Numerals to Persian (e.g., 4 to ۴) - Triggers Post-Process UTF-8",
+            font=font_bold,
+            command=self.on_preprocess_dependency_toggle,
+        )
+        self.chk_english_num.grid(row=3, column=0, padx=5, pady=5, sticky="w")
 
         # --- Process Tab ---
         self.process_inner_frame = ctk.CTkScrollableFrame(self.tab_process)
@@ -488,6 +515,15 @@ class PersianSubtitleToolkit(ctk.CTk):
             font=font_bold,
         )
         self.chk_post_trim_spaces.grid(row=0, column=0, padx=5, pady=5, sticky="w")
+
+        # UTF-8 encoding save option
+        self.chk_encode_utf8 = ctk.CTkCheckBox(
+            self.postprocess_inner_frame,
+            text="Save Final File with UTF-8 Encoding (Required for seamless Persian characters rendering)",
+            font=font_bold,
+            command=self.on_utf8_toggle,
+        )
+        self.chk_encode_utf8.grid(row=1, column=0, padx=5, pady=5, sticky="w")
 
         # --- Extra Options Tab ---
         self.extra_inner_frame = ctk.CTkScrollableFrame(self.tab_extra)
@@ -594,6 +630,21 @@ class PersianSubtitleToolkit(ctk.CTk):
         )
         self.reset_button.grid(row=0, column=5, padx=(5, 0), pady=5, sticky="ew")
 
+    # --- Feature Dependency Methods ---
+    def on_preprocess_dependency_toggle(self):
+        """Enforce UTF-8 selection if any character conversion options are enabled."""
+        if self.chk_arabic_char.get() == 1 or self.chk_arabic_num.get() == 1 or self.chk_english_num.get() == 1:
+            self.chk_encode_utf8.select()
+        self.save_config()
+
+    def on_utf8_toggle(self):
+        """Disable character conversion features if UTF-8 is disabled since they require it."""
+        if self.chk_encode_utf8.get() == 0:
+            self.chk_arabic_char.deselect()
+            self.chk_arabic_num.deselect()
+            self.chk_english_num.deselect()
+        self.save_config()
+
     # --- Widget Toggles ---
     def toggle_bypass(self):
         if self.chk_bypass.get() == 1:
@@ -682,6 +733,22 @@ class PersianSubtitleToolkit(ctk.CTk):
             self.chk_trim_spaces.select()
         else:
             self.chk_trim_spaces.deselect()
+
+        if config.get("arabic_char_to_persian", 1) == 1:
+            self.chk_arabic_char.select()
+        else:
+            self.chk_arabic_char.deselect()
+
+        if config.get("arabic_num_to_persian", 1) == 1:
+            self.chk_arabic_num.select()
+        else:
+            self.chk_arabic_num.deselect()
+
+        if config.get("english_num_to_persian", 1) == 1:
+            self.chk_english_num.select()
+        else:
+            self.chk_english_num.deselect()
+
         # Process Tab Loading
         if config.get("bypass_enabled", 1) == 1:
             self.chk_bypass.select()
@@ -734,6 +801,11 @@ class PersianSubtitleToolkit(ctk.CTk):
         else:
             self.chk_post_trim_spaces.deselect()
 
+        if config.get("encode_utf8", 1) == 1:
+            self.chk_encode_utf8.select()
+        else:
+            self.chk_encode_utf8.deselect()
+
         # Extra Options Loading
         if config.get("delete_original", 0) == 1:
             self.chk_delete_original.select()
@@ -779,6 +851,9 @@ class PersianSubtitleToolkit(ctk.CTk):
             "is_maximized": is_max,
             "save_logs": self.log_switch.get(),
             "trim_spaces": self.chk_trim_spaces.get(),
+            "arabic_char_to_persian": self.chk_arabic_char.get(),
+            "arabic_num_to_persian": self.chk_arabic_num.get(),
+            "english_num_to_persian": self.chk_english_num.get(),
             "bypass_enabled": self.chk_bypass.get(),
             "bypass_list": getattr(self.txt_bypass, "_original_text", ""),
             "remove_enabled": self.chk_remove.get(),
@@ -786,6 +861,7 @@ class PersianSubtitleToolkit(ctk.CTk):
             "replace_enabled": self.chk_replace.get(),
             "replace_list": getattr(self.txt_replace, "_original_text", ""),
             "post_trim_spaces": self.chk_post_trim_spaces.get(),
+            "encode_utf8": self.chk_encode_utf8.get(),
             "delete_original": self.chk_delete_original.get(),
             "detailed_subtitle_logs": self.chk_detailed_logs.get(),
         }
@@ -826,6 +902,9 @@ class PersianSubtitleToolkit(ctk.CTk):
         self.log_switch.configure(state="disabled")
 
         self.chk_trim_spaces.select()
+        self.chk_arabic_char.select()
+        self.chk_arabic_num.select()
+        self.chk_english_num.select()
 
         self.chk_bypass.select()
         self.txt_bypass.configure(state="normal")
@@ -846,6 +925,7 @@ class PersianSubtitleToolkit(ctk.CTk):
         check_and_apply_rtl(self.txt_replace._textbox)
 
         self.chk_post_trim_spaces.select()
+        self.chk_encode_utf8.select()
         self.chk_delete_original.deselect()
         self.chk_detailed_logs.select()
 
@@ -970,6 +1050,9 @@ class PersianSubtitleToolkit(ctk.CTk):
         # Capture dynamic variables from checkbox elements
         run_options = {
             "trim_spaces": self.chk_trim_spaces.get(),
+            "arabic_char_to_persian": self.chk_arabic_char.get(),
+            "arabic_num_to_persian": self.chk_arabic_num.get(),
+            "english_num_to_persian": self.chk_english_num.get(),
             "bypass_enabled": self.chk_bypass.get(),
             "bypass_list": getattr(self.txt_bypass, "_original_text", ""),
             "remove_enabled": self.chk_remove.get(),
@@ -977,6 +1060,7 @@ class PersianSubtitleToolkit(ctk.CTk):
             "replace_enabled": self.chk_replace.get(),
             "replace_list": getattr(self.txt_replace, "_original_text", ""),
             "post_trim_spaces": self.chk_post_trim_spaces.get(),
+            "encode_utf8": self.chk_encode_utf8.get(),
             "delete_original": self.chk_delete_original.get(),
             "detailed_subtitle_logs": self.chk_detailed_logs.get(),
         }
@@ -1039,6 +1123,9 @@ class PersianSubtitleToolkit(ctk.CTk):
 
         run_options = {
             "trim_spaces": self.chk_trim_spaces.get(),
+            "arabic_char_to_persian": self.chk_arabic_char.get(),
+            "arabic_num_to_persian": self.chk_arabic_num.get(),
+            "english_num_to_persian": self.chk_english_num.get(),
             "bypass_enabled": self.chk_bypass.get(),
             "bypass_list": getattr(self.txt_bypass, "_original_text", ""),
             "remove_enabled": self.chk_remove.get(),
@@ -1046,6 +1133,7 @@ class PersianSubtitleToolkit(ctk.CTk):
             "replace_enabled": self.chk_replace.get(),
             "replace_list": getattr(self.txt_replace, "_original_text", ""),
             "post_trim_spaces": self.chk_post_trim_spaces.get(),
+            "encode_utf8": self.chk_encode_utf8.get(),
             "delete_original": self.chk_delete_original.get(),
             "detailed_subtitle_logs": self.chk_detailed_logs.get(),
         }
