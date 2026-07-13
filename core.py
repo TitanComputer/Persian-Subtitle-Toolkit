@@ -43,6 +43,8 @@ class SubtitleProcessor:
         self.target_files = target_files
         self.successful_count = 0
         self.failed_count = 0
+        self.total_lines_processed = 0
+        self.elapsed_time = 0
 
     def run(self):
         # Determine files to process based on execution mode
@@ -107,6 +109,7 @@ class SubtitleProcessor:
         timecode_pattern = re.compile(r"^\d{2}:\d{2}:\d{2},\d{3}\s*-->\s*\d{2}:\d{2}:\d{2},\d{3}")
         index_pattern = re.compile(r"^\d+\s*$")
 
+        start_time = time.time()
         for file_path in srt_files_paths:
             filename = os.path.basename(file_path)
             current_file_dir = os.path.dirname(file_path)
@@ -135,6 +138,7 @@ class SubtitleProcessor:
                     Logger.log_subtitle_change(current_file_dir, filename, f"Started tracking changes for: {filename}")
 
                 for index, line in enumerate(lines, start=1):
+                    self.total_lines_processed += 1
                     original_line = line
                     current_line = original_line
 
@@ -323,6 +327,8 @@ class SubtitleProcessor:
                 Logger.log_process(f"Failed to process file {filename} due to: {str(e)}", current_file_dir)
                 # Increment failed tracking counter
                 self.failed_count += 1
+
+        self.elapsed_time = time.time() - start_time
 
         if self.target_files:
             Logger.log_process(

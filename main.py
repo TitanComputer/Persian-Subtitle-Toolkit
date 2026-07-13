@@ -1070,9 +1070,13 @@ class PersianSubtitleToolkit(ctk.CTk):
         successful = getattr(processor, "successful_count", 0)
         failed = getattr(processor, "failed_count", 0)
         total = successful + failed
+        elapsed = getattr(processor, "elapsed_time", 0)
+        lines_proc = getattr(processor, "total_lines_processed", 0)
+        lines_per_sec = lines_proc / elapsed if elapsed > 0 else 0
 
         summary_message = (
             f"Subtitle processing has completed.\n\n"
+            f"Processed {lines_proc} lines in {elapsed:.2f} seconds ({lines_per_sec:.2f} lines/sec).\n\n"
             f"Total files discovered: {total}\n"
             f"Successfully processed: {successful}\n"
             f"Failed / Skipped: {failed}\n\n"
@@ -1099,8 +1103,6 @@ class PersianSubtitleToolkit(ctk.CTk):
 
     # Adding thread logic for processing single files smoothly without freezing the UI
     def start_single_process_threaded(self):
-        import threading
-
         threading.Thread(target=self.start_single_process, daemon=True).start()
 
     # The actual method handling single file selection and processing
@@ -1146,8 +1148,13 @@ class PersianSubtitleToolkit(ctk.CTk):
         failed = getattr(processor, "failed_count", 0)
         total = successful + failed
 
+        elapsed = getattr(processor, "elapsed_time", 0)
+        lines_proc = getattr(processor, "total_lines_processed", 0)
+        lines_per_sec = lines_proc / elapsed if elapsed > 0 else 0
+
         summary_message = (
             f"Single file processing has completed.\n\n"
+            f"Processed {lines_proc} lines in {elapsed:.2f} seconds ({lines_per_sec:.2f} lines/sec).\n\n"
             f"Total files selected: {total}\n"
             f"Successfully processed: {successful}\n"
             f"Failed / Skipped: {failed}\n\n"
