@@ -436,7 +436,7 @@ class PersianSubtitleToolkit(ctk.CTk):
         # Checkbox for Arabic characters to Persian conversion
         self.chk_arabic_char = ctk.CTkCheckBox(
             self.preprocess_inner_frame,
-            text="Convert Arabic Characters to Persian (e.g., ي to ی) - Triggers Post-Process UTF-8",
+            text="Convert Arabic Characters to Persian (e.g., ي to ی) - (Triggers Post-Process UTF-8)",
             font=font_bold,
             command=self.on_preprocess_dependency_toggle,
         )
@@ -445,7 +445,7 @@ class PersianSubtitleToolkit(ctk.CTk):
         # Checkbox for Arabic numerals to Persian numerals conversion
         self.chk_arabic_num = ctk.CTkCheckBox(
             self.preprocess_inner_frame,
-            text="Convert Arabic Numerals to Persian Numerals (e.g., ٤ to ۴) - Triggers Post-Process UTF-8",
+            text="Convert Arabic Numerals to Persian Numerals (e.g., ٤ to ۴) - (Triggers Post-Process UTF-8)",
             font=font_bold,
             command=self.on_preprocess_dependency_toggle,
         )
@@ -454,7 +454,7 @@ class PersianSubtitleToolkit(ctk.CTk):
         # Checkbox for English numerals conditionally
         self.chk_english_num = ctk.CTkCheckBox(
             self.preprocess_inner_frame,
-            text="Convert English Numerals to Persian (e.g., 4 to ۴) - Triggers Post-Process UTF-8",
+            text="Convert English Numerals to Persian (e.g., 4 to ۴) - (Triggers Post-Process UTF-8)",
             font=font_bold,
             command=self.on_preprocess_dependency_toggle,
         )

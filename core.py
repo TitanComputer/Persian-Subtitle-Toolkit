@@ -191,17 +191,25 @@ class SubtitleProcessor:
 
                     # 3. Convert English Numerals to Persian Numerals conditionally
                     if self.options.get("english_num_to_persian", 1) and not is_timecode_or_index:
+                        # Skip lines that are just whitespace or empty
+                        if not current_line.strip():
+                            continue
+
                         before_enum = current_line
 
                         def replace_eng_num(match):
-                            return "".join(english_numerals.get(char, char) for char in match.group(1))
+                            return "".join(english_numerals.get(char, char) for char in match.group(0))
 
-                        # Split text by HTML tags to preserve numbers inside tags (e.g. font size, colors)
+                        # Split text by HTML tags to preserve numbers inside tags
                         parts = re.split(r"(<[^>]+>)", current_line)
                         for i in range(len(parts)):
+                            # Only process parts that are not HTML tags
                             if not parts[i].startswith("<"):
-                                # Lookbehind/Lookahead to ensure numbers are not attached to english letters
-                                parts[i] = re.sub(r"(?<![a-zA-Z])(\d+)(?![a-zA-Z])", replace_eng_num, parts[i])
+                                # Ensure numbers are not attached to english letters on either side
+                                # Also exclude lines that are entirely just a number (like line 1 in srt)
+                                if parts[i].strip().isdigit():
+                                    continue
+                                parts[i] = re.sub(r"(?<![a-zA-Z0-9])(\d+)(?![a-zA-Z0-9])", replace_eng_num, parts[i])
 
                         current_line = "".join(parts)
                         if current_line != before_enum:
