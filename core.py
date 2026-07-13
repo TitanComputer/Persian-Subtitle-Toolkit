@@ -195,6 +195,11 @@ class SubtitleProcessor:
                         if not current_line.strip():
                             continue
 
+                        # Only process if the line likely contains actual text
+                        # Skip if the line contains only numbers and special characters/tags
+                        if not any(c.isalpha() or "\u0600" <= c <= "\u06ff" for c in current_line):
+                            continue
+
                         before_enum = current_line
 
                         def replace_eng_num(match):
@@ -205,10 +210,7 @@ class SubtitleProcessor:
                         for i in range(len(parts)):
                             # Only process parts that are not HTML tags
                             if not parts[i].startswith("<"):
-                                # Ensure numbers are not attached to english letters on either side
-                                # Also exclude lines that are entirely just a number (like line 1 in srt)
-                                if parts[i].strip().isdigit():
-                                    continue
+                                # Ensure numbers are not attached to English letters or other numbers on either side
                                 parts[i] = re.sub(r"(?<![a-zA-Z0-9])(\d+)(?![a-zA-Z0-9])", replace_eng_num, parts[i])
 
                         current_line = "".join(parts)
