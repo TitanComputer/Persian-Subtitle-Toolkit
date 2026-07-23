@@ -6,3 +6,4 @@ numpy==2.3.2
 packaging==26.0
 pillow==12.1.1
 python-bidi==0.6.11
+tkinterdnd2==0.6.2
