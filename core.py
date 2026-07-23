@@ -435,46 +435,84 @@ class SubtitleProcessor:
                                     dur_sec = max(2, min(10, dur_sec))
                                 except Exception:
                                     dur_sec = 8
-                                dur_ms = dur_sec * 1000
 
-                                first_start_ms = blocks[0]["start_ms"] if blocks else 86400000
-                                if first_start_ms >= dur_ms:
+                                dur_ms = dur_sec * 1000
+                                required_space = dur_ms + 400
+
+                                if not blocks:
                                     new_block = {
                                         "index": "1",
-                                        "start_ms": 0,
-                                        "end_ms": dur_ms,
-                                        "start_str": ms_to_timecode(0),
-                                        "end_str": ms_to_timecode(dur_ms),
+                                        "start_ms": 200,
+                                        "end_ms": 200 + dur_ms,
+                                        "start_str": ms_to_timecode(200),
+                                        "end_str": ms_to_timecode(200 + dur_ms),
                                         "text_lines": credit_lines,
                                     }
-                                    blocks.insert(0, new_block)
+                                    blocks.append(new_block)
                                     file_has_changes = True
                                     if self.options.get("detailed_subtitle_logs", 1):
-                                        log_msg = f'Intro credit subtitle added at beginning | Timecode: "00:00:00,000 --> {ms_to_timecode(dur_ms)}"'
+                                        log_msg = f'Intro credit subtitle added | Timecode: "{ms_to_timecode(200)} --> {ms_to_timecode(200 + dur_ms)}"'
                                         Logger.log_subtitle_change(current_file_dir, filename, log_msg)
                                 else:
-                                    for k in range(len(blocks)):
-                                        gap_start = blocks[k]["end_ms"]
-                                        gap_end = (
-                                            blocks[k + 1]["start_ms"]
-                                            if (k + 1 < len(blocks))
-                                            else (gap_start + dur_ms + 10000)
-                                        )
-                                        if gap_end - gap_start >= dur_ms:
+                                    first_start_ms = blocks[0]["start_ms"]
+                                    if first_start_ms >= required_space:
+                                        start_time_ms = 200
+                                        end_time_ms = start_time_ms + dur_ms
+                                        new_block = {
+                                            "index": "1",
+                                            "start_ms": start_time_ms,
+                                            "end_ms": end_time_ms,
+                                            "start_str": ms_to_timecode(start_time_ms),
+                                            "end_str": ms_to_timecode(end_time_ms),
+                                            "text_lines": credit_lines,
+                                        }
+                                        blocks.insert(0, new_block)
+                                        file_has_changes = True
+                                        if self.options.get("detailed_subtitle_logs", 1):
+                                            log_msg = f'Intro credit subtitle added at beginning | Timecode: "{ms_to_timecode(start_time_ms)} --> {ms_to_timecode(end_time_ms)}"'
+                                            Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+                                    else:
+                                        inserted = False
+                                        for k in range(len(blocks) - 1):
+                                            gap_start = blocks[k]["end_ms"]
+                                            gap_end = blocks[k + 1]["start_ms"]
+
+                                            if gap_end - gap_start >= required_space:
+                                                start_time_ms = gap_start + 200
+                                                end_time_ms = start_time_ms + dur_ms
+                                                new_block = {
+                                                    "index": "",
+                                                    "start_ms": start_time_ms,
+                                                    "end_ms": end_time_ms,
+                                                    "start_str": ms_to_timecode(start_time_ms),
+                                                    "end_str": ms_to_timecode(end_time_ms),
+                                                    "text_lines": credit_lines,
+                                                }
+                                                blocks.insert(k + 1, new_block)
+                                                inserted = True
+                                                file_has_changes = True
+                                                if self.options.get("detailed_subtitle_logs", 1):
+                                                    log_msg = f'Intro credit subtitle added at gap after block {k + 1} | Timecode: "{ms_to_timecode(start_time_ms)} --> {ms_to_timecode(end_time_ms)}"'
+                                                    Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+                                                break
+
+                                        if not inserted:
+                                            last_end = blocks[-1]["end_ms"]
+                                            start_time_ms = last_end + 200
+                                            end_time_ms = start_time_ms + dur_ms
                                             new_block = {
                                                 "index": "",
-                                                "start_ms": gap_start,
-                                                "end_ms": gap_start + dur_ms,
-                                                "start_str": ms_to_timecode(gap_start),
-                                                "end_str": ms_to_timecode(gap_start + dur_ms),
+                                                "start_ms": start_time_ms,
+                                                "end_ms": end_time_ms,
+                                                "start_str": ms_to_timecode(start_time_ms),
+                                                "end_str": ms_to_timecode(end_time_ms),
                                                 "text_lines": credit_lines,
                                             }
-                                            blocks.insert(k + 1, new_block)
+                                            blocks.append(new_block)
                                             file_has_changes = True
                                             if self.options.get("detailed_subtitle_logs", 1):
-                                                log_msg = f'Intro credit subtitle added at gap after block {k + 1} | Timecode: "{ms_to_timecode(gap_start)} --> {ms_to_timecode(gap_start + dur_ms)}"'
+                                                log_msg = f'Intro credit subtitle added at the end | Timecode: "{ms_to_timecode(start_time_ms)} --> {ms_to_timecode(end_time_ms)}"'
                                                 Logger.log_subtitle_change(current_file_dir, filename, log_msg)
-                                            break
 
                     # Option: Remove Negative Timecodes
                     if self.options.get("remove_negative_timecodes", 1):
