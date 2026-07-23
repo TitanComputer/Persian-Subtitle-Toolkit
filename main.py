@@ -422,7 +422,7 @@ class PersianSubtitleToolkit(ctk.CTk):
             tab.grid_rowconfigure(0, weight=1)
 
         # --- Pre-Process Tab ---
-        self.preprocess_inner_frame = ctk.CTkScrollableFrame(self.tab_preprocess)
+        self.preprocess_inner_frame = ctk.CTkScrollableFrame(self.tab_preprocess, orientation="horizontal")
         self.preprocess_inner_frame.grid(row=0, column=0, padx=0, pady=0, sticky="nsew")
         self.preprocess_inner_frame.grid_columnconfigure(0, weight=1)
 
@@ -454,7 +454,7 @@ class PersianSubtitleToolkit(ctk.CTk):
         # Checkbox for English numerals conditionally
         self.chk_english_num = ctk.CTkCheckBox(
             self.preprocess_inner_frame,
-            text="Convert English Numerals to Persian (e.g., 4 to ۴) - (Triggers Post-Process UTF-8)",
+            text="Convert English Numerals to Persian (e.g., 4 to ۴) (Excludes Tags/Timecodes/Letter-attached numbers) - (Triggers Post-Process UTF-8)",
             font=font_bold,
             command=self.on_preprocess_dependency_toggle,
         )

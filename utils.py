@@ -8,7 +8,7 @@ import platform
 
 # --- Single Instance Logic START with Timeout ---
 class AppLock:
-    def __init__(self, app_name, timeout=2):
+    def __init__(self, app_name, timeout=60):
         self.app_name = app_name
         self.timeout = timeout
         self.lock_dir = os.path.join(os.getenv("LOCALAPPDATA", os.getenv("HOME", "/tmp")), app_name)
