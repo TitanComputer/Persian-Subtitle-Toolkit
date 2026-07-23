@@ -1,6 +1,7 @@
 from utils import *
 import os
 import re
+import time
 
 
 def build_flexible_regex(word):
@@ -33,6 +34,94 @@ def build_flexible_regex(word):
 
     pattern = f"{ignored_chars}*".join(char_patterns)
     return re.compile(pattern, re.IGNORECASE)
+
+
+def timecode_to_ms(tc_str):
+    """Converts standard or negative SRT timecode string (HH:MM:SS,mmm or HH:MM:SS.mmm) to milliseconds."""
+    tc_str = tc_str.strip()
+    is_negative = False
+    if tc_str.startswith("-"):
+        is_negative = True
+        tc_str = tc_str[1:]
+
+    parts = re.split(r"[:,\.]", tc_str)
+    if len(parts) >= 4:
+        h, m, s, ms = int(parts[0]), int(parts[1]), int(parts[2]), int(parts[3])
+        total_ms = (h * 3600 + m * 60 + s) * 1000 + ms
+        return -total_ms if is_negative else total_ms
+    return -1 if is_negative else 0
+
+
+def ms_to_timecode(ms):
+    """Converts milliseconds to standard SRT timecode string (HH:MM:SS,mmm)."""
+    if ms < 0:
+        ms = 0
+    hours = ms // 3600000
+    rem = ms % 3600000
+    minutes = rem // 60000
+    rem = rem % 60000
+    seconds = rem // 1000
+    millis = rem % 1000
+    return f"{hours:02d}:{minutes:02d}:{seconds:02d},{millis:03d}"
+
+
+def parse_srt_blocks(lines):
+    """Parses raw lines of an SRT file into a list of block dictionaries."""
+    blocks = []
+    tc_regex = re.compile(r"^(-?\d{2}:\d{2}:\d{2}[,\.]\d{3})\s*-->\s*(-?\d{2}:\d{2}:\d{2}[,\.]\d{3})")
+    i = 0
+    n = len(lines)
+
+    while i < n:
+        line = lines[i].strip()
+        if not line:
+            i += 1
+            continue
+
+        index_str = ""
+        # Check if line is block index
+        if line.isdigit() or (line.startswith("\ufeff") and line[1:].isdigit()):
+            index_str = line
+            i += 1
+            if i >= n:
+                break
+            line = lines[i].strip()
+
+        m = tc_regex.match(line)
+        if m:
+            start_str, end_str = m.group(1), m.group(2)
+            start_ms = timecode_to_ms(start_str)
+            end_ms = timecode_to_ms(end_str)
+
+            i += 1
+            text_lines = []
+            while i < n:
+                curr = lines[i]
+                curr_stripped = curr.strip()
+                if not curr_stripped:
+                    break
+                # Lookahead for next block index + timecode
+                if (
+                    curr_stripped.isdigit() or (curr_stripped.startswith("\ufeff") and curr_stripped[1:].isdigit())
+                ) and (i + 1 < n and tc_regex.match(lines[i + 1].strip())):
+                    break
+                text_lines.append(curr.rstrip("\r\n"))
+                i += 1
+
+            blocks.append(
+                {
+                    "index": index_str,
+                    "start_ms": start_ms,
+                    "end_ms": end_ms,
+                    "start_str": start_str,
+                    "end_str": end_str,
+                    "text_lines": text_lines,
+                }
+            )
+        else:
+            i += 1
+
+    return blocks
 
 
 class SubtitleProcessor:
@@ -108,6 +197,7 @@ class SubtitleProcessor:
         # Regex patterns to identify timecodes and index lines accurately
         timecode_pattern = re.compile(r"^\d{2}:\d{2}:\d{2},\d{3}\s*-->\s*\d{2}:\d{2}:\d{2},\d{3}")
         index_pattern = re.compile(r"^\d+\s*$")
+        empty_tag_pattern = re.compile(r"<([a-zA-Z1-6]+)\b[^>]*>\s*</\1>", re.IGNORECASE)
 
         start_time = time.time()
         for file_path in srt_files_paths:
@@ -166,6 +256,18 @@ class SubtitleProcessor:
                             curr_clean = current_line.rstrip("\n")
                             log_msg = f'Line {index} modified | Option: Pre-Process Trim Spaces | Before: "{orig_clean}" -> After: "{curr_clean}"'
                             Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+
+                    # Option: Convert English Question Marks to Persian
+                    if self.options.get("persian_question_mark", 1) and not is_timecode_or_index:
+                        before_q = current_line
+                        current_line = current_line.replace("?", "؟")
+                        if current_line != before_q:
+                            file_has_changes = True
+                            if self.options.get("detailed_subtitle_logs", 1):
+                                b_clean = before_q.rstrip("\n")
+                                c_clean = current_line.rstrip("\n")
+                                log_msg = f'Line {index} modified | Option: Pre-Process Persian Question Mark | Before: "{b_clean}" -> After: "{c_clean}"'
+                                Logger.log_subtitle_change(current_file_dir, filename, log_msg)
 
                     # 1. Convert Arabic Characters to Persian
                     if self.options.get("arabic_char_to_persian", 1):
@@ -294,9 +396,134 @@ class SubtitleProcessor:
                                     log_msg = f'Line {index} modified | Option: Post-Process Trim Spaces | Before: "{before_clean}" -> After: "{curr_clean}"'
                                     Logger.log_subtitle_change(current_file_dir, filename, log_msg)
 
+                        # Option: Post-Process Remove Empty Tags
+                        if self.options.get("remove_empty_tags", 1) and current_line:
+                            before_tags = current_line
+                            temp_line = current_line
+                            while empty_tag_pattern.search(temp_line):
+                                temp_line = empty_tag_pattern.sub("", temp_line)
+                            current_line = temp_line
+                            if current_line != before_tags:
+                                file_has_changes = True
+                                if self.options.get("detailed_subtitle_logs", 1):
+                                    b_clean = before_tags.rstrip("\n")
+                                    c_clean = current_line.rstrip("\n")
+                                    log_msg = f'Line {index} modified | Option: Post-Process Remove Empty Tags | Before: "{b_clean}" -> After: "{c_clean}"'
+                                    Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+
                     # Finally, append the line if it wasn't removed completely
                     if current_line is not None:
                         processed_lines.append(current_line)
+
+                # --- Block-Level Post-Process Operations ---
+                if (
+                    self.options.get("add_intro_credit", 0)
+                    or self.options.get("remove_negative_timecodes", 1)
+                    or self.options.get("remove_empty_subtitles", 1)
+                    or self.options.get("reformat_renumber", 1)
+                ):
+                    blocks = parse_srt_blocks(processed_lines)
+
+                    # Option: Add Intro Credit Subtitle
+                    if self.options.get("add_intro_credit", 0):
+                        credit_text = self.options.get("intro_credit_text", "").strip()
+                        if credit_text:
+                            credit_lines = [l.strip() for l in credit_text.split("\n") if l.strip()][:2]
+                            if credit_lines:
+                                try:
+                                    dur_sec = int(self.options.get("intro_credit_duration", "8"))
+                                    dur_sec = max(2, min(10, dur_sec))
+                                except Exception:
+                                    dur_sec = 8
+                                dur_ms = dur_sec * 1000
+
+                                first_start_ms = blocks[0]["start_ms"] if blocks else 86400000
+                                if first_start_ms >= dur_ms:
+                                    new_block = {
+                                        "index": "1",
+                                        "start_ms": 0,
+                                        "end_ms": dur_ms,
+                                        "start_str": ms_to_timecode(0),
+                                        "end_str": ms_to_timecode(dur_ms),
+                                        "text_lines": credit_lines,
+                                    }
+                                    blocks.insert(0, new_block)
+                                    file_has_changes = True
+                                    if self.options.get("detailed_subtitle_logs", 1):
+                                        log_msg = f'Intro credit subtitle added at beginning | Timecode: "00:00:00,000 --> {ms_to_timecode(dur_ms)}"'
+                                        Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+                                else:
+                                    for k in range(len(blocks)):
+                                        gap_start = blocks[k]["end_ms"]
+                                        gap_end = (
+                                            blocks[k + 1]["start_ms"]
+                                            if (k + 1 < len(blocks))
+                                            else (gap_start + dur_ms + 10000)
+                                        )
+                                        if gap_end - gap_start >= dur_ms:
+                                            new_block = {
+                                                "index": "",
+                                                "start_ms": gap_start,
+                                                "end_ms": gap_start + dur_ms,
+                                                "start_str": ms_to_timecode(gap_start),
+                                                "end_str": ms_to_timecode(gap_start + dur_ms),
+                                                "text_lines": credit_lines,
+                                            }
+                                            blocks.insert(k + 1, new_block)
+                                            file_has_changes = True
+                                            if self.options.get("detailed_subtitle_logs", 1):
+                                                log_msg = f'Intro credit subtitle added at gap after block {k + 1} | Timecode: "{ms_to_timecode(gap_start)} --> {ms_to_timecode(gap_start + dur_ms)}"'
+                                                Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+                                            break
+
+                    # Option: Remove Negative Timecodes
+                    if self.options.get("remove_negative_timecodes", 1):
+                        filtered_blocks = []
+                        for b in blocks:
+                            if (
+                                b["start_ms"] < 0
+                                or b["end_ms"] < 0
+                                or b["start_str"].startswith("-")
+                                or b["end_str"].startswith("-")
+                            ):
+                                file_has_changes = True
+                                if self.options.get("detailed_subtitle_logs", 1):
+                                    log_msg = f'Subtitle block removed | Option: Remove Negative Timecodes | Index: "{b["index"]}" | Timecode: "{b["start_str"]} --> {b["end_str"]}"'
+                                    Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+                            else:
+                                filtered_blocks.append(b)
+                        blocks = filtered_blocks
+
+                    # Option: Remove Empty Subtitles
+                    if self.options.get("remove_empty_subtitles", 1):
+                        filtered_blocks = []
+                        for b in blocks:
+                            text_content = "".join(b["text_lines"]).strip()
+                            if not text_content:
+                                file_has_changes = True
+                                if self.options.get("detailed_subtitle_logs", 1):
+                                    log_msg = f'Subtitle block removed | Option: Remove Empty Subtitles | Index: "{b["index"]}" | Timecode: "{b["start_str"]} --> {b["end_str"]}"'
+                                    Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+                            else:
+                                filtered_blocks.append(b)
+                        blocks = filtered_blocks
+
+                    # Option: Reformat & Renumber Subtitles
+                    if self.options.get("reformat_renumber", 1):
+                        reformatted_lines = []
+                        for new_idx, b in enumerate(blocks, start=1):
+                            reformatted_lines.append(f"{new_idx}\n")
+                            tc_s = ms_to_timecode(b["start_ms"])
+                            tc_e = ms_to_timecode(b["end_ms"])
+                            reformatted_lines.append(f"{tc_s} --> {tc_e}\n")
+                            for t_line in b["text_lines"]:
+                                reformatted_lines.append(f"{t_line}\n")
+                            reformatted_lines.append("\n")
+                        processed_lines = reformatted_lines
+
+                        if self.options.get("detailed_subtitle_logs", 1):
+                            log_msg = f"Reformat & Renumber completed | Total blocks renumbered: {len(blocks)}"
+                            Logger.log_subtitle_change(current_file_dir, filename, log_msg)
 
                 # Construct output file path structure
                 name_part, ext_part = os.path.splitext(filename)

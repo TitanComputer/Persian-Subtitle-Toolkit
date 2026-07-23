@@ -433,6 +433,15 @@ class PersianSubtitleToolkit(ctk.CTk):
         )
         self.chk_trim_spaces.grid(row=0, column=0, padx=5, pady=5, sticky="w")
 
+        # Checkbox for English question mark to Persian conversion
+        self.chk_persian_question_mark = ctk.CTkCheckBox(
+            self.preprocess_inner_frame,
+            text="Convert English Question Marks to Persian (e.g., ? to ؟) - (Triggers Post-Process UTF-8)",
+            font=font_bold,
+            command=self.on_preprocess_dependency_toggle,
+        )
+        self.chk_persian_question_mark.grid(row=1, column=0, padx=5, pady=5, sticky="w")
+
         # Checkbox for Arabic characters to Persian conversion
         self.chk_arabic_char = ctk.CTkCheckBox(
             self.preprocess_inner_frame,
@@ -440,7 +449,7 @@ class PersianSubtitleToolkit(ctk.CTk):
             font=font_bold,
             command=self.on_preprocess_dependency_toggle,
         )
-        self.chk_arabic_char.grid(row=1, column=0, padx=5, pady=5, sticky="w")
+        self.chk_arabic_char.grid(row=2, column=0, padx=5, pady=5, sticky="w")
 
         # Checkbox for Arabic numerals to Persian numerals conversion
         self.chk_arabic_num = ctk.CTkCheckBox(
@@ -449,7 +458,7 @@ class PersianSubtitleToolkit(ctk.CTk):
             font=font_bold,
             command=self.on_preprocess_dependency_toggle,
         )
-        self.chk_arabic_num.grid(row=2, column=0, padx=5, pady=5, sticky="w")
+        self.chk_arabic_num.grid(row=3, column=0, padx=5, pady=5, sticky="w")
 
         # Checkbox for English numerals conditionally
         self.chk_english_num = ctk.CTkCheckBox(
@@ -458,7 +467,7 @@ class PersianSubtitleToolkit(ctk.CTk):
             font=font_bold,
             command=self.on_preprocess_dependency_toggle,
         )
-        self.chk_english_num.grid(row=3, column=0, padx=5, pady=5, sticky="w")
+        self.chk_english_num.grid(row=4, column=0, padx=5, pady=5, sticky="w")
 
         # --- Process Tab ---
         self.process_inner_frame = ctk.CTkScrollableFrame(self.tab_process)
@@ -516,6 +525,73 @@ class PersianSubtitleToolkit(ctk.CTk):
         )
         self.chk_post_trim_spaces.grid(row=0, column=0, padx=5, pady=5, sticky="w")
 
+        # Checkbox for Removing Empty HTML Tags
+        self.chk_remove_empty_tags = ctk.CTkCheckBox(
+            self.postprocess_inner_frame,
+            text="Remove Empty HTML Tags (e.g., <font></font>, <b></b>)",
+            font=font_bold,
+        )
+        self.chk_remove_empty_tags.grid(row=1, column=0, padx=5, pady=5, sticky="w")
+
+        # Intro Credit Subtitle Container Frame
+        self.intro_credit_frame = ctk.CTkFrame(self.postprocess_inner_frame, fg_color="transparent")
+        self.intro_credit_frame.grid(row=2, column=0, padx=5, pady=5, sticky="w")
+
+        self.chk_add_intro_credit = ctk.CTkCheckBox(
+            self.intro_credit_frame,
+            text="Add Intro Credit Subtitle (Max 2 Lines) - (Triggers Reformat & Renumber)",
+            font=font_bold,
+            command=self.on_reformat_dependency_toggle,
+        )
+        self.chk_add_intro_credit.grid(row=0, column=0, padx=(0, 10), pady=2, sticky="w")
+
+        self.lbl_intro_credit_duration = ctk.CTkLabel(
+            self.intro_credit_frame,
+            text="Duration (sec):",
+            font=font_bold,
+        )
+        self.lbl_intro_credit_duration.grid(row=0, column=1, padx=(0, 5), pady=2, sticky="w")
+
+        self.opt_intro_credit_duration = ctk.CTkOptionMenu(
+            self.intro_credit_frame,
+            values=["2", "3", "4", "5", "6", "7", "8", "9", "10"],
+            width=65,
+            command=lambda _: self.save_config(),
+        )
+        self.opt_intro_credit_duration.grid(row=0, column=2, padx=0, pady=2, sticky="w")
+        self.opt_intro_credit_duration.set("8")
+
+        self.txt_intro_credit_text = ctk.CTkTextbox(self.postprocess_inner_frame, height=55)
+        self.txt_intro_credit_text.grid(row=3, column=0, padx=5, pady=(0, 5), sticky="ew")
+        setup_enhanced_textbox(self.txt_intro_credit_text)
+
+        # Checkbox for Removing Negative Timecodes
+        self.chk_remove_negative_timecodes = ctk.CTkCheckBox(
+            self.postprocess_inner_frame,
+            text="Remove Negative Timecodes - (Triggers Reformat & Renumber)",
+            font=font_bold,
+            command=self.on_reformat_dependency_toggle,
+        )
+        self.chk_remove_negative_timecodes.grid(row=4, column=0, padx=5, pady=5, sticky="w")
+
+        # Checkbox for Removing Empty Subtitles
+        self.chk_remove_empty_subtitles = ctk.CTkCheckBox(
+            self.postprocess_inner_frame,
+            text="Remove Empty Subtitles - (Triggers Reformat & Renumber)",
+            font=font_bold,
+            command=self.on_reformat_dependency_toggle,
+        )
+        self.chk_remove_empty_subtitles.grid(row=5, column=0, padx=5, pady=5, sticky="w")
+
+        # Checkbox for Reformat & Renumber
+        self.chk_reformat_renumber = ctk.CTkCheckBox(
+            self.postprocess_inner_frame,
+            text="Reformat and Renumber Subtitles (Fixes numbering order and cleans block spacing)",
+            font=font_bold,
+            command=self.on_reformat_renumber_toggle,
+        )
+        self.chk_reformat_renumber.grid(row=6, column=0, padx=5, pady=5, sticky="w")
+
         # UTF-8 encoding save option
         self.chk_encode_utf8 = ctk.CTkCheckBox(
             self.postprocess_inner_frame,
@@ -523,7 +599,7 @@ class PersianSubtitleToolkit(ctk.CTk):
             font=font_bold,
             command=self.on_utf8_toggle,
         )
-        self.chk_encode_utf8.grid(row=1, column=0, padx=5, pady=5, sticky="w")
+        self.chk_encode_utf8.grid(row=7, column=0, padx=5, pady=5, sticky="w")
 
         # --- Extra Options Tab ---
         self.extra_inner_frame = ctk.CTkScrollableFrame(self.tab_extra)
@@ -633,17 +709,52 @@ class PersianSubtitleToolkit(ctk.CTk):
     # --- Feature Dependency Methods ---
     def on_preprocess_dependency_toggle(self):
         """Enforce UTF-8 selection if any character conversion options are enabled."""
-        if self.chk_arabic_char.get() == 1 or self.chk_arabic_num.get() == 1 or self.chk_english_num.get() == 1:
+        if (
+            self.chk_persian_question_mark.get() == 1
+            or self.chk_arabic_char.get() == 1
+            or self.chk_arabic_num.get() == 1
+            or self.chk_english_num.get() == 1
+        ):
             self.chk_encode_utf8.select()
         self.save_config()
 
     def on_utf8_toggle(self):
         """Disable character conversion features if UTF-8 is disabled since they require it."""
         if self.chk_encode_utf8.get() == 0:
+            self.chk_persian_question_mark.deselect()
             self.chk_arabic_char.deselect()
             self.chk_arabic_num.deselect()
             self.chk_english_num.deselect()
         self.save_config()
+
+    def on_reformat_dependency_toggle(self):
+        """Enforce Reformat & Renumber selection if any linked post-process options are enabled."""
+        if (
+            self.chk_add_intro_credit.get() == 1
+            or self.chk_remove_negative_timecodes.get() == 1
+            or self.chk_remove_empty_subtitles.get() == 1
+        ):
+            self.chk_reformat_renumber.select()
+        self.toggle_intro_credit_state()
+        self.save_config()
+
+    def on_reformat_renumber_toggle(self):
+        """Disable linked post-process options if Reformat & Renumber is disabled."""
+        if self.chk_reformat_renumber.get() == 0:
+            self.chk_add_intro_credit.deselect()
+            self.chk_remove_negative_timecodes.deselect()
+            self.chk_remove_empty_subtitles.deselect()
+        self.toggle_intro_credit_state()
+        self.save_config()
+
+    def toggle_intro_credit_state(self):
+        """Enable or disable intro credit duration and text widgets based on checkbox state."""
+        if self.chk_add_intro_credit.get() == 1:
+            self.opt_intro_credit_duration.configure(state="normal")
+            self.txt_intro_credit_text.configure(state="normal")
+        else:
+            self.opt_intro_credit_duration.configure(state="disabled")
+            self.txt_intro_credit_text.configure(state="disabled")
 
     # --- Widget Toggles ---
     def toggle_bypass(self):
@@ -734,6 +845,11 @@ class PersianSubtitleToolkit(ctk.CTk):
         else:
             self.chk_trim_spaces.deselect()
 
+        if config.get("persian_question_mark", 1) == 1:
+            self.chk_persian_question_mark.select()
+        else:
+            self.chk_persian_question_mark.deselect()
+
         if config.get("arabic_char_to_persian", 1) == 1:
             self.chk_arabic_char.select()
         else:
@@ -801,6 +917,44 @@ class PersianSubtitleToolkit(ctk.CTk):
         else:
             self.chk_post_trim_spaces.deselect()
 
+        if config.get("remove_empty_tags", 1) == 1:
+            self.chk_remove_empty_tags.select()
+        else:
+            self.chk_remove_empty_tags.deselect()
+
+        if config.get("add_intro_credit", 0) == 1:
+            self.chk_add_intro_credit.select()
+        else:
+            self.chk_add_intro_credit.deselect()
+
+        dur_val = str(config.get("intro_credit_duration", "8"))
+        if dur_val in ["2", "3", "4", "5", "6", "7", "8", "9", "10"]:
+            self.opt_intro_credit_duration.set(dur_val)
+        else:
+            self.opt_intro_credit_duration.set("8")
+
+        self.txt_intro_credit_text.configure(state="normal")
+        self.txt_intro_credit_text.delete("1.0", "end")
+        credit_txt = config.get("intro_credit_text", "")
+        self.txt_intro_credit_text.insert("1.0", credit_txt)
+        self.txt_intro_credit_text._original_text = credit_txt
+        textbox_focus_out(self.txt_intro_credit_text)
+
+        if config.get("remove_negative_timecodes", 1) == 1:
+            self.chk_remove_negative_timecodes.select()
+        else:
+            self.chk_remove_negative_timecodes.deselect()
+
+        if config.get("remove_empty_subtitles", 1) == 1:
+            self.chk_remove_empty_subtitles.select()
+        else:
+            self.chk_remove_empty_subtitles.deselect()
+
+        if config.get("reformat_renumber", 1) == 1:
+            self.chk_reformat_renumber.select()
+        else:
+            self.chk_reformat_renumber.deselect()
+
         if config.get("encode_utf8", 1) == 1:
             self.chk_encode_utf8.select()
         else:
@@ -816,6 +970,8 @@ class PersianSubtitleToolkit(ctk.CTk):
             self.chk_detailed_logs.select()
         else:
             self.chk_detailed_logs.deselect()
+
+        self.toggle_intro_credit_state()
 
         # 5. Final Logs
         sys_info = Logger.get_system_info()
@@ -851,6 +1007,7 @@ class PersianSubtitleToolkit(ctk.CTk):
             "is_maximized": is_max,
             "save_logs": self.log_switch.get(),
             "trim_spaces": self.chk_trim_spaces.get(),
+            "persian_question_mark": self.chk_persian_question_mark.get(),
             "arabic_char_to_persian": self.chk_arabic_char.get(),
             "arabic_num_to_persian": self.chk_arabic_num.get(),
             "english_num_to_persian": self.chk_english_num.get(),
@@ -861,6 +1018,13 @@ class PersianSubtitleToolkit(ctk.CTk):
             "replace_enabled": self.chk_replace.get(),
             "replace_list": getattr(self.txt_replace, "_original_text", ""),
             "post_trim_spaces": self.chk_post_trim_spaces.get(),
+            "remove_empty_tags": self.chk_remove_empty_tags.get(),
+            "add_intro_credit": self.chk_add_intro_credit.get(),
+            "intro_credit_duration": self.opt_intro_credit_duration.get(),
+            "intro_credit_text": getattr(self.txt_intro_credit_text, "_original_text", ""),
+            "remove_negative_timecodes": self.chk_remove_negative_timecodes.get(),
+            "remove_empty_subtitles": self.chk_remove_empty_subtitles.get(),
+            "reformat_renumber": self.chk_reformat_renumber.get(),
             "encode_utf8": self.chk_encode_utf8.get(),
             "delete_original": self.chk_delete_original.get(),
             "detailed_subtitle_logs": self.chk_detailed_logs.get(),
@@ -902,6 +1066,7 @@ class PersianSubtitleToolkit(ctk.CTk):
         self.log_switch.configure(state="disabled")
 
         self.chk_trim_spaces.select()
+        self.chk_persian_question_mark.select()
         self.chk_arabic_char.select()
         self.chk_arabic_num.select()
         self.chk_english_num.select()
@@ -925,9 +1090,22 @@ class PersianSubtitleToolkit(ctk.CTk):
         check_and_apply_rtl(self.txt_replace._textbox)
 
         self.chk_post_trim_spaces.select()
+        self.chk_remove_empty_tags.select()
+        self.chk_add_intro_credit.deselect()
+        self.opt_intro_credit_duration.set("8")
+        self.txt_intro_credit_text.configure(state="normal")
+        self.txt_intro_credit_text.delete("1.0", "end")
+        self.txt_intro_credit_text._original_text = ""
+        check_and_apply_rtl(self.txt_intro_credit_text._textbox)
+
+        self.chk_remove_negative_timecodes.select()
+        self.chk_remove_empty_subtitles.select()
+        self.chk_reformat_renumber.select()
         self.chk_encode_utf8.select()
         self.chk_delete_original.deselect()
         self.chk_detailed_logs.select()
+
+        self.toggle_intro_credit_state()
 
     def import_settings(self):
         file_path = filedialog.askopenfilename(title="Select Configuration File", filetypes=[("JSON files", "*.json")])
@@ -1084,6 +1262,7 @@ class PersianSubtitleToolkit(ctk.CTk):
         # Helper to collect options dictionary
         return {
             "trim_spaces": self.chk_trim_spaces.get(),
+            "persian_question_mark": self.chk_persian_question_mark.get(),
             "arabic_char_to_persian": self.chk_arabic_char.get(),
             "arabic_num_to_persian": self.chk_arabic_num.get(),
             "english_num_to_persian": self.chk_english_num.get(),
@@ -1094,6 +1273,13 @@ class PersianSubtitleToolkit(ctk.CTk):
             "replace_enabled": self.chk_replace.get(),
             "replace_list": getattr(self.txt_replace, "_original_text", ""),
             "post_trim_spaces": self.chk_post_trim_spaces.get(),
+            "remove_empty_tags": self.chk_remove_empty_tags.get(),
+            "add_intro_credit": self.chk_add_intro_credit.get(),
+            "intro_credit_duration": self.opt_intro_credit_duration.get(),
+            "intro_credit_text": getattr(self.txt_intro_credit_text, "_original_text", ""),
+            "remove_negative_timecodes": self.chk_remove_negative_timecodes.get(),
+            "remove_empty_subtitles": self.chk_remove_empty_subtitles.get(),
+            "reformat_renumber": self.chk_reformat_renumber.get(),
             "encode_utf8": self.chk_encode_utf8.get(),
             "delete_original": self.chk_delete_original.get(),
             "detailed_subtitle_logs": self.chk_detailed_logs.get(),
