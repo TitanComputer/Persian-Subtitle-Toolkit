@@ -632,7 +632,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         # Option: Toggle Drag and Drop feature
         self.chk_enable_dnd = ctk.CTkCheckBox(
             self.extra_inner_frame,
-            text="Enable Drag and Drop for Srt files on File Process button",
+            text="Enable Drag and Drop for Files and Folders on Process buttons",
             font=font_bold,
         )
         self.chk_enable_dnd.grid(row=2, column=0, padx=5, pady=5, sticky="w")
@@ -658,6 +658,10 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             command=self.start_process_threaded,
         )
         self.start_btn.grid(row=0, column=0, padx=(0, 5), pady=5, sticky="ew")
+
+        # Register the Folder Process Button as a Drag and Drop target for folders
+        self.start_btn.drop_target_register(DND_FILES)
+        self.start_btn.dnd_bind("<<Drop>>", self.on_folder_drop)
 
         # Single File Process Button
         self.single_process_btn = ctk.CTkButton(
@@ -1220,7 +1224,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         if folder_selected:
             self.write_log(f"Target folder changing to: {folder_selected}")
             self._update_path_entry(folder_selected)
-            self.write_log(f"Target folder successfully changed.")
+            self.write_log("Target folder successfully changed.")
 
     def write_log(self, message):
         folder = self.path_entry.get()
@@ -1259,7 +1263,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
                 f"Total files discovered: {total}\n"
                 f"Successfully processed: {successful}\n"
                 f"Failed / Skipped: {failed}\n\n"
-                f"Output files are located in the 'Outputs' folder within the selected directory."
+                f'Output files are located in the "Outputs" folder within the selected directory.'
             )
         else:
             summary_message = (
@@ -1364,6 +1368,56 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         processor = SubtitleProcessor("", options=run_options, target_files=selected_files)
         self._run_processing_pipeline(processor, is_single_file=True)
 
+    # Drag and Drop event handler logic for dropped folders
+    def on_folder_drop(self, event):
+        # Prevent execution if Drag and Drop setting is disabled
+        if self.chk_enable_dnd.get() == 0:
+            return
+
+        # Safely split list of paths provided by tkinterdnd2 library
+        paths = self.tk.splitlist(event.data)
+
+        valid_folders = []
+        invalid_items = []
+
+        for path in paths:
+            if os.path.isdir(path):
+                valid_folders.append(path)
+            else:
+                invalid_items.append(path)
+
+        if not valid_folders:
+            messagebox.showerror(
+                "Invalid Drop", "No valid folders were dropped.\nPlease drop only folders on this button."
+            )
+            return
+
+        if invalid_items:
+            messagebox.showwarning(
+                "Warning", "Some dropped items were ignored.\nFiles are not supported here, please drop folders only."
+            )
+
+        # Process the first valid folder
+        folder_to_process = valid_folders[0]
+
+        confirm = messagebox.askyesno(
+            "Confirm Process",
+            f"Do you want to process the dropped folder with the current settings?\n\nFolder: {folder_to_process}",
+        )
+
+        if not confirm:
+            return
+
+        self.attributes("-disabled", True)
+        self.save_config()
+
+        run_options = self._get_run_options()
+        # Initialize SubtitleProcessor with the dropped folder instead of the UI folder
+        processor = SubtitleProcessor(folder_to_process, options=run_options)
+
+        # Execute using a background thread so it doesn't freeze the UI
+        threading.Thread(target=self._run_processing_pipeline, args=(processor, False), daemon=True).start()
+
     # Drag and Drop event handler logic for dropped files
     def on_file_drop(self, event):
         # Prevent execution if Drag and Drop setting is disabled
@@ -1383,7 +1437,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
                 invalid_files.append(path)
 
         if not valid_files:
-            messagebox.showerror("Invalid Drop", "No valid SRT files were dropped.\nPlease drop only '.srt' files.")
+            messagebox.showerror("Invalid Drop", 'No valid SRT files were dropped.\nPlease drop only ".srt" files.')
             return
 
         if invalid_files:
