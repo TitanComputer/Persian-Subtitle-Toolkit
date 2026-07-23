@@ -130,7 +130,10 @@ def textbox_focus_out(textbox):
 
     textbox._original_text = original_text
 
-    display_text = reshape_persian_text(original_text)
+    # Remove Tatweel (Kashida) characters only from the displayed text
+    display_source = original_text.replace("\u0640", "")
+
+    display_text = reshape_persian_text(display_source)
 
     textbox.delete("1.0", "end")
     textbox.insert("1.0", display_text)
