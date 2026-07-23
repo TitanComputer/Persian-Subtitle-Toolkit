@@ -8,6 +8,7 @@ from idlelib.tooltip import Hovertip
 import webbrowser
 import arabic_reshaper
 from bidi.algorithm import get_display
+from tkinterdnd2 import TkinterDnD, DND_FILES
 
 
 def check_and_apply_rtl(widget):
@@ -244,7 +245,14 @@ def setup_enhanced_textbox(textbox):
     widget.bind("<KeyPress>", handle_ctrl_key, add="+")
 
 
-class PersianSubtitleToolkit(ctk.CTk):
+# Created wrapper class to inject TkinterDnD capabilities into CustomTkinter window
+class CustomTkinterDnD(ctk.CTk, TkinterDnD.DnDWrapper):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.TkdndVersion = TkinterDnD._require(self)
+
+
+class PersianSubtitleToolkit(CustomTkinterDnD):
     def __init__(self):
         super().__init__()
 
@@ -616,10 +624,18 @@ class PersianSubtitleToolkit(ctk.CTk):
 
         self.chk_detailed_logs = ctk.CTkCheckBox(
             self.extra_inner_frame,
-            text="Create individual changelog file for each subtitle (Log files will be saved in '/Logs/Subtitle-Logs/' folder)",
+            text='Create individual changelog file for each subtitle (Saved in "/Logs/Subtitle-Logs/" folder)',
             font=font_bold,
         )
         self.chk_detailed_logs.grid(row=1, column=0, padx=5, pady=5, sticky="w")
+
+        # Option: Toggle Drag and Drop feature
+        self.chk_enable_dnd = ctk.CTkCheckBox(
+            self.extra_inner_frame,
+            text="Enable Drag and Drop for Srt files on File Process button",
+            font=font_bold,
+        )
+        self.chk_enable_dnd.grid(row=2, column=0, padx=5, pady=5, sticky="w")
 
         # --- Bottom Container (Row 2) ---
         self.bottom_container = ctk.CTkFrame(self, fg_color="transparent")
@@ -654,6 +670,10 @@ class PersianSubtitleToolkit(ctk.CTk):
             command=self.start_single_process_threaded,
         )
         self.single_process_btn.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
+
+        # Register the File Process Button as a Drag and Drop target for files
+        self.single_process_btn.drop_target_register(DND_FILES)
+        self.single_process_btn.dnd_bind("<<Drop>>", self.on_file_drop)
 
         # Donate Button
         self.donate_button = ctk.CTkButton(
@@ -974,6 +994,11 @@ class PersianSubtitleToolkit(ctk.CTk):
         else:
             self.chk_detailed_logs.deselect()
 
+        if config.get("enable_dnd", 1) == 1:
+            self.chk_enable_dnd.select()
+        else:
+            self.chk_enable_dnd.deselect()
+
         self.toggle_intro_credit_state()
 
         # 5. Final Logs
@@ -1031,6 +1056,7 @@ class PersianSubtitleToolkit(ctk.CTk):
             "encode_utf8": self.chk_encode_utf8.get(),
             "delete_original": self.chk_delete_original.get(),
             "detailed_subtitle_logs": self.chk_detailed_logs.get(),
+            "enable_dnd": self.chk_enable_dnd.get(),
         }
         self.config_manager.save(config_data)
         self.write_log("Config saved.")
@@ -1107,6 +1133,8 @@ class PersianSubtitleToolkit(ctk.CTk):
         self.chk_encode_utf8.select()
         self.chk_delete_original.deselect()
         self.chk_detailed_logs.select()
+
+        self.chk_enable_dnd.select()
 
         self.toggle_intro_credit_state()
 
@@ -1286,6 +1314,7 @@ class PersianSubtitleToolkit(ctk.CTk):
             "encode_utf8": self.chk_encode_utf8.get(),
             "delete_original": self.chk_delete_original.get(),
             "detailed_subtitle_logs": self.chk_detailed_logs.get(),
+            "enable_dnd": self.chk_enable_dnd.get(),
         }
 
     def start_process_threaded(self):
@@ -1334,6 +1363,50 @@ class PersianSubtitleToolkit(ctk.CTk):
         # Empty string for folder path, passing target_files explicitly
         processor = SubtitleProcessor("", options=run_options, target_files=selected_files)
         self._run_processing_pipeline(processor, is_single_file=True)
+
+    # Drag and Drop event handler logic for dropped files
+    def on_file_drop(self, event):
+        # Prevent execution if Drag and Drop setting is disabled
+        if self.chk_enable_dnd.get() == 0:
+            return
+
+        # Safely split list of paths provided by tkinterdnd2 library
+        paths = self.tk.splitlist(event.data)
+
+        valid_files = []
+        invalid_files = []
+
+        for path in paths:
+            if os.path.isfile(path) and path.lower().endswith(".srt"):
+                valid_files.append(path)
+            else:
+                invalid_files.append(path)
+
+        if not valid_files:
+            messagebox.showerror("Invalid Drop", "No valid SRT files were dropped.\nPlease drop only '.srt' files.")
+            return
+
+        if invalid_files:
+            messagebox.showwarning(
+                "Warning", "Some dropped items were ignored.\nFolders or non-SRT file extensions are not supported."
+            )
+
+        confirm = messagebox.askyesno(
+            "Confirm Process",
+            f"Do you want to process {len(valid_files)} dropped file(s) with the current settings?",
+        )
+
+        if not confirm:
+            return
+
+        self.attributes("-disabled", True)
+        self.save_config()
+
+        run_options = self._get_run_options()
+        processor = SubtitleProcessor("", options=run_options, target_files=valid_files)
+
+        # Wrapping in a background thread to prevent UI freezing just like start_single_process_threaded
+        threading.Thread(target=self._run_processing_pipeline, args=(processor, True), daemon=True).start()
 
     def donate(self):
         """Opens a donation window with options to support the project."""
