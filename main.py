@@ -552,9 +552,27 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.chk_remove_empty_tags.grid(row=1, column=0, padx=5, pady=5, sticky="w")
 
+        # Checkbox for Removing Negative Timecodes
+        self.chk_remove_negative_timecodes = ctk.CTkCheckBox(
+            self.postprocess_inner_frame,
+            text="Remove Negative Timecodes - (Triggers Reformat & Renumber)",
+            font=font_bold,
+            command=self.on_reformat_dependency_toggle,
+        )
+        self.chk_remove_negative_timecodes.grid(row=2, column=0, padx=5, pady=5, sticky="w")
+
+        # Checkbox for Removing Empty Subtitles
+        self.chk_remove_empty_subtitles = ctk.CTkCheckBox(
+            self.postprocess_inner_frame,
+            text="Remove Empty Subtitles - (Triggers Reformat & Renumber)",
+            font=font_bold,
+            command=self.on_reformat_dependency_toggle,
+        )
+        self.chk_remove_empty_subtitles.grid(row=3, column=0, padx=5, pady=5, sticky="w")
+
         # Intro Credit Subtitle Container Frame
         self.intro_credit_frame = ctk.CTkFrame(self.postprocess_inner_frame, fg_color="transparent")
-        self.intro_credit_frame.grid(row=2, column=0, padx=5, pady=5, sticky="w")
+        self.intro_credit_frame.grid(row=4, column=0, padx=5, pady=5, sticky="w")
 
         self.chk_add_intro_credit = ctk.CTkCheckBox(
             self.intro_credit_frame,
@@ -581,26 +599,8 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         self.opt_intro_credit_duration.set("8")
 
         self.txt_intro_credit_text = ctk.CTkTextbox(self.postprocess_inner_frame, height=55)
-        self.txt_intro_credit_text.grid(row=3, column=0, padx=5, pady=(0, 5), sticky="ew")
+        self.txt_intro_credit_text.grid(row=5, column=0, padx=5, pady=(0, 5), sticky="ew")
         setup_enhanced_textbox(self.txt_intro_credit_text)
-
-        # Checkbox for Removing Negative Timecodes
-        self.chk_remove_negative_timecodes = ctk.CTkCheckBox(
-            self.postprocess_inner_frame,
-            text="Remove Negative Timecodes - (Triggers Reformat & Renumber)",
-            font=font_bold,
-            command=self.on_reformat_dependency_toggle,
-        )
-        self.chk_remove_negative_timecodes.grid(row=4, column=0, padx=5, pady=5, sticky="w")
-
-        # Checkbox for Removing Empty Subtitles
-        self.chk_remove_empty_subtitles = ctk.CTkCheckBox(
-            self.postprocess_inner_frame,
-            text="Remove Empty Subtitles - (Triggers Reformat & Renumber)",
-            font=font_bold,
-            command=self.on_reformat_dependency_toggle,
-        )
-        self.chk_remove_empty_subtitles.grid(row=5, column=0, padx=5, pady=5, sticky="w")
 
         # Checkbox for Reformat & Renumber
         self.chk_reformat_renumber = ctk.CTkCheckBox(

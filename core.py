@@ -464,6 +464,43 @@ class SubtitleProcessor:
                 ):
                     blocks = parse_srt_blocks(processed_lines)
 
+                    # Option: Remove Negative Timecodes
+                    if self.options.get("remove_negative_timecodes", 1):
+                        filtered_blocks = []
+                        for b in blocks:
+                            if (
+                                b["start_ms"] < 0
+                                or b["end_ms"] < 0
+                                or b["start_str"].startswith("-")
+                                or b["end_str"].startswith("-")
+                            ):
+                                file_has_changes = True
+                                if self.options.get("detailed_subtitle_logs", 1):
+                                    b_index = b["index"]
+                                    b_start = b["start_str"]
+                                    b_end = b["end_str"]
+                                    log_msg = f'Subtitle block removed | Option: Remove Negative Timecodes | Index: "{b_index}" | Timecode: "{b_start} --> {b_end}"'
+                                    Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+                            else:
+                                filtered_blocks.append(b)
+                        blocks = filtered_blocks
+
+                    # Option: Remove Empty Subtitles
+                    if self.options.get("remove_empty_subtitles", 1):
+                        filtered_blocks = []
+                        for b in blocks:
+                            text_content = "".join(b["text_lines"]).strip()
+                            if not text_content:
+                                file_has_changes = True
+                                if self.options.get("detailed_subtitle_logs", 1):
+                                    b_index = b["index"]
+                                    b_start = b["start_str"]
+                                    b_end = b["end_str"]
+                                    log_msg = f'Subtitle block removed | Option: Remove Empty Subtitles | Index: "{b_index}" | Timecode: "{b_start} --> {b_end}"'
+                                    Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+                            else:
+                                filtered_blocks.append(b)
+                        blocks = filtered_blocks
                     # Option: Add Intro Credit Subtitle
                     if self.options.get("add_intro_credit", 0):
                         credit_text = self.options.get("intro_credit_text", "").strip()
@@ -553,44 +590,6 @@ class SubtitleProcessor:
                                             if self.options.get("detailed_subtitle_logs", 1):
                                                 log_msg = f'Intro credit subtitle added at the end | Timecode: "{ms_to_timecode(start_time_ms)} --> {ms_to_timecode(end_time_ms)}"'
                                                 Logger.log_subtitle_change(current_file_dir, filename, log_msg)
-
-                    # Option: Remove Negative Timecodes
-                    if self.options.get("remove_negative_timecodes", 1):
-                        filtered_blocks = []
-                        for b in blocks:
-                            if (
-                                b["start_ms"] < 0
-                                or b["end_ms"] < 0
-                                or b["start_str"].startswith("-")
-                                or b["end_str"].startswith("-")
-                            ):
-                                file_has_changes = True
-                                if self.options.get("detailed_subtitle_logs", 1):
-                                    b_index = b["index"]
-                                    b_start = b["start_str"]
-                                    b_end = b["end_str"]
-                                    log_msg = f'Subtitle block removed | Option: Remove Negative Timecodes | Index: "{b_index}" | Timecode: "{b_start} --> {b_end}"'
-                                    Logger.log_subtitle_change(current_file_dir, filename, log_msg)
-                            else:
-                                filtered_blocks.append(b)
-                        blocks = filtered_blocks
-
-                    # Option: Remove Empty Subtitles
-                    if self.options.get("remove_empty_subtitles", 1):
-                        filtered_blocks = []
-                        for b in blocks:
-                            text_content = "".join(b["text_lines"]).strip()
-                            if not text_content:
-                                file_has_changes = True
-                                if self.options.get("detailed_subtitle_logs", 1):
-                                    b_index = b["index"]
-                                    b_start = b["start_str"]
-                                    b_end = b["end_str"]
-                                    log_msg = f'Subtitle block removed | Option: Remove Empty Subtitles | Index: "{b_index}" | Timecode: "{b_start} --> {b_end}"'
-                                    Logger.log_subtitle_change(current_file_dir, filename, log_msg)
-                            else:
-                                filtered_blocks.append(b)
-                        blocks = filtered_blocks
 
                     # Option: Reformat & Renumber Subtitles
                     if self.options.get("reformat_renumber", 1):
