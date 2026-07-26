@@ -211,15 +211,26 @@ class SubtitleProcessor:
             Logger.log_process(f"Identified file: {filename}", current_file_dir)
 
             try:
-                # Smart encoding reader. Tries UTF-8 first, falls back to cp1256 (Windows Arabic)
+                # Smart encoding reader. Tries multiple encodings to handle UTF-16, UTF-8, ANSI, etc.
+                encodings_to_try = ["utf-8", "utf-8-sig", "utf-16", "cp1256", "cp1252"]
                 file_encoding = "utf-8"
-                try:
-                    with open(file_path, "r", encoding="utf-8") as f:
+                lines = []
+
+                for enc in encodings_to_try:
+                    try:
+                        with open(file_path, "r", encoding=enc) as f:
+                            lines = f.readlines()
+                        file_encoding = enc
+                        break
+                    except UnicodeError:
+                        continue
+                else:
+                    # Fallback if all fail
+                    file_encoding = "utf-8"
+                    with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                         lines = f.readlines()
-                except UnicodeDecodeError:
-                    file_encoding = "cp1256"
-                    with open(file_path, "r", encoding="cp1256", errors="ignore") as f:
-                        lines = f.readlines()
+
+                Logger.log_process(f"Identified encoding: {file_encoding}", current_file_dir)
 
                 processed_lines = []
                 file_has_changes = False
