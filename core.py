@@ -268,6 +268,26 @@ class SubtitleProcessor:
                             log_msg = f'Line {index} modified | Option: Pre-Process Trim Spaces | Before: "{orig_clean}" -> After: "{curr_clean}"'
                             Logger.log_subtitle_change(current_file_dir, filename, log_msg)
 
+                    # Apply Pre-Process Option: Remove Standalone Dots
+                    if self.options.get("remove_standalone_dots", 1) and not is_timecode_or_index:
+                        before_dots = current_line
+
+                        # Remove standalone dot at the start of the line (ignores HTML tags prefix)
+                        current_line = re.sub(r"^((?:\s|<[^>]+>)*)\.\s*(?![.\-:;!?؟،,*~_|])", r"\1", current_line)
+
+                        # Remove standalone dot at the end of the line (ignores HTML tags suffix)
+                        current_line = re.sub(
+                            r"(?<![.\-:;!?؟،,*~_|])\s*\.(?=(?:\s|</[^>]+>)*(?:\r\n|\n)?$)", "", current_line
+                        )
+
+                        if current_line != before_dots:
+                            file_has_changes = True
+                            if self.options.get("detailed_subtitle_logs", 1):
+                                b_clean = before_dots.rstrip("\n")
+                                c_clean = current_line.rstrip("\n")
+                                log_msg = f'Line {index} modified | Option: Pre-Process Remove Standalone Dots | Before: "{b_clean}" -> After: "{c_clean}"'
+                                Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+
                     # Option: Convert English Question Marks to Persian
                     if self.options.get("persian_question_mark", 1) and not is_timecode_or_index:
                         before_q = current_line
@@ -537,7 +557,10 @@ class SubtitleProcessor:
                             ):
                                 file_has_changes = True
                                 if self.options.get("detailed_subtitle_logs", 1):
-                                    log_msg = f'Subtitle block removed | Option: Remove Negative Timecodes | Index: "{b["index"]}" | Timecode: "{b["start_str"]} --> {b["end_str"]}"'
+                                    b_index = b["index"]
+                                    b_start = b["start_str"]
+                                    b_end = b["end_str"]
+                                    log_msg = f'Subtitle block removed | Option: Remove Negative Timecodes | Index: "{b_index}" | Timecode: "{b_start} --> {b_end}"'
                                     Logger.log_subtitle_change(current_file_dir, filename, log_msg)
                             else:
                                 filtered_blocks.append(b)
@@ -551,7 +574,10 @@ class SubtitleProcessor:
                             if not text_content:
                                 file_has_changes = True
                                 if self.options.get("detailed_subtitle_logs", 1):
-                                    log_msg = f'Subtitle block removed | Option: Remove Empty Subtitles | Index: "{b["index"]}" | Timecode: "{b["start_str"]} --> {b["end_str"]}"'
+                                    b_index = b["index"]
+                                    b_start = b["start_str"]
+                                    b_end = b["end_str"]
+                                    log_msg = f'Subtitle block removed | Option: Remove Empty Subtitles | Index: "{b_index}" | Timecode: "{b_start} --> {b_end}"'
                                     Logger.log_subtitle_change(current_file_dir, filename, log_msg)
                             else:
                                 filtered_blocks.append(b)
