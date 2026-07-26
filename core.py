@@ -272,12 +272,21 @@ class SubtitleProcessor:
                     if self.options.get("remove_standalone_dots", 1) and not is_timecode_or_index:
                         before_dots = current_line
 
-                        # Remove standalone dot at the start of the line (ignores HTML tags prefix)
-                        current_line = re.sub(r"^((?:\s|<[^>]+>)*)\.\s*(?![.\-:;!?؟،,*~_|])", r"\1", current_line)
+                        # Whitespace + Zero-Width & Invisible Formatting Characters (\u200c=ZWNJ, \u200d=ZWJ, \u200e=LRM, \u200f=RLM, \ufeff=BOM)
+                        zw_space = r"[\s\u200c\u200d\u200e\u200f\ufeff]"
 
-                        # Remove standalone dot at the end of the line (ignores HTML tags suffix)
+                        # Remove standalone dot at the start of the line (ignores HTML tags & zero-width chars prefix)
                         current_line = re.sub(
-                            r"(?<![.\-:;!?؟،,*~_|])\s*\.(?=(?:\s|</[^>]+>)*(?:\r\n|\n)?$)", "", current_line
+                            rf"^((?:{zw_space}|<[^>]+>)*)\.(?!{zw_space}*[.\-:;!?؟،,*~_|]){zw_space}*",
+                            r"\1",
+                            current_line,
+                        )
+
+                        # Remove standalone dot at the end of the line (ignores HTML tags & zero-width chars suffix)
+                        current_line = re.sub(
+                            rf"(?<![.\-:;!?؟،,*~_|\s\u200c\u200d\u200e\u200f\ufeff]){zw_space}*\.(?=(?:{zw_space}|</[^>]+>)*(?:\r\n|\n)?$)",
+                            "",
+                            current_line,
                         )
 
                         if current_line != before_dots:
