@@ -268,6 +268,38 @@ class SubtitleProcessor:
                             log_msg = f'Line {index} modified | Option: Pre-Process Trim Spaces | Before: "{orig_clean}" -> After: "{curr_clean}"'
                             Logger.log_subtitle_change(current_file_dir, filename, log_msg)
 
+                    # Apply Pre-Process Option: Remove Unneeded Spaces
+                    if self.options.get("remove_unneeded_spaces", 1) and not is_timecode_or_index:
+                        before_unneeded = current_line
+                        # Standard rule: convert 2 or more spaces/tabs into a single space
+                        current_line = re.sub(r"[ \t]{2,}", " ", current_line)
+
+                        if current_line != before_unneeded:
+                            file_has_changes = True
+                            if self.options.get("detailed_subtitle_logs", 1):
+                                b_clean = before_unneeded.rstrip("\n")
+                                c_clean = current_line.rstrip("\n")
+                                log_msg = f'Line {index} modified | Option: Pre-Process Remove Unneeded Spaces | Before: "{b_clean}" -> After: "{c_clean}"'
+                                Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+
+                    # Apply Pre-Process Option: Fix Abbreviations
+                    if self.options.get("fix_abbreviations", 1) and not is_timecode_or_index:
+                        before_abbr = current_line
+                        # Pattern to fix spaced abbreviations like "F. B. I." or "A. B. C"
+                        temp_line = current_line
+                        pattern = re.compile(r"(?<=\b[a-zA-Z]\.)[ \t]+(?=[a-zA-Z](?:\.|\b))")
+                        while pattern.search(temp_line):
+                            temp_line = pattern.sub("", temp_line)
+                        current_line = temp_line
+
+                        if current_line != before_abbr:
+                            file_has_changes = True
+                            if self.options.get("detailed_subtitle_logs", 1):
+                                b_clean = before_abbr.rstrip("\n")
+                                c_clean = current_line.rstrip("\n")
+                                log_msg = f'Line {index} modified | Option: Pre-Process Fix Abbreviations | Before: "{b_clean}" -> After: "{c_clean}"'
+                                Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+
                     # Apply Pre-Process Option: Remove Standalone Dots
                     if self.options.get("remove_standalone_dots", 1) and not is_timecode_or_index:
                         before_dots = current_line

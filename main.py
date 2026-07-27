@@ -444,13 +444,29 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.chk_trim_spaces.grid(row=0, column=0, padx=5, pady=5, sticky="w")
 
+        # Option: Remove Unneeded Spaces
+        self.chk_remove_unneeded_spaces = ctk.CTkCheckBox(
+            self.preprocess_inner_frame,
+            text="Remove Unneeded Spaces (Converts multiple spaces into one)",
+            font=font_bold,
+        )
+        self.chk_remove_unneeded_spaces.grid(row=1, column=0, padx=5, pady=5, sticky="w")
+
+        # Option: Fix Abbreviations
+        self.chk_fix_abbreviations = ctk.CTkCheckBox(
+            self.preprocess_inner_frame,
+            text="Fix Abbreviations (e.g., F. B. I. to F.B.I.)",
+            font=font_bold,
+        )
+        self.chk_fix_abbreviations.grid(row=2, column=0, padx=5, pady=5, sticky="w")
+
         # Remove standalone dots at start/end of lines
         self.chk_remove_standalone_dots = ctk.CTkCheckBox(
             self.preprocess_inner_frame,
             text="Remove standalone dots at the beginning and end of lines",
             font=font_bold,
         )
-        self.chk_remove_standalone_dots.grid(row=1, column=0, padx=5, pady=5, sticky="w")
+        self.chk_remove_standalone_dots.grid(row=3, column=0, padx=5, pady=5, sticky="w")
 
         # Checkbox for English question mark to Persian conversion
         self.chk_persian_question_mark = ctk.CTkCheckBox(
@@ -459,7 +475,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             font=font_bold,
             command=self.on_preprocess_dependency_toggle,
         )
-        self.chk_persian_question_mark.grid(row=2, column=0, padx=5, pady=5, sticky="w")
+        self.chk_persian_question_mark.grid(row=4, column=0, padx=5, pady=5, sticky="w")
 
         # Checkbox for Arabic characters to Persian conversion
         self.chk_arabic_char = ctk.CTkCheckBox(
@@ -468,7 +484,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             font=font_bold,
             command=self.on_preprocess_dependency_toggle,
         )
-        self.chk_arabic_char.grid(row=3, column=0, padx=5, pady=5, sticky="w")
+        self.chk_arabic_char.grid(row=5, column=0, padx=5, pady=5, sticky="w")
 
         # Checkbox for Arabic numerals to Persian numerals conversion
         self.chk_arabic_num = ctk.CTkCheckBox(
@@ -477,7 +493,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             font=font_bold,
             command=self.on_preprocess_dependency_toggle,
         )
-        self.chk_arabic_num.grid(row=4, column=0, padx=5, pady=5, sticky="w")
+        self.chk_arabic_num.grid(row=6, column=0, padx=5, pady=5, sticky="w")
 
         # Checkbox for English numerals conditionally
         self.chk_english_num = ctk.CTkCheckBox(
@@ -486,7 +502,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             font=font_bold,
             command=self.on_preprocess_dependency_toggle,
         )
-        self.chk_english_num.grid(row=5, column=0, padx=5, pady=5, sticky="w")
+        self.chk_english_num.grid(row=7, column=0, padx=5, pady=5, sticky="w")
 
         # --- Process Tab ---
         self.process_inner_frame = ctk.CTkScrollableFrame(self.tab_process)
@@ -891,6 +907,16 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         else:
             self.chk_trim_spaces.deselect()
 
+        if config.get("remove_unneeded_spaces", 1) == 1:
+            self.chk_remove_unneeded_spaces.select()
+        else:
+            self.chk_remove_unneeded_spaces.deselect()
+
+        if config.get("fix_abbreviations", 1) == 1:
+            self.chk_fix_abbreviations.select()
+        else:
+            self.chk_fix_abbreviations.deselect()
+
         if config.get("remove_standalone_dots", 1) == 1:
             self.chk_remove_standalone_dots.select()
         else:
@@ -1068,6 +1094,8 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             "is_maximized": is_max,
             "save_logs": self.log_switch.get(),
             "trim_spaces": self.chk_trim_spaces.get(),
+            "remove_unneeded_spaces": self.chk_remove_unneeded_spaces.get(),
+            "fix_abbreviations": self.chk_fix_abbreviations.get(),
             "remove_standalone_dots": self.chk_remove_standalone_dots.get(),
             "persian_question_mark": self.chk_persian_question_mark.get(),
             "arabic_char_to_persian": self.chk_arabic_char.get(),
@@ -1130,6 +1158,8 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         self.log_switch.configure(state="disabled")
 
         self.chk_trim_spaces.select()
+        self.chk_remove_unneeded_spaces.select()
+        self.chk_fix_abbreviations.select()
         self.chk_remove_standalone_dots.select()
         self.chk_persian_question_mark.select()
         self.chk_arabic_char.select()
@@ -1330,6 +1360,8 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         # Helper to collect options dictionary
         return {
             "trim_spaces": self.chk_trim_spaces.get(),
+            "remove_unneeded_spaces": self.chk_remove_unneeded_spaces.get(),
+            "fix_abbreviations": self.chk_fix_abbreviations.get(),
             "remove_standalone_dots": self.chk_remove_standalone_dots.get(),
             "persian_question_mark": self.chk_persian_question_mark.get(),
             "arabic_char_to_persian": self.chk_arabic_char.get(),
