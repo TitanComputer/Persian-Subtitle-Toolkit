@@ -608,6 +608,44 @@ class SubtitleProcessor:
                             log_msg = f"Reformat & Renumber completed | Total blocks renumbered: {len(blocks)}"
                             Logger.log_subtitle_change(current_file_dir, filename, log_msg)
 
+                # Option: Post-Process Force RTL (Remove control chars and force Right-To-Left)
+                # Executed after reformat and renumber block as requested
+                if self.options.get("force_rtl", 1):
+                    rtl_processed_lines = []
+                    rtl_modified_lines_count = 0
+
+                    # Remove specific control characters
+                    ctrl_chars = ["\u200e", "\u200f", "\u202a", "\u202b", "\u202c", "\u202d", "\u202e"]
+
+                    for line in processed_lines:
+                        if index_pattern.match(line) or timecode_pattern.match(line) or not line.strip():
+                            rtl_processed_lines.append(line)
+                        else:
+                            original_text_line = line
+                            clean_text = line
+
+                            for char in ctrl_chars:
+                                clean_text = clean_text.replace(char, "")
+
+                            # Prepend RTL control character to the line (and append closing character)
+                            if clean_text.strip():
+                                line_stripped = clean_text.rstrip("\r\n")
+                                line_ending = clean_text[len(line_stripped) :]
+                                clean_text = "\u202b" + line_stripped + "\u202c" + line_ending
+
+                            if clean_text != original_text_line:
+                                file_has_changes = True
+                                rtl_modified_lines_count += 1
+
+                            rtl_processed_lines.append(clean_text)
+
+                    # Log total RTL changes once at the end if any lines were modified
+                    if rtl_modified_lines_count > 0 and self.options.get("detailed_subtitle_logs", 1):
+                        log_msg = f"Total subtitle lines RTL formatted: {rtl_modified_lines_count}"
+                        Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+
+                    processed_lines = rtl_processed_lines
+
                 # Construct output file path structure
                 name_part, ext_part = os.path.splitext(filename)
                 output_filename = f"{name_part}_Edited{ext_part}"

@@ -1,7 +1,7 @@
 import os
 import sys
 
-APP_VERSION = "0.11.2"
+APP_VERSION = "0.12.0"
 APP_NAME = "Persian Subtitle Toolkit"
 CONFIG_FILENAME = "config.json"
 
@@ -32,6 +32,7 @@ DEFAULT_CONFIG = {
     "add_intro_credit": 0,
     "intro_credit_duration": "8",
     "intro_credit_text": "",
+    "force_rtl": 1,
     "remove_negative_timecodes": 1,
     "remove_empty_subtitles": 1,
     "reformat_renumber": 1,

@@ -572,7 +572,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
 
         # Intro Credit Subtitle Container Frame
         self.intro_credit_frame = ctk.CTkFrame(self.postprocess_inner_frame, fg_color="transparent")
-        self.intro_credit_frame.grid(row=4, column=0, padx=5, pady=5, sticky="w")
+        self.intro_credit_frame.grid(row=4, column=0, padx=5, pady=(0, 5), sticky="w")
 
         self.chk_add_intro_credit = ctk.CTkCheckBox(
             self.intro_credit_frame,
@@ -611,6 +611,14 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.chk_reformat_renumber.grid(row=6, column=0, padx=5, pady=5, sticky="w")
 
+        # Checkbox for Force RTL
+        self.chk_force_rtl = ctk.CTkCheckBox(
+            self.postprocess_inner_frame,
+            text="Force RTL (Remove control characters and apply RTL mark)",
+            font=font_bold,
+        )
+        self.chk_force_rtl.grid(row=7, column=0, padx=5, pady=5, sticky="w")
+
         # UTF-8 encoding save option
         self.chk_encode_utf8 = ctk.CTkCheckBox(
             self.postprocess_inner_frame,
@@ -618,7 +626,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             font=font_bold,
             command=self.on_utf8_toggle,
         )
-        self.chk_encode_utf8.grid(row=7, column=0, padx=5, pady=5, sticky="w")
+        self.chk_encode_utf8.grid(row=8, column=0, padx=5, pady=5, sticky="w")
 
         # --- Extra Options Tab ---
         self.extra_inner_frame = ctk.CTkScrollableFrame(self.tab_extra)
@@ -980,6 +988,11 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         self.txt_intro_credit_text._original_text = credit_txt
         textbox_focus_out(self.txt_intro_credit_text)
 
+        if config.get("force_rtl", 1) == 1:
+            self.chk_force_rtl.select()
+        else:
+            self.chk_force_rtl.deselect()
+
         if config.get("remove_negative_timecodes", 1) == 1:
             self.chk_remove_negative_timecodes.select()
         else:
@@ -1068,6 +1081,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             "add_intro_credit": self.chk_add_intro_credit.get(),
             "intro_credit_duration": self.opt_intro_credit_duration.get(),
             "intro_credit_text": getattr(self.txt_intro_credit_text, "_original_text", ""),
+            "force_rtl": self.chk_force_rtl.get(),
             "remove_negative_timecodes": self.chk_remove_negative_timecodes.get(),
             "remove_empty_subtitles": self.chk_remove_empty_subtitles.get(),
             "reformat_renumber": self.chk_reformat_renumber.get(),
@@ -1146,6 +1160,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         self.txt_intro_credit_text._original_text = ""
         check_and_apply_rtl(self.txt_intro_credit_text._textbox)
 
+        self.chk_force_rtl.select()
         self.chk_remove_negative_timecodes.select()
         self.chk_remove_empty_subtitles.select()
         self.chk_reformat_renumber.select()
@@ -1328,6 +1343,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             "add_intro_credit": self.chk_add_intro_credit.get(),
             "intro_credit_duration": self.opt_intro_credit_duration.get(),
             "intro_credit_text": getattr(self.txt_intro_credit_text, "_original_text", ""),
+            "force_rtl": self.chk_force_rtl.get(),
             "remove_negative_timecodes": self.chk_remove_negative_timecodes.get(),
             "remove_empty_subtitles": self.chk_remove_empty_subtitles.get(),
             "reformat_renumber": self.chk_reformat_renumber.get(),
