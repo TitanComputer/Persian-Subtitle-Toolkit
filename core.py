@@ -366,6 +366,143 @@ class SubtitleProcessor:
             ("‌اِم.آی.6", " اِم.آی.6", False),
         ]
 
+        # Structure of rule lists for formatting processing parsed exactly from XML files
+        comma_rules_list = [
+            (" ، ", "، ", False),
+            (" ،", "،", False),
+            (re.compile(r"^، "), "،", True),
+            (re.compile(r"^<i>، "), "<i>،", True),
+            (">، ", ">،", False),
+            (re.compile(r"^<b>، "), "<b>،", True),
+            (re.compile(r'^"، '), '"،', True),
+            (re.compile(r"^'، "), "'،", True),
+            (re.compile(r"\n، "), "\n،", True),
+            (re.compile(r"\n<i>، "), "\n<i>،", True),
+            (re.compile(r"\n<b>، "), "\n<b>،", True),
+            (re.compile(r'\n"، '), '\n"،', True),
+            (re.compile(r"\n'، "), "\n'،", True),
+            (re.compile(r"، \n"), "\n", True),
+            (re.compile(r"،\n"), "\n", True),
+            (re.compile(r"، $"), "", True),
+            (re.compile(r"،$"), "", True),
+            (re.compile(r">، \b"), ">،", True),
+            (re.compile(r"(،+)"), "،", True),
+            (re.compile(r"([a-zA-Z\d])(،)([a-zA-Z\d])"), r"\1 \2\3", True),
+            (re.compile(r"([\u0600-\u06FF\d]+)( *)(،)( *)([\u0600-\u06FF\d]+)"), r"\1\3 \5", True),
+            (re.compile(r'\b(")( *)([،؟\.!])( *)\b'), r"\1\3 ", True),
+            (re.compile(r"([^\u0000-\u007F])( *)(,)( *)([^\u0000-\u007F])"), r"\1، \5", True),
+            (re.compile(r'([^\u0000-\u007F])( *)(,)( *)([^-<>" ])'), r"\1، \5", True),
+            (re.compile(r"([^\u0000-\u007F])( *)(،)( *)([^\u0000-\u007F])"), r"\1\3 \5", True),
+            (re.compile(r'([^\u0000-\u007F])( *)(،)( *)([^-<>" ])'), r"\1\3 \5", True),
+            (re.compile(r'\b(،\s)((["\-0-9]*)([A-Za-z]+)(["\-0-9]*))([\s]*)\b'), r" ،\2\6", True),
+            ('"،"', '"، "', False),
+        ]
+
+        exclamation_rules_list = [
+            (" ! ", "! ", False),
+            (re.compile(r"(\b[\w\d\s]+\b)( *)(\!)( *)(\b[\w\d\s]+\b)"), r"\1\3 \5", True),
+            (re.compile(r"(\b[^\u0000-\u007F]+\b)( *)(\!)( *)(\b[^\u0000-\u007F]+\b)"), r"\1\3 \5", True),
+            (re.compile(r"^(\<[^<>]+\>)*(\!)( )"), r"\1\2", True),
+            (re.compile(r'^"! '), '"!', True),
+            (re.compile(r"^'! "), "'!", True),
+            (re.compile(r"\n(\<[^<>]+\>)*(\!)( )"), r"\n\1\2", True),
+            (re.compile(r'\n"! '), '\n"!', True),
+            (re.compile(r"\n'! "), "\n'!", True),
+            (re.compile(r"! \n"), "\n", True),
+            (re.compile(r'! "\n'), '"\n', True),
+            (re.compile(r"! $"), "", True),
+            (re.compile(r'! "$'), '"', True),
+            (re.compile(r"(\!)( )(\<[^<>]+\>)"), r"\1\3", True),
+            (re.compile(r"^(\!)(.*)(\-*)(\!)( *)(\-*)\n"), r"\1\2\3\5\6\n", True),
+            (re.compile(r"\n(\!)(.*)(\-*)(\!)( *)(\-*)$"), r"\n\1\2\3\5\6", True),
+            (re.compile(r"^(.*)( *)(\-*)(\!)( *)(\-*)\n"), r"\4\1\2\3\5\6\n", True),
+            (re.compile(r"\n(.*)( *)(\-*)(\!)( *)(\-*)$"), r"\n\4\1\2\3\5\6", True),
+            (re.compile(r"(\b[^\u0000-\u007F]+\b)( *)(\!)( *)([^\-\<\>\"\! ])"), r"\1\3 \5", True),
+        ]
+
+        parentheses_rules_list = [
+            (re.compile(r"( *)(\()( *)(\b[\w\d ]+\b)( *)(\))( *)"), r"\1\2\4\6\7", True),
+            (re.compile(r"( *)(\[)( *)(\b[\w\d ]+\b)( *)(\])( *)"), r"\1\2\4\6\7", True),
+            (re.compile(r"( *)(\{)( *)(\b[\w\d ]+\b)( *)(\})( *)"), r"\1\2\4\6\7", True),
+            (
+                re.compile(r"^(\<[^<>]+\>)*( *)(\))( *)([\w\d\.\,\?\،\؟\!\ ]+)( *)(\()( *)(\<[^<>]+\>)*( *)$"),
+                r"\1\7\5\3\9",
+                True,
+            ),
+            (
+                re.compile(r"^(\<[^<>]+\>)*( *)(\))( *)([\w\d\.\,\?\،\؟\!\ ]+)( *)(\()( *)(-*)( *)(\<[^<>]+\>)*( *)\n"),
+                r"\1\7\5\3\9\11\n",
+                True,
+            ),
+            (
+                re.compile(r"\n(\<[^<>]+\>)*( *)(\))( *)([\w\d\.\,\?\،\؟\!\ ]+)( *)(\()( *)(-*)( *)(\<[^<>]+\>)*( *)$"),
+                r"\n\1\7\5\3\9\11",
+                True,
+            ),
+            (
+                re.compile(r"^(\<[^<>]+\>)*( *)(\])( *)([\w\d\.\,\?\،\؟\!\ ]+)( *)(\[)( *)(\<[^<>]+\>)*( *)$"),
+                r"\1\7\5\3\9",
+                True,
+            ),
+            (
+                re.compile(r"^(\<[^<>]+\>)*( *)(\])( *)([\w\d\.\,\?\،\؟\!\ ]+)( *)(\[)( *)(-*)( *)(\<[^<>]+\>)*( *)\n"),
+                r"\1\7\5\3\9\11\n",
+                True,
+            ),
+            (
+                re.compile(r"\n(\<[^<>]+\>)*( *)(\])( *)([\w\d\.\,\?\،\؟\!\ ]+)( *)(\[)( *)(-*)( *)(\<[^<>]+\>)*( *)$"),
+                r"\n\1\7\5\3\9\11",
+                True,
+            ),
+            (re.compile(r"^([^\(\)\[\]]+)( *)(\))([^\(\)\[\]]{5,})(\()( *)([^\(\)\[\]]+)$"), r"\1\2\5\4\3\6\7", True),
+            (re.compile(r"^([^\(\)\[\]]+)( *)(\])([^\(\)\[\]]{5,})(\[)( *)([^\(\)\[\]]+)$"), r"\1\2\5\4\3\6\7", True),
+            (re.compile(r"^([^\(\)\[\]]+)(\()( *)(\n)( *)(\))([^\(\)\[\]]+)$"), r"\1\6\4\2\7", True),
+            (re.compile(r"^([^\(\)\[\]]+)(\[)( *)(\n)( *)(\])([^\(\)\[\]]+)$"), r"\1\6\4\2\7", True),
+            (
+                re.compile(
+                    r"^(\<[^<>]+\>)*( *)(\()([^\(\)\[\]]+)(-*)( *)(\<[^<>]+\>)*( *)(\n)(\<[^<>]+\>)*([^\(\)\[\]]+)(\))( *)(-*)( *)(\<[^<>]+\>)*$"
+                ),
+                r"\1\4\12\5\7\9\10\3\11\13\14\16",
+                True,
+            ),
+            (
+                re.compile(
+                    r"^(\<[^<>]+\>)*( *)(\[)([^\(\)\[\]]+)(-*)( *)(\<[^<>]+\>)*( *)(\n)(\<[^<>]+\>)*([^\(\)\[\]]+)(\])( *)(-*)( *)(\<[^<>]+\>)*$"
+                ),
+                r"\1\4\12\5\7\9\10\3\11\13\14\16",
+                True,
+            ),
+            (re.compile(r"([\(\[\{])( )"), r"\1", True),
+            (re.compile(r"( )([\)\]\}])"), r"\2", True),
+            (re.compile(r"(\b[\w\d ]+\b)( *)(\()( *)(\b[\w\d ]+\b)( *)(\))( *)(\b[\w\d ]+\b)"), r"\1 \3\5\7 \9", True),
+        ]
+
+        question_mark_rules_list = [
+            ("؟،", "؟", False),
+            (" ؟ ", "؟ ", False),
+            (">؟ ", ">", False),
+            (re.compile(r"\n؟ "), "\n", True),
+            ("؟ \n", "؟\n", False),
+            (re.compile(r"؟ $"), "؟", True),
+            ("؟ </i>", "؟</i>", False),
+            ("؟ </b>", "؟</b>", False),
+            ("؟ <", "؟<", False),
+            ("؟ )", "؟)", False),
+            (re.compile(r" ؟\.\.\."), "؟...", True),
+            (re.compile(r"\b!؟ "), "؟ ", True),
+            (re.compile(r"\b!؟\n"), "؟\n", True),
+            (re.compile(r"\b!؟$"), "؟", True),
+            ("؟ ؟", "؟", False),
+            (re.compile(r"؟+(؟|$)"), "؟", True),
+            (" ؟ ", "؟ ", False),
+            (re.compile(r" ؟(\!)+"), "؟!", True),
+            (re.compile(r"^(؟)( )*([a-zA-Z0-9]+)(.*)$"), r"\1\3\4", True),
+            (re.compile(r"(\b)(\.)(؟)"), r"\1\3", True),
+            (re.compile(r"([^\u0000-\u007F])( *)(؟)( *)([^\u0000-\u007F])"), r"\1\3 \5", True),
+            (re.compile(r"([^\u0000-\u007F])( *)(؟)( *)([\w\d])"), r"\1\3 \5", True),
+            (re.compile(r'\b"؟"\b'), '"؟ "', True),
+        ]
+
         # Regex patterns to identify timecodes and index lines accurately
         timecode_pattern = re.compile(r"^\d{2}:\d{2}:\d{2},\d{3}\s*-->\s*\d{2}:\d{2}:\d{2},\d{3}")
         index_pattern = re.compile(r"^\d+\s*$")
@@ -524,10 +661,11 @@ class SubtitleProcessor:
                         before_comma = current_line
                         temp_line = current_line
 
-                        # Remove spaces before comma or Persian comma
-                        temp_line = re.sub(r"[ \t]+([,،])", r"\1", temp_line)
-                        # Ensure a single space after comma if it is not followed by a space or number
-                        temp_line = re.sub(r"([,،])(?=[^\s\d])", r"\1 ", temp_line)
+                        for rule_pattern, replace_with, is_regex in comma_rules_list:
+                            if is_regex:
+                                temp_line = rule_pattern.sub(replace_with, temp_line)
+                            else:
+                                temp_line = temp_line.replace(rule_pattern, replace_with)
 
                         current_line = temp_line
 
@@ -542,9 +680,15 @@ class SubtitleProcessor:
                     # Apply Pre-Process Option: Exclamation Mark Fixes
                     if self.options.get("exclamation_fixes", 1) and not is_timecode_or_index:
                         before_excl = current_line
+                        temp_line = current_line
 
-                        # Remove spaces before exclamation mark
-                        current_line = re.sub(r"[ \t]+(!)", r"\1", current_line)
+                        for rule_pattern, replace_with, is_regex in exclamation_rules_list:
+                            if is_regex:
+                                temp_line = rule_pattern.sub(replace_with, temp_line)
+                            else:
+                                temp_line = temp_line.replace(rule_pattern, replace_with)
+
+                        current_line = temp_line
 
                         if current_line != before_excl:
                             file_has_changes = True
@@ -559,9 +703,11 @@ class SubtitleProcessor:
                         before_paren = current_line
                         temp_line = current_line
 
-                        # Remove spaces inside parentheses
-                        temp_line = re.sub(r"\(\s+", "(", temp_line)
-                        temp_line = re.sub(r"\s+\)", ")", temp_line)
+                        for rule_pattern, replace_with, is_regex in parentheses_rules_list:
+                            if is_regex:
+                                temp_line = rule_pattern.sub(replace_with, temp_line)
+                            else:
+                                temp_line = temp_line.replace(rule_pattern, replace_with)
 
                         current_line = temp_line
 
@@ -576,9 +722,15 @@ class SubtitleProcessor:
                     # Apply Pre-Process Option: Question Mark Fixes
                     if self.options.get("question_mark_fixes", 1) and not is_timecode_or_index:
                         before_qm = current_line
+                        temp_line = current_line
 
-                        # Remove spaces before question mark or Persian question mark
-                        current_line = re.sub(r"[ \t]+([?؟])", r"\1", current_line)
+                        for rule_pattern, replace_with, is_regex in question_mark_rules_list:
+                            if is_regex:
+                                temp_line = rule_pattern.sub(replace_with, temp_line)
+                            else:
+                                temp_line = temp_line.replace(rule_pattern, replace_with)
+
+                        current_line = temp_line
 
                         if current_line != before_qm:
                             file_has_changes = True

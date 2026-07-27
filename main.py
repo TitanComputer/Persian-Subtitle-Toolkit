@@ -465,7 +465,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         # Option: Comma Fixes
         self.chk_comma_fixes = ctk.CTkCheckBox(
             self.preprocess_inner_frame,
-            text='Comma Fixes (e.g., "Hello , world" -> "Hello, world")',
+            text='Comma Fixes (e.g., "سلام , دنیا" -> "سلام، دنیا")',
             font=font_bold,
         )
         self.chk_comma_fixes.grid(row=3, column=0, padx=5, pady=5, sticky="w")
@@ -473,7 +473,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         # Option: Exclamation Mark Fixes
         self.chk_exclamation_fixes = ctk.CTkCheckBox(
             self.preprocess_inner_frame,
-            text='Exclamation Mark Fixes (e.g., "Wow !" -> "Wow!")',
+            text='Exclamation Mark Fixes (e.g., "سلام !" -> "سلام!")',
             font=font_bold,
         )
         self.chk_exclamation_fixes.grid(row=4, column=0, padx=5, pady=5, sticky="w")
@@ -481,7 +481,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         # Option: Parentheses Fixes
         self.chk_parentheses_fixes = ctk.CTkCheckBox(
             self.preprocess_inner_frame,
-            text='Parentheses Fixes (e.g., "( text )" -> "(text)")',
+            text='Parentheses Fixes (e.g., "( متن )" -> "(متن)" or ")متن(" -> "(متن)")',
             font=font_bold,
         )
         self.chk_parentheses_fixes.grid(row=5, column=0, padx=5, pady=5, sticky="w")
@@ -489,7 +489,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         # Option: Question Mark Fixes
         self.chk_question_mark_fixes = ctk.CTkCheckBox(
             self.preprocess_inner_frame,
-            text='Question Mark Fixes (e.g., "Why ?" -> "Why?")',
+            text='Question Mark Fixes (e.g., "چرا ؟؟" -> "چرا؟")',
             font=font_bold,
         )
         self.chk_question_mark_fixes.grid(row=6, column=0, padx=5, pady=5, sticky="w")
