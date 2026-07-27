@@ -519,6 +519,75 @@ class SubtitleProcessor:
                                 log_msg = f'Line {index} modified | Option: Pre-Process Fix Abbreviations | Before: "{b_clean}" -> After: "{c_clean}"'
                                 Logger.log_subtitle_change(current_file_dir, filename, log_msg)
 
+                    # Apply Pre-Process Option: Comma Fixes
+                    if self.options.get("comma_fixes", 1) and not is_timecode_or_index:
+                        before_comma = current_line
+                        temp_line = current_line
+
+                        # Remove spaces before comma or Persian comma
+                        temp_line = re.sub(r"[ \t]+([,،])", r"\1", temp_line)
+                        # Ensure a single space after comma if it is not followed by a space or number
+                        temp_line = re.sub(r"([,،])(?=[^\s\d])", r"\1 ", temp_line)
+
+                        current_line = temp_line
+
+                        if current_line != before_comma:
+                            file_has_changes = True
+                            if self.options.get("detailed_subtitle_logs", 1):
+                                b_clean = before_comma.rstrip("\n")
+                                c_clean = current_line.rstrip("\n")
+                                log_msg = f'Line {index} modified | Option: Pre-Process Comma Fixes | Before: "{b_clean}" -> After: "{c_clean}"'
+                                Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+
+                    # Apply Pre-Process Option: Exclamation Mark Fixes
+                    if self.options.get("exclamation_fixes", 1) and not is_timecode_or_index:
+                        before_excl = current_line
+
+                        # Remove spaces before exclamation mark
+                        current_line = re.sub(r"[ \t]+(!)", r"\1", current_line)
+
+                        if current_line != before_excl:
+                            file_has_changes = True
+                            if self.options.get("detailed_subtitle_logs", 1):
+                                b_clean = before_excl.rstrip("\n")
+                                c_clean = current_line.rstrip("\n")
+                                log_msg = f'Line {index} modified | Option: Pre-Process Exclamation Mark Fixes | Before: "{b_clean}" -> After: "{c_clean}"'
+                                Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+
+                    # Apply Pre-Process Option: Parentheses Fixes
+                    if self.options.get("parentheses_fixes", 1) and not is_timecode_or_index:
+                        before_paren = current_line
+                        temp_line = current_line
+
+                        # Remove spaces inside parentheses
+                        temp_line = re.sub(r"\(\s+", "(", temp_line)
+                        temp_line = re.sub(r"\s+\)", ")", temp_line)
+
+                        current_line = temp_line
+
+                        if current_line != before_paren:
+                            file_has_changes = True
+                            if self.options.get("detailed_subtitle_logs", 1):
+                                b_clean = before_paren.rstrip("\n")
+                                c_clean = current_line.rstrip("\n")
+                                log_msg = f'Line {index} modified | Option: Pre-Process Parentheses Fixes | Before: "{b_clean}" -> After: "{c_clean}"'
+                                Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+
+                    # Apply Pre-Process Option: Question Mark Fixes
+                    if self.options.get("question_mark_fixes", 1) and not is_timecode_or_index:
+                        before_qm = current_line
+
+                        # Remove spaces before question mark or Persian question mark
+                        current_line = re.sub(r"[ \t]+([?؟])", r"\1", current_line)
+
+                        if current_line != before_qm:
+                            file_has_changes = True
+                            if self.options.get("detailed_subtitle_logs", 1):
+                                b_clean = before_qm.rstrip("\n")
+                                c_clean = current_line.rstrip("\n")
+                                log_msg = f'Line {index} modified | Option: Pre-Process Question Mark Fixes | Before: "{b_clean}" -> After: "{c_clean}"'
+                                Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+
                     # Apply Pre-Process Option: Remove Standalone Dots
                     if self.options.get("remove_standalone_dots", 1) and not is_timecode_or_index:
                         before_dots = current_line

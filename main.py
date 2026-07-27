@@ -1,3 +1,5 @@
+from imageio import config
+
 from core import *
 import customtkinter as ctk
 from customtkinter import filedialog
@@ -460,13 +462,45 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.chk_fix_abbreviations.grid(row=2, column=0, padx=5, pady=5, sticky="w")
 
+        # Option: Comma Fixes
+        self.chk_comma_fixes = ctk.CTkCheckBox(
+            self.preprocess_inner_frame,
+            text='Comma Fixes (e.g., "Hello , world" -> "Hello, world")',
+            font=font_bold,
+        )
+        self.chk_comma_fixes.grid(row=3, column=0, padx=5, pady=5, sticky="w")
+
+        # Option: Exclamation Mark Fixes
+        self.chk_exclamation_fixes = ctk.CTkCheckBox(
+            self.preprocess_inner_frame,
+            text='Exclamation Mark Fixes (e.g., "Wow !" -> "Wow!")',
+            font=font_bold,
+        )
+        self.chk_exclamation_fixes.grid(row=4, column=0, padx=5, pady=5, sticky="w")
+
+        # Option: Parentheses Fixes
+        self.chk_parentheses_fixes = ctk.CTkCheckBox(
+            self.preprocess_inner_frame,
+            text='Parentheses Fixes (e.g., "( text )" -> "(text)")',
+            font=font_bold,
+        )
+        self.chk_parentheses_fixes.grid(row=5, column=0, padx=5, pady=5, sticky="w")
+
+        # Option: Question Mark Fixes
+        self.chk_question_mark_fixes = ctk.CTkCheckBox(
+            self.preprocess_inner_frame,
+            text='Question Mark Fixes (e.g., "Why ?" -> "Why?")',
+            font=font_bold,
+        )
+        self.chk_question_mark_fixes.grid(row=6, column=0, padx=5, pady=5, sticky="w")
+
         # Remove standalone dots at start/end of lines
         self.chk_remove_standalone_dots = ctk.CTkCheckBox(
             self.preprocess_inner_frame,
             text="Remove standalone dots at the beginning and end of lines",
             font=font_bold,
         )
-        self.chk_remove_standalone_dots.grid(row=3, column=0, padx=5, pady=5, sticky="w")
+        self.chk_remove_standalone_dots.grid(row=7, column=0, padx=5, pady=5, sticky="w")
 
         # Checkbox for English question mark to Persian conversion
         self.chk_persian_question_mark = ctk.CTkCheckBox(
@@ -475,7 +509,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             font=font_bold,
             command=self.on_preprocess_dependency_toggle,
         )
-        self.chk_persian_question_mark.grid(row=4, column=0, padx=5, pady=5, sticky="w")
+        self.chk_persian_question_mark.grid(row=8, column=0, padx=5, pady=5, sticky="w")
 
         # Checkbox for Arabic characters to Persian conversion
         self.chk_arabic_char = ctk.CTkCheckBox(
@@ -484,7 +518,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             font=font_bold,
             command=self.on_preprocess_dependency_toggle,
         )
-        self.chk_arabic_char.grid(row=5, column=0, padx=5, pady=5, sticky="w")
+        self.chk_arabic_char.grid(row=9, column=0, padx=5, pady=5, sticky="w")
 
         # Checkbox for Arabic numerals to Persian numerals conversion
         self.chk_arabic_num = ctk.CTkCheckBox(
@@ -493,7 +527,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             font=font_bold,
             command=self.on_preprocess_dependency_toggle,
         )
-        self.chk_arabic_num.grid(row=6, column=0, padx=5, pady=5, sticky="w")
+        self.chk_arabic_num.grid(row=10, column=0, padx=5, pady=5, sticky="w")
 
         # Checkbox for English numerals conditionally
         self.chk_english_num = ctk.CTkCheckBox(
@@ -502,7 +536,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             font=font_bold,
             command=self.on_preprocess_dependency_toggle,
         )
-        self.chk_english_num.grid(row=7, column=0, padx=5, pady=5, sticky="w")
+        self.chk_english_num.grid(row=11, column=0, padx=5, pady=5, sticky="w")
 
         # --- Process Tab ---
         self.process_inner_frame = ctk.CTkScrollableFrame(self.tab_process)
@@ -917,6 +951,26 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         else:
             self.chk_fix_abbreviations.deselect()
 
+        if config.get("comma_fixes", 1) == 1:
+            self.chk_comma_fixes.select()
+        else:
+            self.chk_comma_fixes.deselect()
+
+        if config.get("exclamation_fixes", 1) == 1:
+            self.chk_exclamation_fixes.select()
+        else:
+            self.chk_exclamation_fixes.deselect()
+
+        if config.get("parentheses_fixes", 1) == 1:
+            self.chk_parentheses_fixes.select()
+        else:
+            self.chk_parentheses_fixes.deselect()
+
+        if config.get("question_mark_fixes", 1) == 1:
+            self.chk_question_mark_fixes.select()
+        else:
+            self.chk_question_mark_fixes.deselect()
+
         if config.get("remove_standalone_dots", 1) == 1:
             self.chk_remove_standalone_dots.select()
         else:
@@ -1096,6 +1150,10 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             "trim_spaces": self.chk_trim_spaces.get(),
             "remove_unneeded_spaces": self.chk_remove_unneeded_spaces.get(),
             "fix_abbreviations": self.chk_fix_abbreviations.get(),
+            "comma_fixes": self.chk_comma_fixes.get(),
+            "exclamation_fixes": self.chk_exclamation_fixes.get(),
+            "parentheses_fixes": self.chk_parentheses_fixes.get(),
+            "question_mark_fixes": self.chk_question_mark_fixes.get(),
             "remove_standalone_dots": self.chk_remove_standalone_dots.get(),
             "persian_question_mark": self.chk_persian_question_mark.get(),
             "arabic_char_to_persian": self.chk_arabic_char.get(),
@@ -1160,6 +1218,10 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         self.chk_trim_spaces.select()
         self.chk_remove_unneeded_spaces.select()
         self.chk_fix_abbreviations.select()
+        self.chk_comma_fixes.select()
+        self.chk_exclamation_fixes.select()
+        self.chk_parentheses_fixes.select()
+        self.chk_question_mark_fixes.select()
         self.chk_remove_standalone_dots.select()
         self.chk_persian_question_mark.select()
         self.chk_arabic_char.select()
@@ -1362,6 +1424,10 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             "trim_spaces": self.chk_trim_spaces.get(),
             "remove_unneeded_spaces": self.chk_remove_unneeded_spaces.get(),
             "fix_abbreviations": self.chk_fix_abbreviations.get(),
+            "comma_fixes": self.chk_comma_fixes.get(),
+            "exclamation_fixes": self.chk_exclamation_fixes.get(),
+            "parentheses_fixes": self.chk_parentheses_fixes.get(),
+            "question_mark_fixes": self.chk_question_mark_fixes.get(),
             "remove_standalone_dots": self.chk_remove_standalone_dots.get(),
             "persian_question_mark": self.chk_persian_question_mark.get(),
             "arabic_char_to_persian": self.chk_arabic_char.get(),
