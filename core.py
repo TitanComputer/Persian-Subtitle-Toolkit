@@ -1099,11 +1099,19 @@ class SubtitleProcessor:
                             for char in ctrl_chars:
                                 clean_text = clean_text.replace(char, "")
 
-                            # Prepend RTL control character to the line (and append closing character)
                             if clean_text.strip():
                                 line_stripped = clean_text.rstrip("\r\n")
                                 line_ending = clean_text[len(line_stripped) :]
-                                clean_text = "\u202b" + line_stripped + "\u202c" + line_ending
+
+                                # Remove HTML tags temporarily to check the actual last text character
+                                text_no_tags = re.sub(r"<[^>]+>", "", line_stripped).strip()
+
+                                # Smart RTL Enforcement: Only append RLM (\u200f) if the line ends with
+                                # standard sentence-ending punctuation. Do NOT prepend it.
+                                if text_no_tags and text_no_tags[-1] in (".", "!", "؟", "?", "،", ",", ":", "؛", ";"):
+                                    clean_text = line_stripped + "\u200f" + line_ending
+                                else:
+                                    clean_text = line_stripped + line_ending
 
                             if clean_text != original_text_line:
                                 file_has_changes = True

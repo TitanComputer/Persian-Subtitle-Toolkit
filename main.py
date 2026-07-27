@@ -481,7 +481,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         # Option: Parentheses Fixes
         self.chk_parentheses_fixes = ctk.CTkCheckBox(
             self.preprocess_inner_frame,
-            text='Parentheses Fixes (e.g., "( متن )" -> "(متن)" or ")متن(" -> "(متن)")',
+            text='Parentheses Fixes (e.g., "( متن )" -> "(متن)")',
             font=font_bold,
         )
         self.chk_parentheses_fixes.grid(row=5, column=0, padx=5, pady=5, sticky="w")
