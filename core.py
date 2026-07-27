@@ -194,6 +194,178 @@ class SubtitleProcessor:
             "9": "۹",
         }
 
+        # Compile abbreviation patterns beforehand for performance (Parsed from XML)
+        english_abbr_pattern = re.compile(r"(?<=\b[a-zA-Z]\.)[ \t]+(?=[a-zA-Z](?:\.|\b))")
+
+        # Structure of rule list: (Pattern, Replacement, is_regex)
+        abbreviation_rules = [
+            # Regular Expression Match Patterns
+            (
+                re.compile(
+                    r"(\b([0-9a-zA-Z]{2,2})(\.)([\s]*)([0-9a-zA-Z]{2,2})(\.)([\s]*)([0-9a-zA-Z]{2,2})(\.)([\s]*)([0-9a-zA-Z]{2,2})(\.)([\s]*)([0-9a-zA-Z]{2,2})\b)"
+                ),
+                r"\g<2>\g<3>\g<5>\g<6>\g<8>\g<9>\g<11>\g<12>\g<14>",
+                True,
+            ),
+            (
+                re.compile(
+                    r"(\b([0-9a-zA-Z]{2,2})(\.)([\s]*)([0-9a-zA-Z]{2,2})(\.)([\s]*)([0-9a-zA-Z]{2,2})(\.)([\s]*)([0-9a-zA-Z]{2,2})\b)"
+                ),
+                r"\g<2>\g<3>\g<5>\g<6>\g<8>\g<9>\g<11>",
+                True,
+            ),
+            (
+                re.compile(r"(\b([0-9a-zA-Z]{2,2})(\.)([\s]*)([0-9a-zA-Z]{2,2})(\.)([\s]*)([0-9a-zA-Z]{2,2})\b)"),
+                r"\g<2>\g<3>\g<5>\g<6>\g<8>",
+                True,
+            ),
+            (
+                re.compile(
+                    r"(\b([0-9a-zA-Z]{1,1})(\.)([\s]*)([0-9a-zA-Z]{1,1})(\.)([\s]*)([0-9a-zA-Z]{1,1})(\.)([\s]*)([0-9a-zA-Z]{1,1})\b)"
+                ),
+                r"\g<2>\g<3>\g<5>\g<6>\g<8>\g<9>\g<11>",
+                True,
+            ),
+            (
+                re.compile(r"(\b([0-9a-zA-Z]{2,2})(\.)([\s]*)([0-9a-zA-Z]{2,2})(\.)([\s]*)([0-9a-zA-Z]{1,1})\b)"),
+                r"\g<2>\g<3>\g<5>\g<6>\g<8>",
+                True,
+            ),
+            (
+                re.compile(r"(\b([0-9a-zA-Z]{2,2})(\.)([\s]*)([0-9a-zA-Z]{1,1})(\.)([\s]*)([0-9a-zA-Z]{2,2})\b)"),
+                r"\g<2>\g<3>\g<5>\g<6>\g<8>",
+                True,
+            ),
+            (
+                re.compile(r"(\b([0-9a-zA-Z]{2,2})(\.)([\s]*)([0-9a-zA-Z]{1,1})(\.)([\s]*)([0-9a-zA-Z]{1,1})\b)"),
+                r"\g<2>\g<3>\g<5>\g<6>\g<8>",
+                True,
+            ),
+            (
+                re.compile(r"(\b([0-9a-zA-Z]{1,1})(\.)([\s]*)([0-9a-zA-Z]{2,2})(\.)([\s]*)([0-9a-zA-Z]{2,2})\b)"),
+                r"\g<2>\g<3>\g<5>\g<6>\g<8>",
+                True,
+            ),
+            (
+                re.compile(r"(\b([0-9a-zA-Z]{1,1})(\.)([\s]*)([0-9a-zA-Z]{2,2})(\.)([\s]*)([0-9a-zA-Z]{1,1})\b)"),
+                r"\g<2>\g<3>\g<5>\g<6>\g<8>",
+                True,
+            ),
+            (
+                re.compile(r"(\b([0-9a-zA-Z]{1,1})(\.)([\s]*)([0-9a-zA-Z]{1,1})(\.)([\s]*)([0-9a-zA-Z]{2,2})\b)"),
+                r"\g<2>\g<3>\g<5>\g<6>\g<8>",
+                True,
+            ),
+            (
+                re.compile(r"(\b([0-9a-zA-Z]{1,1})(\.)([\s]*)([0-9a-zA-Z]{1,1})(\.)([\s]*)([0-9a-zA-Z]{1,1})\b)"),
+                r"\g<2>\g<3>\g<5>\g<6>\g<8>",
+                True,
+            ),
+            (
+                re.compile(r"(\b([0-9a-zA-Z]{3,3})(\.)([\s]*)([0-9a-zA-Z]{2,2})(\.)([\s]*)([0-9a-zA-Z]{1,1})\b)"),
+                r"\g<2>\g<3>\g<5>\g<6>\g<8>",
+                True,
+            ),
+            (re.compile(r"(آی)([‌\s‌\.]*)(ام)([‌\s‌\.]*)(اف)"), r"\g<1>.\g<3>.\g<5>", True),
+            (re.compile(r"(ای)([‌\s‌\.]*)(ام)([‌\s‌\.]*)(اف)"), r"آی.\g<3>.\g<5>", True),
+            (re.compile(r"(کا)([‌\s‌\.]*)(اس)([‌\s‌\.]*)(آ)"), r"کِی.\g<3>.\g<5>", True),
+            (re.compile(r"(سی)([‌\s‌\.]*)(آی)([‌\s‌\.]*)(ای)"), r"\g<1>.\g<3>.\g<5>", True),
+            (re.compile(r"(ال)([‌\s‌\.]*)(ای)([‌\s‌\.]*)(پی)([‌\s‌\.]*)(دی)"), r"\g<1>.\g<3>.\g<5>.\g<7>", True),
+            (re.compile(r"(\d+)(،)(\d+)(،)(\d+)(،)(\d+)(،)(\d+)"), r"\g<1>,\g<3>,\g<5>,\g<7>,\g<9>", True),
+            (re.compile(r"(\d+)(،)(\d+)(،)(\d+)(،)(\d+)"), r"\g<1>,\g<3>,\g<5>,\g<7>", True),
+            (re.compile(r"(\d+)(،)(\d+)(،)(\d+)"), r"\g<1>,\g<3>,\g<5>", True),
+            (re.compile(r"(\d+)(،)(\d+)"), r"\g<1>,\g<3>", True),
+            (re.compile(r"نه\.نه\.([0-9\w]{2})"), r"نه، نه، \g<1>", True),
+            # Normal String Match Patterns
+            ("ار.پی.جی", "آر.پی.جی", False),
+            ("ار. پی. جی", "آر.پی.جی", False),
+            ("ار پی جی", "آر.پی.جی", False),
+            ("آر. پی. جی", "آر.پی.جی", False),
+            ("آر پی جی", "آر.پی.جی", False),
+            ("دی. ان. ای", "دی.ان.ای", False),
+            ("دی. اِن. اِی", "دی.اِن.اِی", False),
+            ("دی ان ای", "دی.ان.ای", False),
+            ("دی ان‌ای", "دی.ان.ای", False),
+            ("دی. اِن. ای", "دی.ان.ای", False),
+            ("دی. ان. اِی", "دی.ان.ای", False),
+            ("دی اِن ای", "دی.ان.ای", False),
+            ("دی ان اِی", "دی.ان.ای", False),
+            ("جی. پی. اس", "جی.پی.اس", False),
+            ("جی پی اس", "جی.پی.اس", False),
+            ("جی پی اِس", "جی.پی.اس", False),
+            ("ک. گ. ب", "کی.جی.بی", False),
+            ("ک گ ب", "کی.جی.بی", False),
+            ("دی. جی. اس. ایی", "دی.جی.اس.ایی", False),
+            ("دی جی اس ایی", "دی.جی.اس.ایی", False),
+            ("دی. تی", "دی.تی", False),
+            (" دی تی ", "دی.تی", False),
+            ("سی. ان. ان", "سی.ان.ان", False),
+            ("سی ان ان", "سی.ان.ان", False),
+            ("بی. بی. سی", "بی.بی.سی", False),
+            ("بی بی سی", "بی.بی.سی", False),
+            ("اف. بی. آی", "اف.بی.آی", False),
+            ("اف بی آی", "اف.بی.آی", False),
+            ("اف بی‌آی", "اف.بی.آی", False),
+            ("اف بی‌ای", "اف.بی.آی", False),
+            ("سی. آی. ای", "سی.آی.ای", False),
+            ("سی آی ای", "سی.آی.ای", False),
+            ("سی آی اِی", "سی.آی.ای", False),
+            ("سی‌آی‌ای", "سی.آی.ای", False),
+            ("‌ام. ار. ای", " اِم.آر.آی", False),
+            ("ام. ار. ای", "اِم.آر.آی", False),
+            ("اِم. ار. ای", "اِم.آر.آی", False),
+            ("ام. آر. ای", "اِم.آر.آی", False),
+            ("ام. ار. آی", "اِم.آر.آی", False),
+            ("اِم. آر. ای", "اِم.آر.آی", False),
+            ("اِم. ار. آی", "اِم.آر.آی", False),
+            ("ام. آر. آی", "اِم.آر.آی", False),
+            ("ام ار ای", "اِم.آر.آی", False),
+            ("ال. اس. دی", "اِل.اِس.دی", False),
+            ("کا. گ. ب", "کی.جی.بی", False),
+            ("دی وی دی", "دی-وی-دی", False),
+            ("پی اس ام", "پی.اس.ام", False),
+            ("پی اس‌ام", "پی.اس.ام", False),
+            ("پی‌اس ام", "پی.اس.ام", False),
+            ("پی‌اس‌ام", "پی.اس.ام", False),
+            ("پی. اس. ام", "پی.اس.ام", False),
+            ("دی. سی", "دی.سی", False),
+            ("تی. رکس", "تی.رکس", False),
+            ("اس‌ام اس", "اس.ام.اس", False),
+            ("ان بی سی", "ان.بی.سی", False),
+            ("مجله جی کیو", "مجله جی.کیو", False),
+            ("مجله جی. کیو", "مجله جی.کیو", False),
+            ("مجله‌ی جی کیو", "مجله‌ی جی.کیو", False),
+            ("مجله‌ی جی. کیو", "مجله‌ی جی.کیو", False),
+            ("موج ای. ام", "موج ای.ام", False),
+            ("اس. دبلیو", "اس.دبلیو", False),
+            ("اس. اس", "اس.اس", False),
+            ("اِن اِس اِی", "ان.اس.اِی", False),
+            ("اِن. اِس. اِی", "ان.اس.اِی", False),
+            ("ان اس ای", "ان.اس.اِی", False),
+            ("ان. اس. ای", "ان.اس.اِی", False),
+            ("ان. اس. اِی", "ان.اس.اِی", False),
+            ("آی اِم اِف", "آی.اِم.اِف", False),
+            ("آی. اِم. اِف", "آی.اِم.اِف", False),
+            ("اِم آی تی", "اِم.آی.تی", False),
+            ("ام آی تی", "اِم.آی.تی", False),
+            ("اِم. آی. تی", "اِم.آی.تی", False),
+            ("اِف اِس بی", "اِف.اِس.بی", False),
+            ("اِف. اِس. بی", "اِف.اِس.بی", False),
+            ("جی تی او", "جی.تی.او", False),
+            ("سی. بی", "سی.بی", False),
+            ("ام. ای. تی", "اِم.آی.تی", False),
+            ("ای. بِی", "ای.بِی", False),
+            ("سی دی ", "سی.دی ", False),
+            ("سی. دی ", "سی.دی ", False),
+            ("سی دی‌", "سی.دی‌", False),
+            ("سی. دی‌", "سی.دی‌", False),
+            ("سی. تی‌", "سی.تی‌", False),
+            ("جی. وی", "جی.وی", False),
+            ("ام. آی. 6", "اِم.آی.6", False),
+            ("ام. ای. 6", "اِم.آی.6", False),
+            ("‌اِم.آی.6", " اِم.آی.6", False),
+        ]
+
         # Regex patterns to identify timecodes and index lines accurately
         timecode_pattern = re.compile(r"^\d{2}:\d{2}:\d{2},\d{3}\s*-->\s*\d{2}:\d{2}:\d{2},\d{3}")
         index_pattern = re.compile(r"^\d+\s*$")
@@ -285,11 +457,19 @@ class SubtitleProcessor:
                     # Apply Pre-Process Option: Fix Abbreviations
                     if self.options.get("fix_abbreviations", 1) and not is_timecode_or_index:
                         before_abbr = current_line
-                        # Pattern to fix spaced abbreviations like "F. B. I." or "A. B. C"
                         temp_line = current_line
-                        pattern = re.compile(r"(?<=\b[a-zA-Z]\.)[ \t]+(?=[a-zA-Z](?:\.|\b))")
-                        while pattern.search(temp_line):
-                            temp_line = pattern.sub("", temp_line)
+
+                        # Apply general English spaced abbreviations pattern
+                        while english_abbr_pattern.search(temp_line):
+                            temp_line = english_abbr_pattern.sub("", temp_line)
+
+                        # Apply specific imported XML abbreviation rules
+                        for rule_pattern, replace_with, is_regex in abbreviation_rules:
+                            if is_regex:
+                                temp_line = rule_pattern.sub(replace_with, temp_line)
+                            else:
+                                temp_line = temp_line.replace(rule_pattern, replace_with)
+
                         current_line = temp_line
 
                         if current_line != before_abbr:
