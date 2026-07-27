@@ -614,8 +614,9 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         # Checkbox for Force RTL
         self.chk_force_rtl = ctk.CTkCheckBox(
             self.postprocess_inner_frame,
-            text="Force RTL (Remove control characters and apply RTL mark)",
+            text="Force RTL (Remove control characters and apply RTL mark) - (Triggers Post-Process UTF-8)",
             font=font_bold,
+            command=self.on_preprocess_dependency_toggle,
         )
         self.chk_force_rtl.grid(row=7, column=0, padx=5, pady=5, sticky="w")
 
@@ -757,6 +758,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             or self.chk_arabic_char.get() == 1
             or self.chk_arabic_num.get() == 1
             or self.chk_english_num.get() == 1
+            or self.chk_force_rtl.get() == 1
         ):
             self.chk_encode_utf8.select()
         self.save_config()
@@ -768,6 +770,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             self.chk_arabic_char.deselect()
             self.chk_arabic_num.deselect()
             self.chk_english_num.deselect()
+            self.chk_force_rtl.deselect()
         self.save_config()
 
     def on_reformat_dependency_toggle(self):

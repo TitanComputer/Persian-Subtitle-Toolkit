@@ -1,7 +1,7 @@
 import os
 import sys
 
-APP_VERSION = "0.12.0"
+APP_VERSION = "0.12.1"
 APP_NAME = "Persian Subtitle Toolkit"
 CONFIG_FILENAME = "config.json"
 
