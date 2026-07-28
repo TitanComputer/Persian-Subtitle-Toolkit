@@ -670,13 +670,45 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.chk_question_mark_fixes.grid(row=6, column=0, padx=5, pady=5, sticky="w")
 
+        # Option: Double-Quotes Fixes
+        self.chk_double_quotes_fixes = ctk.CTkCheckBox(
+            preprocess_parent,
+            text='Double-Quotes Fixes (e.g., "text" -> «text»)',
+            font=font_bold,
+        )
+        self.chk_double_quotes_fixes.grid(row=7, column=0, padx=5, pady=5, sticky="w")
+
+        # Option: Dash Fixes
+        self.chk_dash_fixes = ctk.CTkCheckBox(
+            preprocess_parent,
+            text="Dash Fixes (e.g., -- to —)",
+            font=font_bold,
+        )
+        self.chk_dash_fixes.grid(row=8, column=0, padx=5, pady=5, sticky="w")
+
+        # Option: Comments Fixes
+        self.chk_comments_fixes = ctk.CTkCheckBox(
+            preprocess_parent,
+            text="Comments Fixes (e.g., removing bracketed sound notes like [music])",
+            font=font_bold,
+        )
+        self.chk_comments_fixes.grid(row=9, column=0, padx=5, pady=5, sticky="w")
+
+        # Option: Dialog Hyphen Fix
+        self.chk_dialog_hyphen_fix = ctk.CTkCheckBox(
+            preprocess_parent,
+            text="Dialog Hyphen Fix (e.g., - Hello -> - Hello)",
+            font=font_bold,
+        )
+        self.chk_dialog_hyphen_fix.grid(row=10, column=0, padx=5, pady=5, sticky="w")
+
         # Remove standalone dots at start/end of lines
         self.chk_remove_standalone_dots = ctk.CTkCheckBox(
             preprocess_parent,
             text="Remove standalone dots at the beginning and end of lines",
             font=font_bold,
         )
-        self.chk_remove_standalone_dots.grid(row=7, column=0, padx=5, pady=5, sticky="w")
+        self.chk_remove_standalone_dots.grid(row=11, column=0, padx=5, pady=5, sticky="w")
 
         # Checkbox for English question mark to Persian conversion
         self.chk_persian_question_mark = ctk.CTkCheckBox(
@@ -685,7 +717,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             font=font_bold,
             command=self.on_preprocess_dependency_toggle,
         )
-        self.chk_persian_question_mark.grid(row=8, column=0, padx=5, pady=5, sticky="w")
+        self.chk_persian_question_mark.grid(row=12, column=0, padx=5, pady=5, sticky="w")
 
         # Checkbox for Arabic characters to Persian conversion
         self.chk_arabic_char = ctk.CTkCheckBox(
@@ -694,7 +726,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             font=font_bold,
             command=self.on_preprocess_dependency_toggle,
         )
-        self.chk_arabic_char.grid(row=9, column=0, padx=5, pady=5, sticky="w")
+        self.chk_arabic_char.grid(row=13, column=0, padx=5, pady=5, sticky="w")
 
         # Checkbox for Arabic numerals to Persian numerals conversion
         self.chk_arabic_num = ctk.CTkCheckBox(
@@ -703,7 +735,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             font=font_bold,
             command=self.on_preprocess_dependency_toggle,
         )
-        self.chk_arabic_num.grid(row=10, column=0, padx=5, pady=5, sticky="w")
+        self.chk_arabic_num.grid(row=14, column=0, padx=5, pady=5, sticky="w")
 
         # Checkbox for English numerals conditionally
         self.chk_english_num = ctk.CTkCheckBox(
@@ -712,7 +744,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             font=font_bold,
             command=self.on_preprocess_dependency_toggle,
         )
-        self.chk_english_num.grid(row=11, column=0, padx=5, pady=5, sticky="w")
+        self.chk_english_num.grid(row=15, column=0, padx=5, pady=5, sticky="w")
 
         # --- Process Tab ---
         self.process_inner_frame = CTkDualScrollableFrame(self.tab_process)
@@ -1153,6 +1185,26 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         else:
             self.chk_question_mark_fixes.deselect()
 
+        if config.get("double_quotes_fixes", 1) == 1:
+            self.chk_double_quotes_fixes.select()
+        else:
+            self.chk_double_quotes_fixes.deselect()
+
+        if config.get("dash_fixes", 1) == 1:
+            self.chk_dash_fixes.select()
+        else:
+            self.chk_dash_fixes.deselect()
+
+        if config.get("comments_fixes", 1) == 1:
+            self.chk_comments_fixes.select()
+        else:
+            self.chk_comments_fixes.deselect()
+
+        if config.get("dialog_hyphen_fix", 1) == 1:
+            self.chk_dialog_hyphen_fix.select()
+        else:
+            self.chk_dialog_hyphen_fix.deselect()
+
         if config.get("remove_standalone_dots", 1) == 1:
             self.chk_remove_standalone_dots.select()
         else:
@@ -1336,6 +1388,10 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             "exclamation_fixes": self.chk_exclamation_fixes.get(),
             "parentheses_fixes": self.chk_parentheses_fixes.get(),
             "question_mark_fixes": self.chk_question_mark_fixes.get(),
+            "double_quotes_fixes": self.chk_double_quotes_fixes.get(),
+            "dash_fixes": self.chk_dash_fixes.get(),
+            "comments_fixes": self.chk_comments_fixes.get(),
+            "dialog_hyphen_fix": self.chk_dialog_hyphen_fix.get(),
             "remove_standalone_dots": self.chk_remove_standalone_dots.get(),
             "persian_question_mark": self.chk_persian_question_mark.get(),
             "arabic_char_to_persian": self.chk_arabic_char.get(),
@@ -1610,6 +1666,10 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             "exclamation_fixes": self.chk_exclamation_fixes.get(),
             "parentheses_fixes": self.chk_parentheses_fixes.get(),
             "question_mark_fixes": self.chk_question_mark_fixes.get(),
+            "double_quotes_fixes": self.chk_double_quotes_fixes.get(),
+            "dash_fixes": self.chk_dash_fixes.get(),
+            "comments_fixes": self.chk_comments_fixes.get(),
+            "dialog_hyphen_fix": self.chk_dialog_hyphen_fix.get(),
             "remove_standalone_dots": self.chk_remove_standalone_dots.get(),
             "persian_question_mark": self.chk_persian_question_mark.get(),
             "arabic_char_to_persian": self.chk_arabic_char.get(),

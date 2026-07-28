@@ -1,7 +1,7 @@
 import os
 import sys
 
-APP_VERSION = "0.14.4"
+APP_VERSION = "0.15.0"
 APP_NAME = "Persian Subtitle Toolkit"
 CONFIG_FILENAME = "config.json"
 
@@ -22,6 +22,10 @@ DEFAULT_CONFIG = {
     "exclamation_fixes": 1,
     "parentheses_fixes": 1,
     "question_mark_fixes": 1,
+    "double_quotes_fixes": 1,
+    "dash_fixes": 1,
+    "comments_fixes": 1,
+    "dialog_hyphen_fix": 1,
     "remove_standalone_dots": 1,
     "persian_question_mark": 1,
     "arabic_char_to_persian": 1,
