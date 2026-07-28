@@ -633,7 +633,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         # Option: Fix Abbreviations
         self.chk_fix_abbreviations = ctk.CTkCheckBox(
             preprocess_parent,
-            text="Fix Abbreviations (e.g., F. B. I. to F.B.I.)",
+            text="Fix Abbreviations (e.g., F. B. I. ➔ F.B.I.)",
             font=font_bold,
         )
         self.chk_fix_abbreviations.grid(row=2, column=0, padx=5, pady=5, sticky="w")
@@ -641,7 +641,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         # Option: Comma Fixes
         self.chk_comma_fixes = ctk.CTkCheckBox(
             preprocess_parent,
-            text='Comma Fixes (e.g., "سلام , دنیا" -> "سلام، دنیا")',
+            text="Comma Fixes (e.g., سلام , دنیا ➔ سلام، دنیا)",
             font=font_bold,
         )
         self.chk_comma_fixes.grid(row=3, column=0, padx=5, pady=5, sticky="w")
@@ -649,7 +649,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         # Option: Exclamation Mark Fixes
         self.chk_exclamation_fixes = ctk.CTkCheckBox(
             preprocess_parent,
-            text='Exclamation Mark Fixes (e.g., "سلام !" -> "سلام!")',
+            text="Exclamation Mark Fixes (e.g., سلام ! ➔ سلام!)",
             font=font_bold,
         )
         self.chk_exclamation_fixes.grid(row=4, column=0, padx=5, pady=5, sticky="w")
@@ -657,7 +657,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         # Option: Parentheses Fixes
         self.chk_parentheses_fixes = ctk.CTkCheckBox(
             preprocess_parent,
-            text='Parentheses Fixes (e.g., "( متن )" -> "(متن)")',
+            text="Parentheses Fixes (e.g., ( متن ) ➔ (متن))",
             font=font_bold,
         )
         self.chk_parentheses_fixes.grid(row=5, column=0, padx=5, pady=5, sticky="w")
@@ -665,7 +665,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         # Option: Question Mark Fixes
         self.chk_question_mark_fixes = ctk.CTkCheckBox(
             preprocess_parent,
-            text='Question Mark Fixes (e.g., "چرا ؟؟" -> "چرا؟")',
+            text="Question Mark Fixes (e.g., چرا ؟؟ ➔ چرا؟)",
             font=font_bold,
         )
         self.chk_question_mark_fixes.grid(row=6, column=0, padx=5, pady=5, sticky="w")
@@ -673,7 +673,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         # Option: Double-Quotes Fixes
         self.chk_double_quotes_fixes = ctk.CTkCheckBox(
             preprocess_parent,
-            text='Double-Quotes Fixes (e.g., "text" -> «text»)',
+            text='Double-Quotes Fixes (e.g., "سلام" ➔ «سلام»)',
             font=font_bold,
         )
         self.chk_double_quotes_fixes.grid(row=7, column=0, padx=5, pady=5, sticky="w")
@@ -681,7 +681,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         # Option: Dash Fixes
         self.chk_dash_fixes = ctk.CTkCheckBox(
             preprocess_parent,
-            text="Dash Fixes (e.g., -- to —)",
+            text="Dash Fixes (e.g., -- ➔ —)",
             font=font_bold,
         )
         self.chk_dash_fixes.grid(row=8, column=0, padx=5, pady=5, sticky="w")
@@ -689,7 +689,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         # Option: Comments Fixes
         self.chk_comments_fixes = ctk.CTkCheckBox(
             preprocess_parent,
-            text="Comments Fixes (e.g., removing bracketed sound notes like [music])",
+            text="Comments Fixes (e.g., [موسیقی] ➔ حذف)",
             font=font_bold,
         )
         self.chk_comments_fixes.grid(row=9, column=0, padx=5, pady=5, sticky="w")
@@ -697,7 +697,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         # Option: Dialog Hyphen Fix
         self.chk_dialog_hyphen_fix = ctk.CTkCheckBox(
             preprocess_parent,
-            text="Dialog Hyphen Fix (e.g., - Hello -> - Hello)",
+            text="Dialog Hyphen Fix (e.g., -سلام ➔ - سلام)",
             font=font_bold,
         )
         self.chk_dialog_hyphen_fix.grid(row=10, column=0, padx=5, pady=5, sticky="w")
@@ -705,7 +705,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         # Remove standalone dots at start/end of lines
         self.chk_remove_standalone_dots = ctk.CTkCheckBox(
             preprocess_parent,
-            text="Remove standalone dots at the beginning and end of lines",
+            text="Remove Standalone Dots at the beginning and end of lines (e.g., .سلام. ➔ سلام)",
             font=font_bold,
         )
         self.chk_remove_standalone_dots.grid(row=11, column=0, padx=5, pady=5, sticky="w")
@@ -713,7 +713,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         # Checkbox for English question mark to Persian conversion
         self.chk_persian_question_mark = ctk.CTkCheckBox(
             preprocess_parent,
-            text="Convert English Question Marks to Persian (e.g., ? to ؟) - (Triggers Post-Process UTF-8)",
+            text="Convert English Question Marks to Persian (e.g., ? ➔ ؟) - (Triggers Post-Process UTF-8)",
             font=font_bold,
             command=self.on_preprocess_dependency_toggle,
         )
@@ -722,7 +722,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         # Checkbox for Arabic characters to Persian conversion
         self.chk_arabic_char = ctk.CTkCheckBox(
             preprocess_parent,
-            text="Convert Arabic Characters to Persian (e.g., ي to ی) - (Triggers Post-Process UTF-8)",
+            text="Convert Arabic Characters to Persian (e.g., ي، ك ➔ ی، ک) - (Triggers Post-Process UTF-8)",
             font=font_bold,
             command=self.on_preprocess_dependency_toggle,
         )
@@ -731,7 +731,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         # Checkbox for Arabic numerals to Persian numerals conversion
         self.chk_arabic_num = ctk.CTkCheckBox(
             preprocess_parent,
-            text="Convert Arabic Numerals to Persian Numerals (e.g., ٤ to ۴) - (Triggers Post-Process UTF-8)",
+            text="Convert Arabic Numerals to Persian Numerals (e.g., ٤ ➔ ۴) - (Triggers Post-Process UTF-8)",
             font=font_bold,
             command=self.on_preprocess_dependency_toggle,
         )
@@ -740,7 +740,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         # Checkbox for English numerals conditionally
         self.chk_english_num = ctk.CTkCheckBox(
             preprocess_parent,
-            text="Convert English Numerals to Persian (e.g., 4 to ۴) (Excludes Tags/Timecodes/Letter-attached numbers) - (Triggers Post-Process UTF-8)",
+            text="Convert English Numerals to Persian (e.g., 4 ➔ ۴) (Excludes Tags/Timecodes/Letter-attached numbers) - (Triggers Post-Process UTF-8)",
             font=font_bold,
             command=self.on_preprocess_dependency_toggle,
         )
