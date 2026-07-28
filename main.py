@@ -247,6 +247,147 @@ def setup_enhanced_textbox(textbox):
     widget.bind("<KeyPress>", handle_ctrl_key, add="+")
 
 
+class CTkDualScrollableFrame(ctk.CTkFrame):
+    def __init__(self, master, **kwargs):
+        # 1. Force the main container to have sharp corners (corner_radius=0) and transparent background
+        # This completely prevents white/gray artifacts at the 4 corners.
+        kwargs.setdefault("corner_radius", 0)
+        kwargs.setdefault("fg_color", "transparent")
+        kwargs.setdefault("bg_color", "transparent")
+        super().__init__(master, **kwargs)
+
+        # 2. Determine the correct background color based on the current theme (Light/Dark)
+        bg_color = ctk.ThemeManager.theme["CTkFrame"]["fg_color"]
+        if isinstance(bg_color, (list, tuple)):
+            mode_idx = 1 if ctk.get_appearance_mode() == "Dark" else 0
+            bg_color = bg_color[mode_idx]
+
+        # 3. Create Canvas and set its background color to match the theme perfectly
+        self.canvas = tk.Canvas(self, highlightthickness=0, bd=0, bg=bg_color)
+
+        # Create vertical and horizontal scrollbars
+        self.vsb = ctk.CTkScrollbar(self, orientation="vertical", command=self.canvas.yview)
+        self.hsb = ctk.CTkScrollbar(self, orientation="horizontal", command=self.canvas.xview)
+        self.canvas.configure(yscrollcommand=self.vsb.set, xscrollcommand=self.hsb.set)
+
+        # Create inner frame with the theme color
+        self.inner_frame = ctk.CTkFrame(self.canvas, fg_color=bg_color, corner_radius=0)
+
+        # Create inner window inside the Canvas with resizing capabilities
+        self.inner_window = self.canvas.create_window((0, 0), window=self.inner_frame, anchor="nw")
+
+        # Grid configuration for the main Canvas
+        self.canvas.grid(row=0, column=0, sticky="nsew")
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+
+        # Bind events for size changes and scroll region updates
+        self.inner_frame.bind("<Configure>", self._on_frame_configure)
+        self.canvas.bind("<Configure>", self._on_canvas_configure)
+
+        # Bind mouse scroll events over the frame and canvas
+        self.canvas.bind("<Enter>", self._bind_mouse_scroll)
+        self.canvas.bind("<Leave>", self._unbind_mouse_scroll)
+        self.inner_frame.bind("<Enter>", self._bind_mouse_scroll)
+        self.inner_frame.bind("<Leave>", self._unbind_mouse_scroll)
+
+        # Sync with theme appearance changes (Light / Dark)
+        ctk.AppearanceModeTracker.add(self._update_canvas_bg)
+
+    def _update_canvas_bg(self, new_appearance_mode=None):
+        bg_color = ctk.ThemeManager.theme["CTkFrame"]["fg_color"]
+
+        if isinstance(bg_color, (list, tuple)):
+            mode_idx = 1 if ctk.get_appearance_mode() == "Dark" else 0
+            bg_color = bg_color[mode_idx]
+
+        self.canvas.configure(bg=bg_color)
+
+        if hasattr(self, "inner_frame") and self.inner_frame.winfo_exists():
+            self.inner_frame.configure(fg_color=bg_color)
+            self._propagate_appearance(self.inner_frame, ctk.get_appearance_mode())
+
+    def _propagate_appearance(self, widget, mode):
+        """Recursively apply appearance mode to custom tkinter widgets inside the canvas."""
+        try:
+            if hasattr(widget, "_set_appearance_mode"):
+                widget._set_appearance_mode(mode)
+        except Exception:
+            pass
+
+        for child in widget.winfo_children():
+            self._propagate_appearance(child, mode)
+
+    def _on_frame_configure(self, event=None):
+        """Update scroll region and check scrollbars whenever inner frame content changes."""
+        canvas_w = self.canvas.winfo_width()
+        content_w = self.inner_frame.winfo_reqwidth()
+
+        if content_w > canvas_w:
+            self.canvas.itemconfig(self.inner_window, width=content_w)
+        else:
+            self.canvas.itemconfig(self.inner_window, width=canvas_w)
+
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+        self._check_scrollbars()
+
+    def _on_canvas_configure(self, event):
+        """Handle canvas resize events to adjust inner window width."""
+        canvas_w = event.width
+        content_w = self.inner_frame.winfo_reqwidth()
+
+        if content_w > canvas_w:
+            self.canvas.itemconfig(self.inner_window, width=content_w)
+        else:
+            self.canvas.itemconfig(self.inner_window, width=canvas_w)
+
+        self._check_scrollbars()
+
+    def _check_scrollbars(self):
+        """Smart management to show or hide scrollbars based on content dimensions."""
+        self.update_idletasks()
+        bbox = self.canvas.bbox("all")
+        if not bbox:
+            return
+
+        canvas_w = self.canvas.winfo_width()
+        canvas_h = self.canvas.winfo_height()
+        content_w = bbox[2] - bbox[0]
+        content_h = bbox[3] - bbox[1]
+
+        # Vertical scrollbar check
+        if content_h > canvas_h and canvas_h > 1:
+            self.vsb.grid(row=0, column=1, sticky="ns")
+        else:
+            self.vsb.grid_forget()
+
+        # Horizontal scrollbar check
+        if content_w > canvas_w and canvas_w > 1:
+            self.hsb.grid(row=1, column=0, sticky="ew")
+        else:
+            self.hsb.grid_forget()
+
+    def _bind_mouse_scroll(self, event):
+        """Bind mouse wheel globally when cursor enters the scrollable area."""
+        self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
+        self.canvas.bind_all("<Button-4>", self._on_mousewheel)
+        self.canvas.bind_all("<Button-5>", self._on_mousewheel)
+
+    def _unbind_mouse_scroll(self, event):
+        """Unbind mouse wheel globally when cursor leaves the scrollable area."""
+        self.canvas.unbind_all("<MouseWheel>")
+        self.canvas.unbind_all("<Button-4>")
+        self.canvas.unbind_all("<Button-5>")
+
+    def _on_mousewheel(self, event):
+        """Execute vertical scrolling via mouse wheel."""
+        if self.vsb.winfo_ismapped():
+            if event.num == 4 or event.delta > 0:
+                self.canvas.yview_scroll(-1, "units")
+            elif event.num == 5 or event.delta < 0:
+                self.canvas.yview_scroll(1, "units")
+
+
 # Created wrapper class to inject TkinterDnD capabilities into CustomTkinter window
 class CustomTkinterDnD(ctk.CTk, TkinterDnD.DnDWrapper):
     def __init__(self, *args, **kwargs):
@@ -435,12 +576,16 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             tab.grid_rowconfigure(0, weight=1)
 
         # --- Pre-Process Tab ---
-        self.preprocess_inner_frame = ctk.CTkScrollableFrame(self.tab_preprocess, orientation="horizontal")
+        self.preprocess_inner_frame = CTkDualScrollableFrame(self.tab_preprocess)  # یا نام کلاس خودتان
         self.preprocess_inner_frame.grid(row=0, column=0, padx=0, pady=0, sticky="nsew")
         self.preprocess_inner_frame.grid_columnconfigure(0, weight=1)
 
+        # Get the inner frame for adding widgets
+        preprocess_parent = self.preprocess_inner_frame.inner_frame
+
+        # Option: Trim Spaces
         self.chk_trim_spaces = ctk.CTkCheckBox(
-            self.preprocess_inner_frame,
+            preprocess_parent,
             text="Trim spaces from beginning and end of lines (Pre-Process)",
             font=font_bold,
         )
@@ -448,7 +593,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
 
         # Option: Remove Unneeded Spaces
         self.chk_remove_unneeded_spaces = ctk.CTkCheckBox(
-            self.preprocess_inner_frame,
+            preprocess_parent,
             text="Remove Unneeded Spaces (Converts multiple spaces into one)",
             font=font_bold,
         )
@@ -456,7 +601,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
 
         # Option: Fix Abbreviations
         self.chk_fix_abbreviations = ctk.CTkCheckBox(
-            self.preprocess_inner_frame,
+            preprocess_parent,
             text="Fix Abbreviations (e.g., F. B. I. to F.B.I.)",
             font=font_bold,
         )
@@ -464,7 +609,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
 
         # Option: Comma Fixes
         self.chk_comma_fixes = ctk.CTkCheckBox(
-            self.preprocess_inner_frame,
+            preprocess_parent,
             text='Comma Fixes (e.g., "سلام , دنیا" -> "سلام، دنیا")',
             font=font_bold,
         )
@@ -472,7 +617,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
 
         # Option: Exclamation Mark Fixes
         self.chk_exclamation_fixes = ctk.CTkCheckBox(
-            self.preprocess_inner_frame,
+            preprocess_parent,
             text='Exclamation Mark Fixes (e.g., "سلام !" -> "سلام!")',
             font=font_bold,
         )
@@ -480,7 +625,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
 
         # Option: Parentheses Fixes
         self.chk_parentheses_fixes = ctk.CTkCheckBox(
-            self.preprocess_inner_frame,
+            preprocess_parent,
             text='Parentheses Fixes (e.g., "( متن )" -> "(متن)")',
             font=font_bold,
         )
@@ -488,7 +633,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
 
         # Option: Question Mark Fixes
         self.chk_question_mark_fixes = ctk.CTkCheckBox(
-            self.preprocess_inner_frame,
+            preprocess_parent,
             text='Question Mark Fixes (e.g., "چرا ؟؟" -> "چرا؟")',
             font=font_bold,
         )
@@ -496,7 +641,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
 
         # Remove standalone dots at start/end of lines
         self.chk_remove_standalone_dots = ctk.CTkCheckBox(
-            self.preprocess_inner_frame,
+            preprocess_parent,
             text="Remove standalone dots at the beginning and end of lines",
             font=font_bold,
         )
@@ -504,7 +649,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
 
         # Checkbox for English question mark to Persian conversion
         self.chk_persian_question_mark = ctk.CTkCheckBox(
-            self.preprocess_inner_frame,
+            preprocess_parent,
             text="Convert English Question Marks to Persian (e.g., ? to ؟) - (Triggers Post-Process UTF-8)",
             font=font_bold,
             command=self.on_preprocess_dependency_toggle,
@@ -513,7 +658,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
 
         # Checkbox for Arabic characters to Persian conversion
         self.chk_arabic_char = ctk.CTkCheckBox(
-            self.preprocess_inner_frame,
+            preprocess_parent,
             text="Convert Arabic Characters to Persian (e.g., ي to ی) - (Triggers Post-Process UTF-8)",
             font=font_bold,
             command=self.on_preprocess_dependency_toggle,
@@ -522,7 +667,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
 
         # Checkbox for Arabic numerals to Persian numerals conversion
         self.chk_arabic_num = ctk.CTkCheckBox(
-            self.preprocess_inner_frame,
+            preprocess_parent,
             text="Convert Arabic Numerals to Persian Numerals (e.g., ٤ to ۴) - (Triggers Post-Process UTF-8)",
             font=font_bold,
             command=self.on_preprocess_dependency_toggle,
@@ -531,7 +676,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
 
         # Checkbox for English numerals conditionally
         self.chk_english_num = ctk.CTkCheckBox(
-            self.preprocess_inner_frame,
+            preprocess_parent,
             text="Convert English Numerals to Persian (e.g., 4 to ۴) (Excludes Tags/Timecodes/Letter-attached numbers) - (Triggers Post-Process UTF-8)",
             font=font_bold,
             command=self.on_preprocess_dependency_toggle,
@@ -539,56 +684,60 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         self.chk_english_num.grid(row=11, column=0, padx=5, pady=5, sticky="w")
 
         # --- Process Tab ---
-        self.process_inner_frame = ctk.CTkScrollableFrame(self.tab_process)
+        self.process_inner_frame = CTkDualScrollableFrame(self.tab_process)
         self.process_inner_frame.grid(row=0, column=0, padx=0, pady=0, sticky="nsew")
-        self.process_inner_frame.grid_columnconfigure(0, weight=1)
-        self.process_inner_frame.grid_rowconfigure(1, weight=1)
-        self.process_inner_frame.grid_rowconfigure(3, weight=1)
-        self.process_inner_frame.grid_rowconfigure(5, weight=1)
+
+        process_parent = self.process_inner_frame.inner_frame
+        process_parent.grid_columnconfigure(0, weight=1)
+        process_parent.grid_rowconfigure(1, weight=1)
+        process_parent.grid_rowconfigure(3, weight=1)
+        process_parent.grid_rowconfigure(5, weight=1)
 
         # Bypass List
         self.chk_bypass = ctk.CTkCheckBox(
-            self.process_inner_frame,
+            process_parent,
             text="Bypass List (Skip lines matching these words)",
             font=font_bold,
             command=self.toggle_bypass,
         )
         self.chk_bypass.grid(row=0, column=0, padx=5, pady=(5, 0), sticky="w")
-        self.txt_bypass = ctk.CTkTextbox(self.process_inner_frame, height=160)
+        self.txt_bypass = ctk.CTkTextbox(process_parent, height=160)
         self.txt_bypass.grid(row=1, column=0, padx=5, pady=5, sticky="nsew")
         setup_enhanced_textbox(self.txt_bypass)
 
         # Remove List
         self.chk_remove = ctk.CTkCheckBox(
-            self.process_inner_frame,
+            process_parent,
             text="Remove List (Delete entire line if matching these words)",
             font=font_bold,
             command=self.toggle_remove,
         )
         self.chk_remove.grid(row=2, column=0, padx=5, pady=(15, 0), sticky="w")
-        self.txt_remove = ctk.CTkTextbox(self.process_inner_frame, height=160)
+        self.txt_remove = ctk.CTkTextbox(process_parent, height=160)
         self.txt_remove.grid(row=3, column=0, padx=5, pady=5, sticky="nsew")
         setup_enhanced_textbox(self.txt_remove)
 
         # Replace List
         self.chk_replace = ctk.CTkCheckBox(
-            self.process_inner_frame,
+            process_parent,
             text="Replace List (Remove these specific words from matching lines)",
             font=font_bold,
             command=self.toggle_replace,
         )
         self.chk_replace.grid(row=4, column=0, padx=5, pady=(15, 0), sticky="w")
-        self.txt_replace = ctk.CTkTextbox(self.process_inner_frame, height=160)
+        self.txt_replace = ctk.CTkTextbox(process_parent, height=160)
         self.txt_replace.grid(row=5, column=0, padx=5, pady=5, sticky="nsew")
         setup_enhanced_textbox(self.txt_replace)
 
         # --- Post-Process Tab ---
-        self.postprocess_inner_frame = ctk.CTkScrollableFrame(self.tab_postprocess)
+        self.postprocess_inner_frame = CTkDualScrollableFrame(self.tab_postprocess)
         self.postprocess_inner_frame.grid(row=0, column=0, padx=0, pady=0, sticky="nsew")
-        self.postprocess_inner_frame.grid_columnconfigure(0, weight=1)
+
+        post_parent = self.postprocess_inner_frame.inner_frame
+        post_parent.grid_columnconfigure(0, weight=1)
 
         self.chk_post_trim_spaces = ctk.CTkCheckBox(
-            self.postprocess_inner_frame,
+            post_parent,
             text="Trim spaces from beginning and end of lines (Post-Process)",
             font=font_bold,
         )
@@ -596,7 +745,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
 
         # Checkbox for Removing Empty HTML Tags
         self.chk_remove_empty_tags = ctk.CTkCheckBox(
-            self.postprocess_inner_frame,
+            post_parent,
             text="Remove Empty HTML Tags (e.g., <font></font>, <b></b>)",
             font=font_bold,
         )
@@ -604,7 +753,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
 
         # Checkbox for Removing Negative Timecodes
         self.chk_remove_negative_timecodes = ctk.CTkCheckBox(
-            self.postprocess_inner_frame,
+            post_parent,
             text="Remove Negative Timecodes - (Triggers Reformat & Renumber)",
             font=font_bold,
             command=self.on_reformat_dependency_toggle,
@@ -613,7 +762,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
 
         # Checkbox for Removing Empty Subtitles
         self.chk_remove_empty_subtitles = ctk.CTkCheckBox(
-            self.postprocess_inner_frame,
+            post_parent,
             text="Remove Empty Subtitles - (Triggers Reformat & Renumber)",
             font=font_bold,
             command=self.on_reformat_dependency_toggle,
@@ -621,7 +770,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         self.chk_remove_empty_subtitles.grid(row=3, column=0, padx=5, pady=5, sticky="w")
 
         # Intro Credit Subtitle Container Frame
-        self.intro_credit_frame = ctk.CTkFrame(self.postprocess_inner_frame, fg_color="transparent")
+        self.intro_credit_frame = ctk.CTkFrame(post_parent, fg_color="transparent")
         self.intro_credit_frame.grid(row=4, column=0, padx=5, pady=(0, 5), sticky="w")
 
         self.chk_add_intro_credit = ctk.CTkCheckBox(
@@ -648,13 +797,13 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         self.opt_intro_credit_duration.grid(row=0, column=2, padx=0, pady=2, sticky="w")
         self.opt_intro_credit_duration.set("8")
 
-        self.txt_intro_credit_text = ctk.CTkTextbox(self.postprocess_inner_frame, height=55)
+        self.txt_intro_credit_text = ctk.CTkTextbox(post_parent, height=55)
         self.txt_intro_credit_text.grid(row=5, column=0, padx=5, pady=(0, 5), sticky="ew")
         setup_enhanced_textbox(self.txt_intro_credit_text)
 
         # Checkbox for Reformat & Renumber
         self.chk_reformat_renumber = ctk.CTkCheckBox(
-            self.postprocess_inner_frame,
+            post_parent,
             text="Reformat and Renumber Subtitles (Fixes numbering order and cleans block spacing)",
             font=font_bold,
             command=self.on_reformat_renumber_toggle,
@@ -663,7 +812,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
 
         # Checkbox for Force RTL
         self.chk_force_rtl = ctk.CTkCheckBox(
-            self.postprocess_inner_frame,
+            post_parent,
             text="Force RTL (Remove control characters and apply RTL mark) - (Triggers Post-Process UTF-8)",
             font=font_bold,
             command=self.on_preprocess_dependency_toggle,
@@ -672,7 +821,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
 
         # UTF-8 encoding save option
         self.chk_encode_utf8 = ctk.CTkCheckBox(
-            self.postprocess_inner_frame,
+            post_parent,
             text="Save Final File with UTF-8 Encoding (Required for seamless Persian characters rendering)",
             font=font_bold,
             command=self.on_utf8_toggle,
@@ -680,17 +829,19 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         self.chk_encode_utf8.grid(row=8, column=0, padx=5, pady=5, sticky="w")
 
         # --- Extra Options Tab ---
-        self.extra_inner_frame = ctk.CTkScrollableFrame(self.tab_extra)
+        self.extra_inner_frame = CTkDualScrollableFrame(self.tab_extra)
         self.extra_inner_frame.grid(row=0, column=0, padx=0, pady=0, sticky="nsew")
-        self.extra_inner_frame.grid_columnconfigure(0, weight=1)
+
+        extra_parent = self.extra_inner_frame.inner_frame
+        extra_parent.grid_columnconfigure(0, weight=1)
 
         self.chk_delete_original = ctk.CTkCheckBox(
-            self.extra_inner_frame, text="Delete original subtitle file after successful process", font=font_bold
+            extra_parent, text="Delete original subtitle file after successful process", font=font_bold
         )
         self.chk_delete_original.grid(row=0, column=0, padx=5, pady=5, sticky="w")
 
         self.chk_detailed_logs = ctk.CTkCheckBox(
-            self.extra_inner_frame,
+            extra_parent,
             text='Create individual changelog file for each subtitle (Saved in "/Logs/Subtitle-Logs/" folder)',
             font=font_bold,
         )
@@ -698,7 +849,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
 
         # Option: Toggle Drag and Drop feature
         self.chk_enable_dnd = ctk.CTkCheckBox(
-            self.extra_inner_frame,
+            extra_parent,
             text="Enable Drag and Drop for Files and Folders on Process buttons",
             font=font_bold,
         )
