@@ -249,66 +249,84 @@ def setup_enhanced_textbox(textbox):
 
 class CTkDualScrollableFrame(ctk.CTkFrame):
     def __init__(self, master, **kwargs):
-        # 1. Force the main container to have sharp corners (corner_radius=0) and transparent background
-        # This completely prevents white/gray artifacts at the 4 corners.
+        # Set default corner radius to zero to avoid corner artifacts
         kwargs.setdefault("corner_radius", 0)
-        kwargs.setdefault("fg_color", "transparent")
-        kwargs.setdefault("bg_color", "transparent")
+
         super().__init__(master, **kwargs)
 
-        # 2. Determine the correct background color based on the current theme (Light/Dark)
-        bg_color = ctk.ThemeManager.theme["CTkFrame"]["fg_color"]
-        if isinstance(bg_color, (list, tuple)):
-            mode_idx = 1 if ctk.get_appearance_mode() == "Dark" else 0
-            bg_color = bg_color[mode_idx]
+        # Retrieve the current theme background color
+        self._theme_bg = self._get_theme_bg()
 
-        # 3. Create Canvas and set its background color to match the theme perfectly
-        self.canvas = tk.Canvas(self, highlightthickness=0, bd=0, bg=bg_color)
+        # Configure main frame appearance and background
+        self.configure(fg_color=self._theme_bg, bg_color=self._theme_bg, corner_radius=0)
 
-        # Create vertical and horizontal scrollbars
+        # Initialize the canvas for scrollable content management
+        self.canvas = tk.Canvas(self, bg=self._theme_bg, highlightthickness=0, bd=0, relief="flat", insertwidth=0)
+
+        # Initialize vertical and horizontal scrollbars
         self.vsb = ctk.CTkScrollbar(self, orientation="vertical", command=self.canvas.yview)
         self.hsb = ctk.CTkScrollbar(self, orientation="horizontal", command=self.canvas.xview)
+
+        # Link scrollbars to the canvas view commands
         self.canvas.configure(yscrollcommand=self.vsb.set, xscrollcommand=self.hsb.set)
 
-        # Create inner frame with the theme color
-        self.inner_frame = ctk.CTkFrame(self.canvas, fg_color=bg_color, corner_radius=0)
+        # Create the inner content container frame
+        self.inner_frame = ctk.CTkFrame(self.canvas, fg_color=self._theme_bg, bg_color=self._theme_bg, corner_radius=0)
 
-        # Create inner window inside the Canvas with resizing capabilities
+        # Embed the inner frame inside the canvas window
         self.inner_window = self.canvas.create_window((0, 0), window=self.inner_frame, anchor="nw")
 
-        # Grid configuration for the main Canvas
-        self.canvas.grid(row=0, column=0, sticky="nsew")
+        # Create a filler frame for the bottom-right corner when both scrollbars are visible
+        self.corner_fill = tk.Frame(self, bg=self._theme_bg, bd=0, highlightthickness=0)
+
+        # Place the canvas inside the main layout grid
+        self.canvas.grid(row=0, column=0, sticky="nsew", padx=0, pady=0)
+
+        # Configure main grid weights for proper scaling
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
-        # Bind events for size changes and scroll region updates
+        # Bind configuration and mouse interaction events
         self.inner_frame.bind("<Configure>", self._on_frame_configure)
         self.canvas.bind("<Configure>", self._on_canvas_configure)
-
-        # Bind mouse scroll events over the frame and canvas
         self.canvas.bind("<Enter>", self._bind_mouse_scroll)
         self.canvas.bind("<Leave>", self._unbind_mouse_scroll)
         self.inner_frame.bind("<Enter>", self._bind_mouse_scroll)
         self.inner_frame.bind("<Leave>", self._unbind_mouse_scroll)
 
-        # Sync with theme appearance changes (Light / Dark)
+        # Register appearance mode tracker callback for theme switching
         ctk.AppearanceModeTracker.add(self._update_canvas_bg)
 
+        # Defer initial theme background update to idle loop
+        self.after_idle(self._update_canvas_bg)
+
+    def _get_theme_bg(self):
+        """Extract the background color matching the active theme mode."""
+        color = ctk.ThemeManager.theme["CTkFrame"]["fg_color"]
+        if isinstance(color, (list, tuple)):
+            color = color[1 if ctk.get_appearance_mode() == "Dark" else 0]
+        return color
+
     def _update_canvas_bg(self, new_appearance_mode=None):
-        bg_color = ctk.ThemeManager.theme["CTkFrame"]["fg_color"]
+        """Update widget background colors when the application theme changes."""
+        self._theme_bg = self._get_theme_bg()
 
-        if isinstance(bg_color, (list, tuple)):
-            mode_idx = 1 if ctk.get_appearance_mode() == "Dark" else 0
-            bg_color = bg_color[mode_idx]
+        self.configure(fg_color=self._theme_bg, bg_color=self._theme_bg)
+        self.canvas.configure(bg=self._theme_bg)
+        self.corner_fill.configure(bg=self._theme_bg)
 
-        self.canvas.configure(bg=bg_color)
-
-        if hasattr(self, "inner_frame") and self.inner_frame.winfo_exists():
-            self.inner_frame.configure(fg_color=bg_color)
+        if self.inner_frame.winfo_exists():
+            # Use try-except block to safely configure the inner frame and avoid CustomTkinter internal textbox attribute errors
+            try:
+                self.inner_frame.configure(fg_color=self._theme_bg, bg_color=self._theme_bg)
+            except Exception:
+                pass
             self._propagate_appearance(self.inner_frame, ctk.get_appearance_mode())
 
+        self.after_idle(self._check_scrollbars)
+
     def _propagate_appearance(self, widget, mode):
-        """Recursively apply appearance mode to custom tkinter widgets inside the canvas."""
+        """Recursively apply appearance mode updates to child widgets safely."""
         try:
             if hasattr(widget, "_set_appearance_mode"):
                 widget._set_appearance_mode(mode)
@@ -316,76 +334,89 @@ class CTkDualScrollableFrame(ctk.CTkFrame):
             pass
 
         for child in widget.winfo_children():
+            # Skip propagating down into nested CustomTkinter textboxes to prevent configuration AttributeError exceptions
+            if isinstance(child, ctk.CTkTextbox):
+                continue
             self._propagate_appearance(child, mode)
 
-    def _on_frame_configure(self, event=None):
-        """Update scroll region and check scrollbars whenever inner frame content changes."""
-        canvas_w = self.canvas.winfo_width()
-        content_w = self.inner_frame.winfo_reqwidth()
-
-        if content_w > canvas_w:
-            self.canvas.itemconfig(self.inner_window, width=content_w)
+    def _update_inner_width(self, canvas_width):
+        """Adjust inner window width to match or exceed the viewport width."""
+        content_width = self.inner_frame.winfo_reqwidth()
+        if content_width <= canvas_width:
+            self.canvas.itemconfigure(self.inner_window, width=canvas_width)
         else:
-            self.canvas.itemconfig(self.inner_window, width=canvas_w)
+            self.canvas.itemconfigure(self.inner_window, width=content_width)
 
+    def _on_frame_configure(self, event=None):
+        """Handle inner frame geometry changes to update scroll regions."""
+        self._update_inner_width(self.canvas.winfo_width())
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
         self._check_scrollbars()
 
     def _on_canvas_configure(self, event):
-        """Handle canvas resize events to adjust inner window width."""
-        canvas_w = event.width
-        content_w = self.inner_frame.winfo_reqwidth()
-
-        if content_w > canvas_w:
-            self.canvas.itemconfig(self.inner_window, width=content_w)
-        else:
-            self.canvas.itemconfig(self.inner_window, width=canvas_w)
-
+        """Handle canvas viewport resize events."""
+        self._update_inner_width(event.width)
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
         self._check_scrollbars()
 
     def _check_scrollbars(self):
-        """Smart management to show or hide scrollbars based on content dimensions."""
+        """Manage visibility rules for vertical and horizontal scrollbars."""
         self.update_idletasks()
-        bbox = self.canvas.bbox("all")
-        if not bbox:
-            return
 
         canvas_w = self.canvas.winfo_width()
         canvas_h = self.canvas.winfo_height()
-        content_w = bbox[2] - bbox[0]
-        content_h = bbox[3] - bbox[1]
 
-        # Vertical scrollbar check
-        if content_h > canvas_h and canvas_h > 1:
-            self.vsb.grid(row=0, column=1, sticky="ns")
+        if canvas_w <= 1 or canvas_h <= 1:
+            return
+
+        content_w = self.inner_frame.winfo_reqwidth()
+        content_h = self.inner_frame.winfo_reqheight()
+
+        show_v = content_h > canvas_h
+        show_h = content_w > canvas_w
+
+        if show_v:
+            self.vsb.grid(row=0, column=1, sticky="ns", padx=0, pady=0)
         else:
             self.vsb.grid_forget()
 
-        # Horizontal scrollbar check
-        if content_w > canvas_w and canvas_w > 1:
-            self.hsb.grid(row=1, column=0, sticky="ew")
+        if show_h:
+            self.hsb.grid(row=1, column=0, sticky="ew", padx=0, pady=0)
         else:
             self.hsb.grid_forget()
 
+        if show_v and show_h:
+            self.corner_fill.grid(row=1, column=1, sticky="nsew")
+        else:
+            self.corner_fill.grid_forget()
+
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+
     def _bind_mouse_scroll(self, event):
-        """Bind mouse wheel globally when cursor enters the scrollable area."""
+        """Bind global mouse wheel events when cursor hovers over the frame."""
         self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
         self.canvas.bind_all("<Button-4>", self._on_mousewheel)
         self.canvas.bind_all("<Button-5>", self._on_mousewheel)
 
     def _unbind_mouse_scroll(self, event):
-        """Unbind mouse wheel globally when cursor leaves the scrollable area."""
+        """Unbind global mouse wheel events when cursor leaves the frame."""
         self.canvas.unbind_all("<MouseWheel>")
         self.canvas.unbind_all("<Button-4>")
         self.canvas.unbind_all("<Button-5>")
 
     def _on_mousewheel(self, event):
-        """Execute vertical scrolling via mouse wheel."""
-        if self.vsb.winfo_ismapped():
-            if event.num == 4 or event.delta > 0:
-                self.canvas.yview_scroll(-1, "units")
-            elif event.num == 5 or event.delta < 0:
-                self.canvas.yview_scroll(1, "units")
+        """Process vertical mouse wheel scrolling actions."""
+        if not self.vsb.winfo_ismapped():
+            return
+
+        if getattr(event, "num", None) == 4:
+            self.canvas.yview_scroll(-1, "units")
+        elif getattr(event, "num", None) == 5:
+            self.canvas.yview_scroll(1, "units")
+        elif event.delta > 0:
+            self.canvas.yview_scroll(-1, "units")
+        elif event.delta < 0:
+            self.canvas.yview_scroll(1, "units")
 
 
 # Created wrapper class to inject TkinterDnD capabilities into CustomTkinter window
