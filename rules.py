@@ -262,6 +262,9 @@ abbreviation_rules = [
 comma_rules_list = [
     (" ، ", "، ", False),
     (" ،", "،", False),
+    (re.compile(r"^،(?=[\u0600-\u06FF])"), "", True),
+    (re.compile(r"^<i>،(?=[\u0600-\u06FF])"), "<i>", True),
+    (re.compile(r"^<b>،(?=[\u0600-\u06FF])"), "<b>", True),
     (re.compile(r"^، "), "،", True),
     (re.compile(r"^<i>، "), "<i>،", True),
     (">، ", ">،", False),
