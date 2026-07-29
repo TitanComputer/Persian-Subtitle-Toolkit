@@ -1003,59 +1003,6 @@ class SubtitleProcessor:
                             log_msg = f'Line {index} modified | Option: Pre-Process Trim Spaces | Before: "{orig_clean}" -> After: "{curr_clean}"'
                             Logger.log_subtitle_change(current_file_dir, filename, log_msg)
 
-                    # Apply Pre-Process Option: Remove Unneeded Spaces (Aligned with XML rules)
-                    if self.options.get("remove_unneeded_spaces", 1) and not is_timecode_or_index:
-                        before_unneeded = current_line
-                        temp_line = current_line
-
-                        # Unneeded spaces rules parsed and adapted from Remove Unneeded Spaces.xml
-                        unneeded_rules = [
-                            (re.compile(r"^ +"), "", "Remove Unneeded Spaces: beginning of line"),
-                            (re.compile(r" +(?=\r?\n|$)"), "", "Remove Unneeded Spaces: end of line"),
-                            (
-                                re.compile(r"^(\s*)(\<[^<>]+\>)(\s*)"),
-                                r"\2",
-                                "Remove Unneeded Spaces: beginning of line with tag",
-                            ),
-                            (
-                                re.compile(r"(\s*)(\<[^<>]+\>)(\s*)(?=\r?\n|$)"),
-                                r"\2",
-                                "Remove Unneeded Spaces: end of line with tag",
-                            ),
-                            (re.compile(r"^: \b"), ":", "Remove Unneeded Spaces: colon at start"),
-                            (
-                                re.compile(r"(\<[^<>]+\>)(\:)( )"),
-                                r"\1\3\2",
-                                "Remove Unneeded Spaces: tag colon spacing",
-                            ),
-                            (
-                                re.compile(r"^(\s*)(^[^ ]+[\S ]+[^ ]+$)(\s*)"),
-                                r"\2",
-                                "Remove Unneeded Spaces: edges of line",
-                            ),
-                            (
-                                re.compile(r'^([!،؟:\.\(\)]*)(")([\s]*)([0-9\w\b\s]+)([\s]*)(")([!-~]*)(?=\r?\n|$)'),
-                                r"\2\4\6\7",
-                                "Remove Unneeded Spaces: double quotes",
-                            ),
-                            (re.compile(r'^" \b'), '"', "Remove Unneeded Spaces: double quote start"),
-                            (re.compile(r'\b "\r?\n'), '"\n', "Remove Unneeded Spaces: double quote end"),
-                            (re.compile(r"[ \t]{2,}"), " ", "Remove Unneeded Spaces: multiple spaces"),
-                        ]
-
-                        for pattern, replacement, desc in unneeded_rules:
-                            temp_line = pattern.sub(replacement, temp_line)
-
-                        current_line = temp_line
-
-                        if current_line != before_unneeded:
-                            file_has_changes = True
-                            if self.options.get("detailed_subtitle_logs", 1):
-                                b_clean = before_unneeded.rstrip("\n")
-                                c_clean = current_line.rstrip("\n")
-                                log_msg = f'Line {index} modified | Option: Pre-Process Remove Unneeded Spaces | Before: "{b_clean}" -> After: "{c_clean}"'
-                                Logger.log_subtitle_change(current_file_dir, filename, log_msg)
-
                     # Apply Pre-Process Option: Fix Abbreviations
                     if self.options.get("fix_abbreviations", 1) and not is_timecode_or_index:
                         before_abbr = current_line
@@ -1277,6 +1224,59 @@ class SubtitleProcessor:
                                 b_clean = before_dots.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
                                 log_msg = f'Line {index} modified | Option: Pre-Process Remove Standalone Dots | Before: "{b_clean}" -> After: "{c_clean}"'
+                                Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+
+                    # Apply Pre-Process Option: Remove Unneeded Spaces (Aligned with XML rules)
+                    if self.options.get("remove_unneeded_spaces", 1) and not is_timecode_or_index:
+                        before_unneeded = current_line
+                        temp_line = current_line
+
+                        # Unneeded spaces rules parsed and adapted from Remove Unneeded Spaces.xml
+                        unneeded_rules = [
+                            (re.compile(r"^ +"), "", "Remove Unneeded Spaces: beginning of line"),
+                            (re.compile(r" +(?=\r?\n|$)"), "", "Remove Unneeded Spaces: end of line"),
+                            (
+                                re.compile(r"^(\s*)(\<[^<>]+\>)(\s*)"),
+                                r"\2",
+                                "Remove Unneeded Spaces: beginning of line with tag",
+                            ),
+                            (
+                                re.compile(r"(\s*)(\<[^<>]+\>)(\s*)(?=\r?\n|$)"),
+                                r"\2",
+                                "Remove Unneeded Spaces: end of line with tag",
+                            ),
+                            (re.compile(r"^: \b"), ":", "Remove Unneeded Spaces: colon at start"),
+                            (
+                                re.compile(r"(\<[^<>]+\>)(\:)( )"),
+                                r"\1\3\2",
+                                "Remove Unneeded Spaces: tag colon spacing",
+                            ),
+                            (
+                                re.compile(r"^(\s*)(^[^ ]+[\S ]+[^ ]+$)(\s*)"),
+                                r"\2",
+                                "Remove Unneeded Spaces: edges of line",
+                            ),
+                            (
+                                re.compile(r'^([!،؟:\.\(\)]*)(")([\s]*)([0-9\w\b\s]+)([\s]*)(")([!-~]*)(?=\r?\n|$)'),
+                                r"\2\4\6\7",
+                                "Remove Unneeded Spaces: double quotes",
+                            ),
+                            (re.compile(r'^" \b'), '"', "Remove Unneeded Spaces: double quote start"),
+                            (re.compile(r'\b "\r?\n'), '"\n', "Remove Unneeded Spaces: double quote end"),
+                            (re.compile(r"[ \t]{2,}"), " ", "Remove Unneeded Spaces: multiple spaces"),
+                        ]
+
+                        for pattern, replacement, desc in unneeded_rules:
+                            temp_line = pattern.sub(replacement, temp_line)
+
+                        current_line = temp_line
+
+                        if current_line != before_unneeded:
+                            file_has_changes = True
+                            if self.options.get("detailed_subtitle_logs", 1):
+                                b_clean = before_unneeded.rstrip("\n")
+                                c_clean = current_line.rstrip("\n")
+                                log_msg = f'Line {index} modified | Option: Pre-Process Remove Unneeded Spaces | Before: "{b_clean}" -> After: "{c_clean}"'
                                 Logger.log_subtitle_change(current_file_dir, filename, log_msg)
 
                     # Option: Convert English Question Marks to Persian
