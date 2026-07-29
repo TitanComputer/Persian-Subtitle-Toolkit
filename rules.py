@@ -297,6 +297,8 @@ exclamation_rules_list = [
     (" ! ", "! ", False),
     (re.compile(r"(\b[\w\d\s]+\b)( *)(\!)( *)(\b[\w\d\s]+\b)"), r"\1\3 \5", True),
     (re.compile(r"(\b[^\u0000-\u007F]+\b)( *)(\!)( *)(\b[^\u0000-\u007F]+\b)"), r"\1\3 \5", True),
+    (re.compile(r"^(\<[^<>]+\>)*!(?=[^\s])"), r"\1", True),
+    (re.compile(r"\n(\<[^<>]+\>)*!(?=[^\s])"), r"\n\1", True),
     (re.compile(r"^(\<[^<>]+\>)*(\!)( )"), r"\1\2", True),
     (re.compile(r'^"! '), '"!', True),
     (re.compile(r"^'! "), "'!", True),
