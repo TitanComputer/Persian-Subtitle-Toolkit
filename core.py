@@ -973,6 +973,19 @@ class SubtitleProcessor:
                 if self.options.get("detailed_subtitle_logs", 1):
                     Logger.log_subtitle_change(current_file_dir, filename, f"Started tracking changes for: {filename}")
 
+                # Helper function to trim spaces while preserving SRT line endings
+                def trim_line_spaces(line_text):
+                    if not line_text:
+                        return line_text
+                    stripped = line_text.strip()
+                    # Preserving structural carriage returns of SRT format
+                    if line_text.endswith("\r\n"):
+                        return stripped + "\r\n"
+                    elif line_text.endswith("\n"):
+                        return stripped + "\n"
+                    else:
+                        return stripped
+
                 for index, line in enumerate(lines, start=1):
                     self.total_lines_processed += 1
                     original_line = line
@@ -985,14 +998,7 @@ class SubtitleProcessor:
 
                     # Apply Pre-Process Option: Trim Spaces
                     if self.options.get("trim_spaces", 1):
-                        stripped = current_line.strip()
-                        # Preserving structural carriage returns of SRT format
-                        if current_line.endswith("\n"):
-                            current_line = stripped + "\n"
-                        elif current_line.endswith("\r\n"):
-                            current_line = stripped + "\r\n"
-                        else:
-                            current_line = stripped
+                        current_line = trim_line_spaces(current_line)
 
                     # Log Pre-Process Changes
                     if current_line != original_line:
@@ -1430,13 +1436,7 @@ class SubtitleProcessor:
                         # Apply Post-Process Option: Trim Spaces
                         if post_trim_spaces and current_line:
                             before_post = current_line
-                            stripped = current_line.strip()
-                            if current_line.endswith("\n"):
-                                current_line = stripped + "\n"
-                            elif current_line.endswith("\r\n"):
-                                current_line = stripped + "\r\n"
-                            else:
-                                current_line = stripped
+                            current_line = trim_line_spaces(current_line)
 
                             if current_line != before_post:
                                 file_has_changes = True
@@ -1627,7 +1627,7 @@ class SubtitleProcessor:
                     # Remove specific control characters
                     ctrl_chars = ["\u200e", "\u200f", "\u202a", "\u202b", "\u202c", "\u202d", "\u202e"]
 
-                    for line in processed_lines:
+                    for index, line in enumerate(processed_lines, start=1):
                         if index_pattern.match(line) or timecode_pattern.match(line) or not line.strip():
                             rtl_processed_lines.append(line)
                         else:
@@ -1637,6 +1637,19 @@ class SubtitleProcessor:
                             for char in ctrl_chars:
                                 clean_text = clean_text.replace(char, "")
 
+                            # Apply RTL Trim Spaces
+                            if post_trim_spaces and clean_text:
+                                before_post = clean_text
+                                clean_text = trim_line_spaces(clean_text)
+                                if before_post != clean_text:
+                                    file_has_changes = True
+                                    if self.options.get("detailed_subtitle_logs", 1):
+                                        before_clean = before_post.rstrip("\n")
+                                        curr_clean = clean_text.rstrip("\n")
+                                        log_msg = f'Line {index} modified | Option: RTL Trim Spaces | Before: "{before_clean}" -> After: "{curr_clean}"'
+                                        Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+
+                            # Apply Post-Process Option: Smart RTL Enforcement
                             if clean_text.strip():
                                 line_stripped = clean_text.rstrip("\r\n")
                                 line_ending = clean_text[len(line_stripped) :]
