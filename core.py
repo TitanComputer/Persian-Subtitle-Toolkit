@@ -1276,24 +1276,22 @@ class SubtitleProcessor:
                                 r"\2\4\6",
                                 "Remove Unneeded Spaces: edges of line with tag",
                             ),
-                            # Double quotes internal and external spacing fixes
+                            # Double quotes internal spacing fixes
                             (
-                                re.compile(r'^([!،؟:\.\(\)]*)(")([\s]*)([0-9\w\b\s]+)([\s]*)(")([!-~]*)(?=\r?\n|$)'),
-                                r"\2\4\6\7",
-                                "Remove Unneeded Spaces: double quotes",
-                            ),
-                            (re.compile(r'^" \b'), '"', "Remove Unneeded Spaces: double quote start"),
-                            (re.compile(r'\b "\r?\n'), '"\n', "Remove Unneeded Spaces: double quote end"),
-                            # Fix spaces before Persian/Arabic question mark inside quotes or text
-                            (
-                                re.compile(r"(\s+)(\")([؟])(<[^\\p{Lo}\"]+>)*(\r?\n|$)"),
-                                r"\2\3\4\5",
-                                "Remove Unneeded Spaces: double quotes question mark",
+                                re.compile(r'"\s+([^"]+?)"'),
+                                r'"\1"',
+                                "Remove Unneeded Spaces: right after opening quote",
                             ),
                             (
-                                re.compile(r"(\s*)(\")([؟])(\")(<[^\\p{Lo}\"]+>)*(\r?\n|$)"),
-                                r"\2\3\4\5\6",
-                                "Remove Unneeded Spaces: double quotes question mark pair",
+                                re.compile(r'"([^"]+?)\s+"'),
+                                r'"\1"',
+                                "Remove Unneeded Spaces: right before closing quote",
+                            ),
+                            # Fix spaces between closing quote and punctuation (e.g. " ؟" -> "؟")
+                            (
+                                re.compile(r'"\s+([؟!\.\,،:;])'),
+                                r'"\1',
+                                "Remove Unneeded Spaces: between quote and punctuation",
                             ),
                             # Collapse multiple spaces into a single space
                             (re.compile(r"[ \t]{2,}"), " ", "Remove Unneeded Spaces: multiple spaces"),
