@@ -175,14 +175,29 @@ class SubtitleProcessor:
         # Extract Process configuration variables
         bypass_enabled = self.options.get("bypass_enabled", 1)
         bypass_list = [w.strip() for w in self.options.get("bypass_list", "").split("\n") if w.strip()]
+        # Pre-compile regexes for bypass list to optimize performance
+        bypass_regexes = [(w, build_flexible_regex(w)) for w in bypass_list if build_flexible_regex(w)]
 
         remove_enabled = self.options.get("remove_enabled", 1)
         remove_list = [w.strip() for w in self.options.get("remove_list", "").split("\n") if w.strip()]
+        # Pre-compile regexes for remove list to optimize performance
+        remove_regexes = [(w, build_flexible_regex(w)) for w in remove_list if build_flexible_regex(w)]
 
         replace_enabled = self.options.get("replace_enabled", 1)
         replace_list = [w.strip() for w in self.options.get("replace_list", "").split("\n") if w.strip()]
+        # Pre-compile regexes for replace list to optimize performance
+        replace_regexes = [(w, build_flexible_regex(w)) for w in replace_list if build_flexible_regex(w)]
 
         post_trim_spaces = self.options.get("post_trim_spaces", 1)
+
+        # Pre-compile heavy regex patterns used in line processing to avoid O(n) recompilation overhead
+        zw_space = r"[\s\u200c\u200d\u200e\u200f\ufeff]"
+        start_dot_pattern = re.compile(rf"^((?:{zw_space}|<[^>]+>)*)\.(?!{zw_space}*[.\-:;!?؟،,*~_|]){zw_space}*")
+        end_dot_pattern = re.compile(
+            rf"(?<![.\-:;!?؟،,*~_|\s\u200c\u200d\u200e\u200f\ufeff]){zw_space}*\.(?=(?:{zw_space}|</[^>]+>)*(?:\r\n|\n)?$)"
+        )
+        html_tag_split_pattern = re.compile(r"(<[^>]+>)")
+        isolated_eng_num_pattern = re.compile(r"(?<![a-zA-Z0-9])(\d+)(?![a-zA-Z0-9])")
 
         start_time = time.time()
         for file_path in srt_files_paths:
@@ -457,21 +472,13 @@ class SubtitleProcessor:
                         before_dots = current_line
 
                         # Whitespace + Zero-Width & Invisible Formatting Characters (\u200c=ZWNJ, \u200d=ZWJ, \u200e=LRM, \u200f=RLM, \ufeff=BOM)
-                        zw_space = r"[\s\u200c\u200d\u200e\u200f\ufeff]"
+                        # Regex patterns are pre-compiled outside the main loop for performance
 
                         # Remove standalone dot at the start of the line (ignores HTML tags & zero-width chars prefix)
-                        current_line = re.sub(
-                            rf"^((?:{zw_space}|<[^>]+>)*)\.(?!{zw_space}*[.\-:;!?؟،,*~_|]){zw_space}*",
-                            r"\1",
-                            current_line,
-                        )
+                        current_line = start_dot_pattern.sub(r"\1", current_line)
 
                         # Remove standalone dot at the end of the line (ignores HTML tags & zero-width chars suffix)
-                        current_line = re.sub(
-                            rf"(?<![.\-:;!?؟،,*~_|\s\u200c\u200d\u200e\u200f\ufeff]){zw_space}*\.(?=(?:{zw_space}|</[^>]+>)*(?:\r\n|\n)?$)",
-                            "",
-                            current_line,
-                        )
+                        current_line = end_dot_pattern.sub("", current_line)
 
                         if current_line != before_dots:
                             file_has_changes = True
@@ -554,12 +561,12 @@ class SubtitleProcessor:
                             return "".join(english_numerals.get(char, char) for char in match.group(0))
 
                         # Split text by HTML tags to preserve numbers inside tags
-                        parts = re.split(r"(<[^>]+>)", current_line)
+                        parts = html_tag_split_pattern.split(current_line)
                         for i in range(len(parts)):
                             # Only process parts that are not HTML tags
                             if not parts[i].startswith("<"):
                                 # Ensure numbers are not attached to English letters or other numbers on either side
-                                parts[i] = re.sub(r"(?<![a-zA-Z0-9])(\d+)(?![a-zA-Z0-9])", replace_eng_num, parts[i])
+                                parts[i] = isolated_eng_num_pattern.sub(replace_eng_num, parts[i])
 
                         current_line = "".join(parts)
                         if current_line != before_enum:
@@ -573,9 +580,8 @@ class SubtitleProcessor:
                     # --- Process Options ---
                     is_bypassed = False
                     if bypass_enabled:
-                        for word in bypass_list:
-                            reg = build_flexible_regex(word)
-                            if reg and reg.search(current_line):
+                        for word, reg in bypass_regexes:
+                            if reg.search(current_line):
                                 is_bypassed = True
                                 if self.options.get("detailed_subtitle_logs", 1):
                                     log_msg = f'Line {index} bypassed | Matched "{word}" in Bypass List. No further process changes applied.'
@@ -587,9 +593,8 @@ class SubtitleProcessor:
 
                         # Process Option: Remove List
                         if remove_enabled:
-                            for word in remove_list:
-                                reg = build_flexible_regex(word)
-                                if reg and reg.search(current_line):
+                            for word, reg in remove_regexes:
+                                if reg.search(current_line):
                                     is_removed = True
                                     file_has_changes = True
                                     if self.options.get("detailed_subtitle_logs", 1):
@@ -605,9 +610,8 @@ class SubtitleProcessor:
 
                         # Process Option: Replace List
                         if replace_enabled and current_line:
-                            for word in replace_list:
-                                reg = build_flexible_regex(word)
-                                if reg and reg.search(current_line):
+                            for word, reg in replace_regexes:
+                                if reg.search(current_line):
                                     before_replace = current_line
                                     current_line = reg.sub("", current_line)
                                     if current_line != before_replace:
