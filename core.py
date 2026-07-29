@@ -1511,6 +1511,7 @@ class SubtitleProcessor:
                             else:
                                 filtered_blocks.append(b)
                         blocks = filtered_blocks
+
                     # Option: Add Intro Credit Subtitle
                     if self.options.get("add_intro_credit", 0):
                         credit_text = self.options.get("intro_credit_text", "").strip()
@@ -1627,6 +1628,33 @@ class SubtitleProcessor:
                     # Remove specific control characters
                     ctrl_chars = ["\u200e", "\u200f", "\u202a", "\u202b", "\u202c", "\u202d", "\u202e"]
 
+                    # Tuples of symbols that require RTL enforcement at boundaries
+                    start_symbols = ("-", "–", "—", '"', "'", "«", "»", "“", "”", "‘", "’", "(", "[", "{", "<")
+                    end_symbols = (
+                        ".",
+                        "!",
+                        "؟",
+                        "?",
+                        "،",
+                        ",",
+                        ":",
+                        "؛",
+                        ";",
+                        "…",
+                        '"',
+                        "'",
+                        "«",
+                        "»",
+                        "“",
+                        "”",
+                        "‘",
+                        "’",
+                        ")",
+                        "]",
+                        "}",
+                        ">",
+                    )
+
                     for index, line in enumerate(processed_lines, start=1):
                         if index_pattern.match(line) or timecode_pattern.match(line) or not line.strip():
                             rtl_processed_lines.append(line)
@@ -1654,13 +1682,24 @@ class SubtitleProcessor:
                                 line_stripped = clean_text.rstrip("\r\n")
                                 line_ending = clean_text[len(line_stripped) :]
 
-                                # Remove HTML tags temporarily to check the actual last text character
+                                # Remove HTML tags temporarily to check the actual boundary text
                                 text_no_tags = re.sub(r"<[^>]+>", "", line_stripped).strip()
 
-                                # Smart RTL Enforcement: Only append RLM (\u200f) if the line ends with
-                                # standard sentence-ending punctuation. Do NOT prepend it.
-                                if text_no_tags and text_no_tags[-1] in (".", "!", "؟", "?", "،", ",", ":", "؛", ";"):
-                                    clean_text = line_stripped + "\u200f" + line_ending
+                                if text_no_tags:
+                                    has_symbol_start = text_no_tags.startswith(start_symbols)
+                                    has_symbol_end = text_no_tags.endswith(end_symbols)
+
+                                    rtl_line = line_stripped
+
+                                    # Prepend RLM if the line starts with dialogue hyphen, quote, or opening bracket
+                                    if has_symbol_start:
+                                        rtl_line = "\u200f" + rtl_line
+
+                                    # Append RLM if the line ends with punctuation, quote, or closing bracket
+                                    if has_symbol_end:
+                                        rtl_line = rtl_line + "\u200f"
+
+                                    clean_text = rtl_line + line_ending
                                 else:
                                     clean_text = line_stripped + line_ending
 
