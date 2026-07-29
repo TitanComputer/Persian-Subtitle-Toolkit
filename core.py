@@ -109,6 +109,7 @@ def parse_srt_blocks(lines):
 
             i += 1
             text_lines = []
+            text_indices = []  # Added to track the original line numbers of pure subtitle texts
             while i < n:
                 curr = lines[i]
                 curr_stripped = curr.strip()
@@ -120,6 +121,7 @@ def parse_srt_blocks(lines):
                 ) and (i + 1 < n and tc_regex.match(lines[i + 1].strip())):
                     break
                 text_lines.append(curr.rstrip("\r\n"))
+                text_indices.append(i + 1)  # Storing 1-based index to match enumerate
                 i += 1
 
             blocks.append(
@@ -130,6 +132,7 @@ def parse_srt_blocks(lines):
                     "start_str": start_str,
                     "end_str": end_str,
                     "text_lines": text_lines,
+                    "text_indices": text_indices,  # Included in block dictionary
                 }
             )
         else:
@@ -214,6 +217,12 @@ class SubtitleProcessor:
 
                 Logger.log_process(f"Identified encoding: {file_encoding}", current_file_dir)
 
+                # Pre-parse blocks to identify and isolate valid text lines from timecodes/indexes
+                parsed_blocks_for_index = parse_srt_blocks(lines)
+                valid_text_indices = set()
+                for b in parsed_blocks_for_index:
+                    valid_text_indices.update(b.get("text_indices", []))
+
                 processed_lines = []
                 file_has_changes = False
 
@@ -222,6 +231,12 @@ class SubtitleProcessor:
 
                 for index, line in enumerate(lines, start=1):
                     self.total_lines_processed += 1
+
+                    # Skip all processing if the line is not a subtitle text (e.g., timecodes, indexes, empty lines)
+                    if index not in valid_text_indices:
+                        processed_lines.append(line)
+                        continue
+
                     original_line = line
                     current_line = original_line
 
@@ -353,7 +368,7 @@ class SubtitleProcessor:
                                 log_msg = f'Line {index} modified | Option: Pre-Process Question Mark Fixes | Before: "{b_clean}" -> After: "{c_clean}"'
                                 Logger.log_subtitle_change(current_file_dir, filename, log_msg)
 
-                        # Double-Quotes Fixes processing and logging
+                    # Double-Quotes Fixes processing and logging
                     if self.options.get("double_quotes_fixes", 1) == 1 and not is_timecode_or_index:
                         before_dq = current_line
                         temp_line = current_line
