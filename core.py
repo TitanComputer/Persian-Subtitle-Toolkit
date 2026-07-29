@@ -1233,29 +1233,45 @@ class SubtitleProcessor:
 
                         # Unneeded spaces rules parsed and adapted from Remove Unneeded Spaces.xml
                         unneeded_rules = [
+                            # Remove spaces at the beginning of the line
                             (re.compile(r"^ +"), "", "Remove Unneeded Spaces: beginning of line"),
+                            # Remove spaces at the end of the line
                             (re.compile(r" +(?=\r?\n|$)"), "", "Remove Unneeded Spaces: end of line"),
+                            # Remove spaces around tags at the beginning of the line
                             (
                                 re.compile(r"^(\s*)(\<[^<>]+\>)(\s*)"),
                                 r"\2",
                                 "Remove Unneeded Spaces: beginning of line with tag",
                             ),
+                            # Remove spaces around tags at the end of the line
                             (
                                 re.compile(r"(\s*)(\<[^<>]+\>)(\s*)(?=\r?\n|$)"),
                                 r"\2",
                                 "Remove Unneeded Spaces: end of line with tag",
                             ),
+                            # Clean up colon spacing at start
                             (re.compile(r"^: \b"), ":", "Remove Unneeded Spaces: colon at start"),
+                            # Clean up tag and colon spacing
                             (
                                 re.compile(r"(\<[^<>]+\>)(\:)( )"),
                                 r"\1\3\2",
                                 "Remove Unneeded Spaces: tag colon spacing",
                             ),
+                            # Remove edges of line spacing
                             (
                                 re.compile(r"^(\s*)(^[^ ]+[\S ]+[^ ]+$)(\s*)"),
                                 r"\2",
                                 "Remove Unneeded Spaces: edges of line",
                             ),
+                            # Advanced lines with tags edges cleaning
+                            (
+                                re.compile(
+                                    r"^(\s*)(\<[^<>]+\>)(\ *)([^<>]+\b[\b\w\d ]+\b[^<>]+)(\ *)(\<[^<>]+\>)(\s*)"
+                                ),
+                                r"\2\4\6",
+                                "Remove Unneeded Spaces: edges of line with tag",
+                            ),
+                            # Double quotes internal and external spacing fixes
                             (
                                 re.compile(r'^([!،؟:\.\(\)]*)(")([\s]*)([0-9\w\b\s]+)([\s]*)(")([!-~]*)(?=\r?\n|$)'),
                                 r"\2\4\6\7",
@@ -1263,6 +1279,18 @@ class SubtitleProcessor:
                             ),
                             (re.compile(r'^" \b'), '"', "Remove Unneeded Spaces: double quote start"),
                             (re.compile(r'\b "\r?\n'), '"\n', "Remove Unneeded Spaces: double quote end"),
+                            # Fix spaces before Persian/Arabic question mark inside quotes or text
+                            (
+                                re.compile(r"(\s+)(\")([؟])(<[^\\p{Lo}\"]+>)*(\r?\n|$)"),
+                                r"\2\3\4\5",
+                                "Remove Unneeded Spaces: double quotes question mark",
+                            ),
+                            (
+                                re.compile(r"(\s*)(\")([؟])(\")(<[^\\p{Lo}\"]+>)*(\r?\n|$)"),
+                                r"\2\3\4\5\6",
+                                "Remove Unneeded Spaces: double quotes question mark pair",
+                            ),
+                            # Collapse multiple spaces into a single space
                             (re.compile(r"[ \t]{2,}"), " ", "Remove Unneeded Spaces: multiple spaces"),
                         ]
 
