@@ -819,7 +819,26 @@ class SubtitleProcessor:
                     ctrl_chars = ["\u200e", "\u200f", "\u202a", "\u202b", "\u202c", "\u202d", "\u202e"]
 
                     # Tuples of symbols that require RTL enforcement at boundaries
-                    start_symbols = ("-", "–", "—", '"', "'", "«", "»", "“", "”", "‘", "’", "(", "[", "{", "<")
+                    # Tuples of symbols that require RTL enforcement at boundaries
+                    start_symbols = (
+                        ".",
+                        "…",
+                        "-",
+                        "–",
+                        "—",
+                        '"',
+                        "'",
+                        "«",
+                        "»",
+                        "“",
+                        "”",
+                        "‘",
+                        "’",
+                        "(",
+                        "[",
+                        "{",
+                        "<",
+                    )
                     end_symbols = (
                         ".",
                         "!",
@@ -872,8 +891,9 @@ class SubtitleProcessor:
                                 line_stripped = clean_text.rstrip("\r\n")
                                 line_ending = clean_text[len(line_stripped) :]
 
-                                # Remove HTML tags temporarily to check the actual boundary text
-                                text_no_tags = re.sub(r"<[^>]+>", "", line_stripped).strip()
+                                # Remove HTML tags AND invisible zero-width chars temporarily to check boundaries accurately
+                                text_no_tags = re.sub(r"<[^>]+>", "", line_stripped)
+                                text_no_tags = re.sub(r"[\u200b\u200c\u200d\ufeff]", "", text_no_tags).strip()
 
                                 if text_no_tags:
                                     has_symbol_start = text_no_tags.startswith(start_symbols)
@@ -881,11 +901,11 @@ class SubtitleProcessor:
 
                                     rtl_line = line_stripped
 
-                                    # Prepend RLM if the line starts with dialogue hyphen, quote, or opening bracket
+                                    # Prepend RLM if the line starts with dialogue hyphen, quote, dots or opening bracket
                                     if has_symbol_start:
                                         rtl_line = "\u200f" + rtl_line
 
-                                    # Append RLM if the line ends with punctuation, quote, or closing bracket
+                                    # Append RLM if the line ends with punctuation, quote, dots or closing bracket
                                     if has_symbol_end:
                                         rtl_line = rtl_line + "\u200f"
 
