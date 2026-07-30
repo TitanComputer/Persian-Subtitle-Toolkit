@@ -392,6 +392,13 @@ class SubtitleProcessor:
                                 temp_line = rule_pattern.sub(replace_with, temp_line)
                             else:
                                 temp_line = temp_line.replace(rule_pattern, replace_with)
+
+                        # Handle unbalanced double quotes (odd number of quotes)
+                        if temp_line.count('"') % 2 != 0:
+                            # Replace the quote and any surrounding spaces/tabs with a single space
+                            # to avoid merging words. The unneeded_spaces rules will clean up any extra spaces.
+                            temp_line = re.sub(r'[ \t]*"[ \t]*', " ", temp_line)
+
                         current_line = temp_line
                         if current_line != before_dq:
                             file_has_changes = True
