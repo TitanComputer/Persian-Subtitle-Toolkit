@@ -79,6 +79,30 @@ def ms_to_timecode(ms):
     return f"{hours:02d}:{minutes:02d}:{seconds:02d},{millis:03d}"
 
 
+def fix_inconsistent_dialog_hyphens(blocks):
+    """Removes leading dialogue hyphens from multi-line blocks unless every line starts with one."""
+    dialog_prefix_pattern = re.compile(
+        r"""^(?P<prefix>(?:<[^<>]+>|[\s\u200b-\u200f\u202a-\u202e\ufeff])*)(?P<hyphen>-)\s*"""
+    )
+
+    for block in blocks:
+        text_lines = block.get("text_lines", [])
+
+        if len(text_lines) < 2:
+            continue
+
+        dialog_matches = [dialog_prefix_pattern.match(text_line) for text_line in text_lines]
+
+        if all(dialog_matches):
+            continue
+
+        for line_index, dialog_match in enumerate(dialog_matches):
+            if dialog_match:
+                text_lines[line_index] = dialog_match.group("prefix") + text_lines[line_index][dialog_match.end() :]
+
+    return blocks
+
+
 def parse_srt_blocks(lines):
     """Parses raw lines of an SRT file into a list of block dictionaries."""
     blocks = []
@@ -661,6 +685,23 @@ class SubtitleProcessor:
                     # Finally, append the line if it wasn't removed completely
                     if current_line is not None:
                         processed_lines.append(current_line)
+
+                # --- Block-Level Dialog Hyphen Validation ---
+                if self.options.get("dialog_hyphen_fix", 1) == 1:
+                    dialog_blocks = parse_srt_blocks(processed_lines)
+                    dialog_blocks = fix_inconsistent_dialog_hyphens(dialog_blocks)
+
+                    dialog_reformatted_lines = []
+                    for dialog_block in dialog_blocks:
+                        if dialog_block["index"]:
+                            dialog_reformatted_lines.append(f'{dialog_block["index"]}\n')
+                        dialog_reformatted_lines.append(f'{dialog_block["start_str"]} --> {dialog_block["end_str"]}\n')
+                        for dialog_text_line in dialog_block["text_lines"]:
+                            dialog_reformatted_lines.append(f"{dialog_text_line}\n")
+                        dialog_reformatted_lines.append("\n")
+
+                    if dialog_reformatted_lines:
+                        processed_lines = dialog_reformatted_lines
 
                 # --- Block-Level Post-Process Operations ---
                 if (
