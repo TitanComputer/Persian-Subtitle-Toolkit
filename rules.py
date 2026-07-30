@@ -85,6 +85,12 @@ unneeded_rules = [
         r'"\1',
         "Remove Unneeded Spaces: between quote and punctuation",
     ),
+    # Remove spaces before punctuation marks
+    (
+        re.compile(r"([^\s])\s+([،\.!\؟؛:,])"),
+        r"\1\2",
+        "Remove Unneeded Spaces: space before punctuation",
+    ),
     # Collapse multiple spaces into a single space
     (re.compile(r"[ \t]{2,}"), " ", "Remove Unneeded Spaces: multiple spaces"),
 ]
