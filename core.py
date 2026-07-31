@@ -867,7 +867,6 @@ class SubtitleProcessor:
                     ctrl_chars = ["\u200e", "\u200f", "\u202a", "\u202b", "\u202c", "\u202d", "\u202e"]
 
                     # Tuples of symbols that require RTL enforcement at boundaries
-                    # Tuples of symbols that require RTL enforcement at boundaries
                     start_symbols = (
                         ".",
                         "…",
@@ -944,20 +943,25 @@ class SubtitleProcessor:
                                 text_no_tags = re.sub(r"[\u200b\u200c\u200d\ufeff]", "", text_no_tags).strip()
 
                                 if text_no_tags:
-                                    has_symbol_start = text_no_tags.startswith(start_symbols)
-                                    has_symbol_end = text_no_tags.endswith(end_symbols)
+                                    # Check if the line contains any non-ASCII (non-English) characters
+                                    has_non_english = bool(re.search(r"[^\x00-\x7F]", text_no_tags))
 
-                                    rtl_line = line_stripped
+                                    if has_non_english:
+                                        has_symbol_start = text_no_tags.startswith(start_symbols)
+                                        has_symbol_end = text_no_tags.endswith(end_symbols)
+                                        has_english_letters = bool(re.search(r"[a-zA-Z]", text_no_tags))
 
-                                    # Prepend RLM if the line starts with dialogue hyphen, quote, dots or opening bracket
-                                    if has_symbol_start:
-                                        rtl_line = "\u200f" + rtl_line
+                                        rtl_line = line_stripped
 
-                                    # Append RLM if the line ends with punctuation, quote, dots or closing bracket
-                                    if has_symbol_end:
-                                        rtl_line = rtl_line + "\u200f"
+                                        # Use RLE (\u202b) and PDF (\u202c) to strictly enforce RTL direction
+                                        # This forces the internal bidi algorithm to treat English words as embedded inside an RTL context
+                                        if has_symbol_start or has_symbol_end or has_english_letters:
+                                            rtl_line = "\u202b" + rtl_line + "\u202c"
 
-                                    clean_text = rtl_line + line_ending
+                                        clean_text = rtl_line + line_ending
+                                    else:
+                                        # Skip RTL processing completely for fully English/ASCII lines
+                                        clean_text = line_stripped + line_ending
                                 else:
                                     clean_text = line_stripped + line_ending
 
