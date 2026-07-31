@@ -949,13 +949,13 @@ class SubtitleProcessor:
                                     if has_non_english:
                                         has_symbol_start = text_no_tags.startswith(start_symbols)
                                         has_symbol_end = text_no_tags.endswith(end_symbols)
-                                        has_english_letters = bool(re.search(r"[a-zA-Z]", text_no_tags))
+                                        has_english_or_digits = bool(re.search(r"[a-zA-Z0-9]", text_no_tags))
 
                                         rtl_line = line_stripped
 
                                         # Use RLE (\u202b) and PDF (\u202c) to strictly enforce RTL direction
-                                        # This forces the internal bidi algorithm to treat English words as embedded inside an RTL context
-                                        if has_symbol_start or has_symbol_end or has_english_letters:
+                                        # This forces the internal bidi algorithm to treat English words and digits as embedded inside an RTL context
+                                        if has_symbol_start or has_symbol_end or has_english_or_digits:
                                             rtl_line = "\u202b" + rtl_line + "\u202c"
 
                                         clean_text = rtl_line + line_ending
