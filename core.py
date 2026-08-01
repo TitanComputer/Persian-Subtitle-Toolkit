@@ -573,16 +573,17 @@ class SubtitleProcessor:
                                 log_msg = f'Line {index} modified | Option: Pre-Process Remove Unneeded Spaces | Before: "{b_clean}" -> After: "{c_clean}"'
                                 Logger.log_subtitle_change(current_file_dir, filename, log_msg)
 
-                    # Option: Convert English Question Marks to Persian
-                    if self.options.get("persian_question_mark", 1) and not is_timecode_or_index:
+                    # Option: Convert English Question Marks and Commas to Persian
+                    if self.options.get("persian_question_mark_and_comma", 1) and not is_timecode_or_index:
                         before_q = current_line
                         current_line = current_line.replace("?", "؟")
+                        current_line = current_line.replace(",", "،")
                         if current_line != before_q:
                             file_has_changes = True
                             if self.options.get("detailed_subtitle_logs", 1):
                                 b_clean = before_q.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
-                                log_msg = f'Line {index} modified | Option: Pre-Process Persian Question Mark | Before: "{b_clean}" -> After: "{c_clean}"'
+                                log_msg = f'Line {index} modified | Option: Pre-Process Persian Question Mark and Comma | Before: "{b_clean}" -> After: "{c_clean}"'
                                 Logger.log_subtitle_change(current_file_dir, filename, log_msg)
 
                     # 1. Convert Arabic Characters to Persian

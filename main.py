@@ -710,14 +710,14 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.chk_remove_unneeded_spaces.grid(row=11, column=0, padx=5, pady=5, sticky="w")
 
-        # Checkbox for English question mark to Persian conversion
-        self.chk_persian_question_mark = ctk.CTkCheckBox(
+        # Checkbox for English question mark and comma to Persian conversion
+        self.chk_persian_question_mark_and_comma = ctk.CTkCheckBox(
             preprocess_parent,
-            text="Convert English Question Marks to Persian (e.g., ? ➔ ؟) - (Triggers Post-Process UTF-8)",
+            text="Convert English Question Marks and Commas to Persian (e.g., ?, ➔ ؟،) - (Triggers Post-Process UTF-8)",
             font=font_bold,
             command=self.on_preprocess_dependency_toggle,
         )
-        self.chk_persian_question_mark.grid(row=12, column=0, padx=5, pady=5, sticky="w")
+        self.chk_persian_question_mark_and_comma.grid(row=12, column=0, padx=5, pady=5, sticky="w")
 
         # Checkbox for Arabic characters to Persian conversion
         self.chk_arabic_char = ctk.CTkCheckBox(
@@ -1018,7 +1018,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
     def on_preprocess_dependency_toggle(self):
         """Enforce UTF-8 selection if any character conversion options are enabled."""
         if (
-            self.chk_persian_question_mark.get() == 1
+            self.chk_persian_question_mark_and_comma.get() == 1
             or self.chk_arabic_char.get() == 1
             or self.chk_arabic_num.get() == 1
             or self.chk_english_num.get() == 1
@@ -1030,7 +1030,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
     def on_utf8_toggle(self):
         """Disable character conversion features if UTF-8 is disabled since they require it."""
         if self.chk_encode_utf8.get() == 0:
-            self.chk_persian_question_mark.deselect()
+            self.chk_persian_question_mark_and_comma.deselect()
             self.chk_arabic_char.deselect()
             self.chk_arabic_num.deselect()
             self.chk_english_num.deselect()
@@ -1210,10 +1210,10 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         else:
             self.chk_remove_standalone_dots.deselect()
 
-        if config.get("persian_question_mark", 1) == 1:
-            self.chk_persian_question_mark.select()
+        if config.get("persian_question_mark_and_comma", 1) == 1:
+            self.chk_persian_question_mark_and_comma.select()
         else:
-            self.chk_persian_question_mark.deselect()
+            self.chk_persian_question_mark_and_comma.deselect()
 
         if config.get("arabic_char_to_persian", 1) == 1:
             self.chk_arabic_char.select()
@@ -1393,7 +1393,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             "comments_fixes": self.chk_comments_fixes.get(),
             "dialog_hyphen_fix": self.chk_dialog_hyphen_fix.get(),
             "remove_standalone_dots": self.chk_remove_standalone_dots.get(),
-            "persian_question_mark": self.chk_persian_question_mark.get(),
+            "persian_question_mark_and_comma": self.chk_persian_question_mark_and_comma.get(),
             "arabic_char_to_persian": self.chk_arabic_char.get(),
             "arabic_num_to_persian": self.chk_arabic_num.get(),
             "english_num_to_persian": self.chk_english_num.get(),
@@ -1461,7 +1461,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         self.chk_parentheses_fixes.select()
         self.chk_question_mark_fixes.select()
         self.chk_remove_standalone_dots.select()
-        self.chk_persian_question_mark.select()
+        self.chk_persian_question_mark_and_comma.select()
         self.chk_arabic_char.select()
         self.chk_arabic_num.select()
         self.chk_english_num.select()
@@ -1671,7 +1671,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             "comments_fixes": self.chk_comments_fixes.get(),
             "dialog_hyphen_fix": self.chk_dialog_hyphen_fix.get(),
             "remove_standalone_dots": self.chk_remove_standalone_dots.get(),
-            "persian_question_mark": self.chk_persian_question_mark.get(),
+            "persian_question_mark_and_comma": self.chk_persian_question_mark_and_comma.get(),
             "arabic_char_to_persian": self.chk_arabic_char.get(),
             "arabic_num_to_persian": self.chk_arabic_num.get(),
             "english_num_to_persian": self.chk_english_num.get(),
