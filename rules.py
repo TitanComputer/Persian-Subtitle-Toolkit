@@ -266,6 +266,7 @@ abbreviation_rules = [
 
 # Structure of rule lists for formatting processing parsed exactly from XML files
 comma_rules_list = [
+    (re.compile(r","), "،", True),
     (" ، ", "، ", False),
     (" ،", "،", False),
     (re.compile(r"^،(?=[\u0600-\u06FF])"), "", True),
