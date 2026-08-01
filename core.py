@@ -165,6 +165,42 @@ def parse_srt_blocks(lines):
     return blocks
 
 
+def fix_trailing_dialog_hyphens(blocks):
+    """Converts trailing dialogue hyphens to leading dialogue hyphens in multi-line dialogue blocks."""
+
+    for block in blocks:
+        text_lines = block.get("text_lines", [])
+
+        if len(text_lines) < 2:
+            continue
+
+        all_end_with_hyphen = True
+        any_start_with_hyphen = False
+
+        for text_line in text_lines:
+            stripped = text_line.strip()
+
+            if not stripped.endswith("-"):
+                all_end_with_hyphen = False
+                break
+
+            if stripped.startswith("-"):
+                any_start_with_hyphen = True
+
+        if not all_end_with_hyphen or any_start_with_hyphen:
+            continue
+
+        for line_index, text_line in enumerate(text_lines):
+            stripped = text_line.rstrip()
+
+            content = stripped[:-1].rstrip()
+
+            if content:
+                text_lines[line_index] = f"- {content}"
+
+    return blocks
+
+
 class SubtitleProcessor:
     # Added target_files to handle single file process mode
     def __init__(self, folder_path, options=None, target_files=None):
@@ -689,6 +725,7 @@ class SubtitleProcessor:
                 # --- Block-Level Dialog Hyphen Validation ---
                 if self.options.get("dialog_hyphen_fix", 1) == 1:
                     dialog_blocks = parse_srt_blocks(processed_lines)
+                    dialog_blocks = fix_trailing_dialog_hyphens(dialog_blocks)
                     dialog_blocks = fix_inconsistent_dialog_hyphens(dialog_blocks)
 
                     dialog_reformatted_lines = []
