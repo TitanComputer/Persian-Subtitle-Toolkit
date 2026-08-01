@@ -947,6 +947,19 @@ class SubtitleProcessor:
                                     has_non_english = bool(re.search(r"[^\x00-\x7F]", text_no_tags))
 
                                     if has_non_english:
+                                        # Fix visually typed punctuation at the start of the line
+                                        # Moves misplaced punctuation (colons, question/exclamation marks) from the start to the end
+                                        if re.match(r"^((?:<[^>]+>\s*)*)([:؛!\?؟])", line_stripped):
+                                            line_stripped = re.sub(
+                                                r"^((?:<[^>]+>\s*)*)([:؛!\?؟])\s*(.*)$", r"\1\3\2", line_stripped
+                                            )
+
+                                            # Re-evaluate text_no_tags after modification
+                                            text_no_tags = re.sub(r"<[^>]+>", "", line_stripped)
+                                            text_no_tags = re.sub(
+                                                r"[\u200b\u200c\u200d\ufeff]", "", text_no_tags
+                                            ).strip()
+
                                         has_symbol_start = text_no_tags.startswith(start_symbols)
                                         has_symbol_end = text_no_tags.endswith(end_symbols)
                                         has_english_or_digits = bool(re.search(r"[a-zA-Z0-9]", text_no_tags))
