@@ -625,72 +625,81 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         # Option: Fix Abbreviations
         self.chk_fix_abbreviations = ctk.CTkCheckBox(
             preprocess_parent,
-            text="Fix Abbreviations (e.g., F. B. I. ➔ F.B.I.)",
+            text="Fix Abbreviations (e.g., F. B. I. ➔ F.B.I.)  - (Triggers Post-Process UTF-8)",
             font=font_bold,
+            command=self.on_preprocess_dependency_toggle,
         )
         self.chk_fix_abbreviations.grid(row=1, column=0, padx=5, pady=5, sticky="w")
 
         # Option: Comma Fixes
         self.chk_comma_fixes = ctk.CTkCheckBox(
             preprocess_parent,
-            text="Comma Fixes (e.g., سلام , دنیا ➔ سلام، دنیا)",
+            text="Comma Fixes (e.g., سلام , دنیا ➔ سلام، دنیا) - (Triggers Post-Process UTF-8)",
             font=font_bold,
+            command=self.on_preprocess_dependency_toggle,
         )
         self.chk_comma_fixes.grid(row=2, column=0, padx=5, pady=5, sticky="w")
 
         # Option: Exclamation Mark Fixes
         self.chk_exclamation_fixes = ctk.CTkCheckBox(
             preprocess_parent,
-            text="Exclamation Mark Fixes (e.g., سلام ! ➔ سلام!)",
+            text="Exclamation Mark Fixes (e.g., سلام ! ➔ سلام!) - (Triggers Post-Process UTF-8)",
             font=font_bold,
+            command=self.on_preprocess_dependency_toggle,
         )
         self.chk_exclamation_fixes.grid(row=3, column=0, padx=5, pady=5, sticky="w")
 
         # Option: Parentheses Fixes
         self.chk_parentheses_fixes = ctk.CTkCheckBox(
             preprocess_parent,
-            text="Parentheses Fixes (e.g., ( متن ) ➔ (متن))",
+            text="Parentheses Fixes (e.g., ( متن ) ➔ (متن)) - (Triggers Post-Process UTF-8)",
             font=font_bold,
+            command=self.on_preprocess_dependency_toggle,
         )
         self.chk_parentheses_fixes.grid(row=4, column=0, padx=5, pady=5, sticky="w")
 
         # Option: Question Mark Fixes
         self.chk_question_mark_fixes = ctk.CTkCheckBox(
             preprocess_parent,
-            text="Question Mark Fixes (e.g., چرا ؟؟ ➔ چرا؟)",
+            text="Question Mark Fixes (e.g., چرا ؟؟ ➔ چرا؟) - (Triggers Post-Process UTF-8)",
             font=font_bold,
+            command=self.on_preprocess_dependency_toggle,
         )
         self.chk_question_mark_fixes.grid(row=5, column=0, padx=5, pady=5, sticky="w")
 
         # Option: Double-Quotes Fixes
         self.chk_double_quotes_fixes = ctk.CTkCheckBox(
             preprocess_parent,
-            text='Double-Quotes Fixes (e.g., "سلام" ➔ «سلام»)',
+            text='Double-Quotes Fixes (e.g., "سلام" ➔ «سلام») - (Triggers Post-Process UTF-8)',
             font=font_bold,
+            command=self.on_preprocess_dependency_toggle,
         )
         self.chk_double_quotes_fixes.grid(row=6, column=0, padx=5, pady=5, sticky="w")
 
         # Option: Dash Fixes
         self.chk_dash_fixes = ctk.CTkCheckBox(
             preprocess_parent,
-            text="Dash Fixes (e.g., -- ➔ —)",
+            text="Dash Fixes (e.g., -- ➔ —) - (Triggers Post-Process UTF-8)",
             font=font_bold,
+            command=self.on_preprocess_dependency_toggle,
         )
         self.chk_dash_fixes.grid(row=7, column=0, padx=5, pady=5, sticky="w")
 
         # Option: Comments Fixes
         self.chk_comments_fixes = ctk.CTkCheckBox(
             preprocess_parent,
-            text="Comments Fixes (e.g., [موسیقی] ➔ حذف)",
+            text="Comments Fixes (e.g., [موسیقی] ➔ حذف) - (Triggers Post-Process UTF-8)",
             font=font_bold,
+            command=self.on_preprocess_dependency_toggle,
         )
         self.chk_comments_fixes.grid(row=8, column=0, padx=5, pady=5, sticky="w")
 
         # Option: Dialog Hyphen Fix
         self.chk_dialog_hyphen_fix = ctk.CTkCheckBox(
             preprocess_parent,
-            text="Dialog Hyphen Fix (e.g., -سلام ➔ - سلام)",
+            text="Dialog Hyphen Fix (e.g., -سلام ➔ - سلام) - (Triggers Post-Process UTF-8)",
             font=font_bold,
+            command=self.on_preprocess_dependency_toggle,
         )
         self.chk_dialog_hyphen_fix.grid(row=9, column=0, padx=5, pady=5, sticky="w")
 
@@ -1023,6 +1032,15 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             or self.chk_arabic_num.get() == 1
             or self.chk_english_num.get() == 1
             or self.chk_force_rtl.get() == 1
+            or self.chk_fix_abbreviations.get() == 1
+            or self.chk_comma_fixes.get() == 1
+            or self.chk_exclamation_fixes.get() == 1
+            or self.chk_parentheses_fixes.get() == 1
+            or self.chk_question_mark_fixes.get() == 1
+            or self.chk_double_quotes_fixes.get() == 1
+            or self.chk_dash_fixes.get() == 1
+            or self.chk_comments_fixes.get() == 1
+            or self.chk_dialog_hyphen_fix.get() == 1
         ):
             self.chk_encode_utf8.select()
         self.save_config()
@@ -1035,6 +1053,15 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             self.chk_arabic_num.deselect()
             self.chk_english_num.deselect()
             self.chk_force_rtl.deselect()
+            self.chk_fix_abbreviations.deselect()
+            self.chk_comma_fixes.deselect()
+            self.chk_exclamation_fixes.deselect()
+            self.chk_parentheses_fixes.deselect()
+            self.chk_question_mark_fixes.deselect()
+            self.chk_double_quotes_fixes.deselect()
+            self.chk_dash_fixes.deselect()
+            self.chk_comments_fixes.deselect()
+            self.chk_dialog_hyphen_fix.deselect()
         self.save_config()
 
     def on_reformat_dependency_toggle(self):
