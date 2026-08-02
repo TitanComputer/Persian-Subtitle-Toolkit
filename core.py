@@ -36,6 +36,16 @@ def build_flexible_regex(word):
     return re.compile(pattern, re.IGNORECASE)
 
 
+def is_pure_english(text):
+    """
+    Checks if the given text line is purely English (contains no Persian/Arabic characters).
+    Ignores music symbols and HTML tags to evaluate text content accurately.
+    """
+    # Ignore music symbols and HTML tags to check if the text is purely English
+    clean_for_check = re.sub(r"[♪♫<i>b/\\<>]", "", text)
+    return not bool(re.search(r"[\u0600-\u06FF]", clean_for_check))
+
+
 # Helper function to trim spaces while preserving SRT line endings
 def trim_line_spaces(line_text):
     if not line_text:
@@ -330,7 +340,7 @@ class SubtitleProcessor:
                         if self.options.get("detailed_subtitle_logs", 1):
                             orig_clean = original_line.rstrip("\n")
                             curr_clean = current_line.rstrip("\n")
-                            log_msg = f'Line {index} modified | Option: Pre-Process Trim Spaces | Before: "{orig_clean}" -> After: "{curr_clean}"'
+                            log_msg = f"Line {index} modified | Option: Pre-Process Trim Spaces | Before: |{orig_clean}| -> After: |{curr_clean}|"
                             Logger.log_subtitle_change(current_file_dir, filename, log_msg)
 
                     # Apply Pre-Process Option: Fix Abbreviations
@@ -356,7 +366,7 @@ class SubtitleProcessor:
                             if self.options.get("detailed_subtitle_logs", 1):
                                 b_clean = before_abbr.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
-                                log_msg = f'Line {index} modified | Option: Pre-Process Fix Abbreviations | Before: "{b_clean}" -> After: "{c_clean}"'
+                                log_msg = f"Line {index} modified | Option: Pre-Process Fix Abbreviations | Before: |{b_clean}| -> After: |{c_clean}|"
                                 Logger.log_subtitle_change(current_file_dir, filename, log_msg)
 
                     # Apply Pre-Process Option: Comma Fixes
@@ -364,12 +374,8 @@ class SubtitleProcessor:
                         before_comma = current_line
                         temp_line = current_line
 
-                        # Ignore music symbols and HTML tags to check if the text is purely English
-                        clean_for_check = re.sub(r"[♪♫<i>b/\\<>]", "", temp_line)
-                        is_pure_english = not bool(re.search(r"[\u0600-\u06FF]", clean_for_check))
-
                         # Apply comma rules only if the line is not purely English
-                        if not is_pure_english:
+                        if not is_pure_english(temp_line):
                             for rule_pattern, replace_with, is_regex in comma_rules_list:
                                 if is_regex:
                                     temp_line = rule_pattern.sub(replace_with, temp_line)
@@ -383,7 +389,7 @@ class SubtitleProcessor:
                             if self.options.get("detailed_subtitle_logs", 1):
                                 b_clean = before_comma.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
-                                log_msg = f'Line {index} modified | Option: Pre-Process Comma Fixes | Before: "{b_clean}" -> After: "{c_clean}"'
+                                log_msg = f"Line {index} modified | Option: Pre-Process Comma Fixes | Before: |{b_clean}| -> After: |{c_clean}|"
                                 Logger.log_subtitle_change(current_file_dir, filename, log_msg)
 
                     # Apply Pre-Process Option: Exclamation Mark Fixes
@@ -404,7 +410,7 @@ class SubtitleProcessor:
                             if self.options.get("detailed_subtitle_logs", 1):
                                 b_clean = before_excl.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
-                                log_msg = f'Line {index} modified | Option: Pre-Process Exclamation Mark Fixes | Before: "{b_clean}" -> After: "{c_clean}"'
+                                log_msg = f"Line {index} modified | Option: Pre-Process Exclamation Mark Fixes | Before: |{b_clean}| -> After: |{c_clean}|"
                                 Logger.log_subtitle_change(current_file_dir, filename, log_msg)
 
                     # Apply Pre-Process Option: Parentheses Fixes
@@ -425,7 +431,7 @@ class SubtitleProcessor:
                             if self.options.get("detailed_subtitle_logs", 1):
                                 b_clean = before_paren.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
-                                log_msg = f'Line {index} modified | Option: Pre-Process Parentheses Fixes | Before: "{b_clean}" -> After: "{c_clean}"'
+                                log_msg = f"Line {index} modified | Option: Pre-Process Parentheses Fixes | Before: |{b_clean}| -> After: |{c_clean}|"
                                 Logger.log_subtitle_change(current_file_dir, filename, log_msg)
 
                     # Apply Pre-Process Option: Question Mark Fixes
@@ -446,7 +452,7 @@ class SubtitleProcessor:
                             if self.options.get("detailed_subtitle_logs", 1):
                                 b_clean = before_qm.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
-                                log_msg = f'Line {index} modified | Option: Pre-Process Question Mark Fixes | Before: "{b_clean}" -> After: "{c_clean}"'
+                                log_msg = f"Line {index} modified | Option: Pre-Process Question Mark Fixes | Before: |{b_clean}| -> After: |{c_clean}|"
                                 Logger.log_subtitle_change(current_file_dir, filename, log_msg)
 
                     # Double-Quotes Fixes processing and logging
@@ -487,7 +493,7 @@ class SubtitleProcessor:
                                 Logger.log_subtitle_change(
                                     current_file_dir,
                                     filename,
-                                    f'Line {index} modified | Option: Pre-Process Double-Quotes Fixes | Before: "{b_clean}" -> After: "{c_clean}"',
+                                    f"Line {index} modified | Option: Pre-Process Double-Quotes Fixes | Before: |{b_clean}| -> After: |{c_clean}|",
                                 )
 
                     # Dash Fixes processing and logging
@@ -508,7 +514,7 @@ class SubtitleProcessor:
                                 Logger.log_subtitle_change(
                                     current_file_dir,
                                     filename,
-                                    f'Line {index} modified | Option: Pre-Process Dash Fixes | Before: "{b_clean}" -> After: "{c_clean}"',
+                                    f"Line {index} modified | Option: Pre-Process Dash Fixes | Before: |{b_clean}| -> After: |{c_clean}|",
                                 )
 
                     # Comments Fixes processing and logging
@@ -529,7 +535,7 @@ class SubtitleProcessor:
                                 Logger.log_subtitle_change(
                                     current_file_dir,
                                     filename,
-                                    f'Line {index} modified | Option: Pre-Process Comments Fixes | Before: "{b_clean}" -> After: "{c_clean}"',
+                                    f"Line {index} modified | Option: Pre-Process Comments Fixes | Before: |{b_clean}| -> After: |{c_clean}|",
                                 )
 
                     # Dialog Hyphen Fix processing and logging
@@ -550,7 +556,7 @@ class SubtitleProcessor:
                                 Logger.log_subtitle_change(
                                     current_file_dir,
                                     filename,
-                                    f'Line {index} modified | Option: Pre-Process Dialog Hyphen Fix | Before: "{b_clean}" -> After: "{c_clean}"',
+                                    f"Line {index} modified | Option: Pre-Process Dialog Hyphen Fix | Before: |{b_clean}| -> After: |{c_clean}|",
                                 )
 
                     # Option: Fix Misplaced Chars processing and logging
@@ -581,7 +587,7 @@ class SubtitleProcessor:
                             if self.options.get("detailed_subtitle_logs", 1):
                                 b_clean = before_misplaced.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
-                                log_msg = f'Line {index} modified | Option: Pre-Process Fix Misplaced Chars | Before: "{b_clean}" -> After: "{c_clean}"'
+                                log_msg = f"Line {index} modified | Option: Pre-Process Fix Misplaced Chars | Before: |{b_clean}| -> After: |{c_clean}|"
                                 Logger.log_subtitle_change(current_file_dir, filename, log_msg)
 
                     # Apply Pre-Process Option: Remove Standalone Dots
@@ -602,7 +608,7 @@ class SubtitleProcessor:
                             if self.options.get("detailed_subtitle_logs", 1):
                                 b_clean = before_dots.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
-                                log_msg = f'Line {index} modified | Option: Pre-Process Remove Standalone Dots | Before: "{b_clean}" -> After: "{c_clean}"'
+                                log_msg = f"Line {index} modified | Option: Pre-Process Remove Standalone Dots | Before: |{b_clean}| -> After: |{c_clean}|"
                                 Logger.log_subtitle_change(current_file_dir, filename, log_msg)
 
                     # Apply Pre-Process Option: Remove Unneeded Spaces (Aligned with XML rules)
@@ -620,7 +626,7 @@ class SubtitleProcessor:
                             if self.options.get("detailed_subtitle_logs", 1):
                                 b_clean = before_unneeded.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
-                                log_msg = f'Line {index} modified | Option: Pre-Process Remove Unneeded Spaces | Before: "{b_clean}" -> After: "{c_clean}"'
+                                log_msg = f"Line {index} modified | Option: Pre-Process Remove Unneeded Spaces | Before: |{b_clean}| -> After: |{c_clean}|"
                                 Logger.log_subtitle_change(current_file_dir, filename, log_msg)
 
                     # Option: Convert English Question Marks and Commas to Persian
@@ -628,11 +634,7 @@ class SubtitleProcessor:
                         before_q = current_line
                         current_line = current_line.replace("?", "؟")
 
-                        # Ignore music symbols and HTML tags to check if the text is purely English
-                        clean_for_check = re.sub(r"[♪♫<i>b/\\<>]", "", current_line)
-                        is_pure_english = not bool(re.search(r"[\u0600-\u06FF]", clean_for_check))
-
-                        if not is_pure_english:
+                        if not is_pure_english(current_line):
                             current_line = current_line.replace(",", "،")
 
                         if current_line != before_q:
@@ -640,7 +642,7 @@ class SubtitleProcessor:
                             if self.options.get("detailed_subtitle_logs", 1):
                                 b_clean = before_q.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
-                                log_msg = f'Line {index} modified | Option: Pre-Process Persian Question Mark and Comma | Before: "{b_clean}" -> After: "{c_clean}"'
+                                log_msg = f"Line {index} modified | Option: Pre-Process Persian Question Mark and Comma | Before: |{b_clean}| -> After: |{c_clean}|"
                                 Logger.log_subtitle_change(current_file_dir, filename, log_msg)
 
                     # 1. Convert Arabic Characters to Persian
@@ -653,7 +655,7 @@ class SubtitleProcessor:
                             if self.options.get("detailed_subtitle_logs", 1):
                                 b_clean = before_char.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
-                                log_msg = f'Line {index} modified | Option: Pre-Process Arabic Chars | Before: "{b_clean}" -> After: "{c_clean}"'
+                                log_msg = f"Line {index} modified | Option: Pre-Process Arabic Chars | Before: |{b_clean}| -> After: |{c_clean}|"
                                 Logger.log_subtitle_change(current_file_dir, filename, log_msg)
 
                     # 2. Convert Arabic Numerals to Persian Numerals
@@ -666,7 +668,7 @@ class SubtitleProcessor:
                             if self.options.get("detailed_subtitle_logs", 1):
                                 b_clean = before_anum.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
-                                log_msg = f'Line {index} modified | Option: Pre-Process Arabic Numerals | Before: "{b_clean}" -> After: "{c_clean}"'
+                                log_msg = f"Line {index} modified | Option: Pre-Process Arabic Numerals | Before: |{b_clean}| -> After: |{c_clean}|"
                                 Logger.log_subtitle_change(current_file_dir, filename, log_msg)
 
                     # 3. Convert English Numerals to Persian Numerals conditionally
@@ -699,7 +701,7 @@ class SubtitleProcessor:
                             if self.options.get("detailed_subtitle_logs", 1):
                                 b_clean = before_enum.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
-                                log_msg = f'Line {index} modified | Option: Pre-Process English Numerals | Before: "{b_clean}" -> After: "{c_clean}"'
+                                log_msg = f"Line {index} modified | Option: Pre-Process English Numerals | Before: |{b_clean}| -> After: |{c_clean}|"
                                 Logger.log_subtitle_change(current_file_dir, filename, log_msg)
 
                     # --- Process Options ---
@@ -744,7 +746,7 @@ class SubtitleProcessor:
                                         if self.options.get("detailed_subtitle_logs", 1):
                                             before_clean = before_replace.rstrip("\n")
                                             curr_clean = current_line.rstrip("\n")
-                                            log_msg = f'Line {index} modified | Option: Replace List (Matched "{word}") | Before: "{before_clean}" -> After: "{curr_clean}"'
+                                            log_msg = f'Line {index} modified | Option: Replace List (Matched "{word}") | Before: |{before_clean}| -> After: |{curr_clean}|'
                                             Logger.log_subtitle_change(current_file_dir, filename, log_msg)
 
                         # --- Post-Process Options ---
@@ -758,7 +760,7 @@ class SubtitleProcessor:
                                 if self.options.get("detailed_subtitle_logs", 1):
                                     before_clean = before_post.rstrip("\n")
                                     curr_clean = current_line.rstrip("\n")
-                                    log_msg = f'Line {index} modified | Option: Post-Process Trim Spaces | Before: "{before_clean}" -> After: "{curr_clean}"'
+                                    log_msg = f"Line {index} modified | Option: Post-Process Trim Spaces | Before: |{before_clean}| -> After: |{curr_clean}|"
                                     Logger.log_subtitle_change(current_file_dir, filename, log_msg)
 
                         # Option: Post-Process Remove Empty Tags
@@ -773,7 +775,7 @@ class SubtitleProcessor:
                                 if self.options.get("detailed_subtitle_logs", 1):
                                     b_clean = before_tags.rstrip("\n")
                                     c_clean = current_line.rstrip("\n")
-                                    log_msg = f'Line {index} modified | Option: Post-Process Remove Empty Tags | Before: "{b_clean}" -> After: "{c_clean}"'
+                                    log_msg = f"Line {index} modified | Option: Post-Process Remove Empty Tags | Before: |{b_clean}| -> After: |{c_clean}|"
                                     Logger.log_subtitle_change(current_file_dir, filename, log_msg)
 
                     # Finally, append the line if it wasn't removed completely
@@ -1025,7 +1027,7 @@ class SubtitleProcessor:
                                     if self.options.get("detailed_subtitle_logs", 1):
                                         before_clean = before_post.rstrip("\n")
                                         curr_clean = clean_text.rstrip("\n")
-                                        log_msg = f'Line {index} modified | Option: RTL Trim Spaces | Before: "{before_clean}" -> After: "{curr_clean}"'
+                                        log_msg = f"Line {index} modified | Option: RTL Trim Spaces | Before: |{before_clean}| -> After: |{curr_clean}|"
                                         Logger.log_subtitle_change(current_file_dir, filename, log_msg)
 
                             # Apply Post-Process Option: Smart RTL Enforcement
@@ -1078,7 +1080,7 @@ class SubtitleProcessor:
                                 if self.options.get("detailed_subtitle_logs", 1):
                                     before_clean = original_text_line.rstrip("\n")
                                     curr_clean = clean_text.rstrip("\n")
-                                    log_msg = f'Line {index} modified | Option: Smart RTL Enforcement | Before: "{before_clean}" -> After: "{curr_clean}"'
+                                    log_msg = f"Line {index} modified | Option: Smart RTL Enforcement | Before: |{before_clean}| -> After: |{curr_clean}|"
                                     Logger.log_subtitle_change(current_file_dir, filename, log_msg)
                                 rtl_modified_lines_count += 1
 
