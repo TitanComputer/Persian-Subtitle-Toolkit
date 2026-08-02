@@ -539,12 +539,22 @@ class SubtitleProcessor:
                         before_misplaced = current_line
                         temp_line = current_line
 
+                        # Preserve and strip trailing newline to prevent regexes from corrupting line endings
+                        line_ending = ""
+                        if temp_line.endswith(("\r\n", "\n")):
+                            if temp_line.endswith("\r\n"):
+                                line_ending = "\r\n"
+                            else:
+                                line_ending = "\n"
+                            temp_line = temp_line[: -len(line_ending)]
+
                         for rule_pattern, replace_with, is_regex in misplaced_chars_rules:
                             if is_regex:
                                 temp_line = rule_pattern.sub(replace_with, temp_line)
                             else:
                                 temp_line = temp_line.replace(rule_pattern, replace_with)
 
+                        temp_line += line_ending
                         current_line = temp_line
 
                         if current_line != before_misplaced:
