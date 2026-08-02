@@ -466,7 +466,11 @@ class SubtitleProcessor:
                                 temp_line = temp_line.replace(rule_pattern, replace_with)
 
                         # Handle misplaced opening quote at start of line
-                        if temp_line.count('"') == 2 and temp_line.startswith('"'):
+                        if (
+                            temp_line.count('"') == 2
+                            and temp_line.startswith('"')
+                            and not temp_line.rstrip("\r\n").endswith('"')
+                        ):
                             line_ending = ""
 
                             if temp_line.endswith("\r\n"):
