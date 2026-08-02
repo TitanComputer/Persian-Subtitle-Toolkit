@@ -1018,6 +1018,11 @@ class SubtitleProcessor:
 
                             if clean_text != original_text_line:
                                 file_has_changes = True
+                                if self.options.get("detailed_subtitle_logs", 1):
+                                    before_clean = original_text_line.rstrip("\n")
+                                    curr_clean = clean_text.rstrip("\n")
+                                    log_msg = f'Line {index} modified | Option: Smart RTL Enforcement | Before: "{before_clean}" -> After: "{curr_clean}"'
+                                    Logger.log_subtitle_change(current_file_dir, filename, log_msg)
                                 rtl_modified_lines_count += 1
 
                             rtl_processed_lines.append(clean_text)
