@@ -614,7 +614,14 @@ class SubtitleProcessor:
                     if self.options.get("persian_question_mark_and_comma", 1) and not is_timecode_or_index:
                         before_q = current_line
                         current_line = current_line.replace("?", "؟")
-                        current_line = current_line.replace(",", "،")
+
+                        # Ignore music symbols and HTML tags to check if the text is purely English
+                        clean_for_check = re.sub(r"[♪♫<i>b/\\<>]", "", current_line)
+                        is_pure_english = not bool(re.search(r"[\u0600-\u06FF]", clean_for_check))
+
+                        if not is_pure_english:
+                            current_line = current_line.replace(",", "،")
+
                         if current_line != before_q:
                             file_has_changes = True
                             if self.options.get("detailed_subtitle_logs", 1):
