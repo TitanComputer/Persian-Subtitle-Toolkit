@@ -364,11 +364,17 @@ class SubtitleProcessor:
                         before_comma = current_line
                         temp_line = current_line
 
-                        for rule_pattern, replace_with, is_regex in comma_rules_list:
-                            if is_regex:
-                                temp_line = rule_pattern.sub(replace_with, temp_line)
-                            else:
-                                temp_line = temp_line.replace(rule_pattern, replace_with)
+                        # Ignore music symbols and HTML tags to check if the text is purely English
+                        clean_for_check = re.sub(r"[♪♫<i>b/\\<>]", "", temp_line)
+                        is_pure_english = not bool(re.search(r"[\u0600-\u06FF]", clean_for_check))
+
+                        # Apply comma rules only if the line is not purely English
+                        if not is_pure_english:
+                            for rule_pattern, replace_with, is_regex in comma_rules_list:
+                                if is_regex:
+                                    temp_line = rule_pattern.sub(replace_with, temp_line)
+                                else:
+                                    temp_line = temp_line.replace(rule_pattern, replace_with)
 
                         current_line = temp_line
 
