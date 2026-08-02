@@ -1040,8 +1040,11 @@ class SubtitleProcessor:
                                 text_no_tags = re.sub(r"[\u200b\u200c\u200d\ufeff]", "", text_no_tags).strip()
 
                                 if text_no_tags:
+                                    # Ignore music symbols when detecting non-English content
+                                    text_for_language_check = re.sub(r"[♪♬♫]", "", text_no_tags).strip()
+
                                     # Check if the line contains any non-ASCII (non-English) characters
-                                    has_non_english = bool(re.search(r"[^\x00-\x7F]", text_no_tags))
+                                    has_non_english = bool(re.search(r"[^\x00-\x7F]", text_for_language_check))
 
                                     if has_non_english:
                                         # Fix visually typed punctuation at the start of the line
