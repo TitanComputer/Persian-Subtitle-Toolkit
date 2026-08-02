@@ -461,10 +461,16 @@ class SubtitleProcessor:
 
                         # Handle misplaced opening quote at start of line
                         if temp_line.count('"') == 2 and temp_line.startswith('"'):
-                            second_quote = temp_line.find('"', 1)
+                            line_ending = ""
 
-                            if second_quote != -1:
-                                temp_line = temp_line[1:] + '"'
+                            if temp_line.endswith("\r\n"):
+                                line_ending = "\r\n"
+                                temp_line = temp_line[:-2]
+                            elif temp_line.endswith("\n"):
+                                line_ending = "\n"
+                                temp_line = temp_line[:-1]
+
+                            temp_line = temp_line[1:] + '"' + line_ending
 
                         # Handle unbalanced double quotes (odd number of quotes)
                         if temp_line.count('"') % 2 != 0:
