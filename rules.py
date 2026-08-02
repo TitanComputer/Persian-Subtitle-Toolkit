@@ -836,7 +836,7 @@ dialog_hyphen_fix_list = [
 misplaced_chars_rules = [
     # Misplaced: Leading Ellipsis
     (
-        re.compile(r"^((?:-\s*)?)…\s*(.+?)(\s*-\s*)?$"),
+        re.compile(r"^((?:-\s*)?)(?:…|\.{3})\s*(.+?)(\s*-\s*)?$"),
         lambda m: f"{m.group(1) or ''}{m.group(2)}…{m.group(3) or ''}",
         True,
     ),
