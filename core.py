@@ -459,6 +459,13 @@ class SubtitleProcessor:
                             else:
                                 temp_line = temp_line.replace(rule_pattern, replace_with)
 
+                        # Handle misplaced opening quote at start of line
+                        if temp_line.count('"') == 2 and temp_line.startswith('"'):
+                            second_quote = temp_line.find('"', 1)
+
+                            if second_quote != -1:
+                                temp_line = temp_line[1:] + '"'
+
                         # Handle unbalanced double quotes (odd number of quotes)
                         if temp_line.count('"') % 2 != 0:
                             # Replace the quote and any surrounding spaces/tabs with a single space
