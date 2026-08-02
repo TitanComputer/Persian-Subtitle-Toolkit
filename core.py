@@ -534,6 +534,27 @@ class SubtitleProcessor:
                                     f'Line {index} modified | Option: Pre-Process Dialog Hyphen Fix | Before: "{b_clean}" -> After: "{c_clean}"',
                                 )
 
+                    # Option: Fix Misplaced Chars processing and logging
+                    if self.options.get("fix_misplaced_chars", 1) and not is_timecode_or_index:
+                        before_misplaced = current_line
+                        temp_line = current_line
+
+                        for rule_pattern, replace_with, is_regex in misplaced_chars_rules:
+                            if is_regex:
+                                temp_line = rule_pattern.sub(replace_with, temp_line)
+                            else:
+                                temp_line = temp_line.replace(rule_pattern, replace_with)
+
+                        current_line = temp_line
+
+                        if current_line != before_misplaced:
+                            file_has_changes = True
+                            if self.options.get("detailed_subtitle_logs", 1):
+                                b_clean = before_misplaced.rstrip("\n")
+                                c_clean = current_line.rstrip("\n")
+                                log_msg = f'Line {index} modified | Option: Pre-Process Fix Misplaced Chars | Before: "{b_clean}" -> After: "{c_clean}"'
+                                Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+
                     # Apply Pre-Process Option: Remove Standalone Dots
                     if self.options.get("remove_standalone_dots", 1) and not is_timecode_or_index:
                         before_dots = current_line

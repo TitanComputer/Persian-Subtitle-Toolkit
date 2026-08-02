@@ -1,5 +1,3 @@
-from imageio import config
-
 from core import *
 import customtkinter as ctk
 from customtkinter import filedialog
@@ -607,7 +605,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             tab.grid_rowconfigure(0, weight=1)
 
         # --- Pre-Process Tab ---
-        self.preprocess_inner_frame = CTkDualScrollableFrame(self.tab_preprocess)  # یا نام کلاس خودتان
+        self.preprocess_inner_frame = CTkDualScrollableFrame(self.tab_preprocess)
         self.preprocess_inner_frame.grid(row=0, column=0, padx=0, pady=0, sticky="nsew")
         self.preprocess_inner_frame.grid_columnconfigure(0, weight=1)
 
@@ -703,13 +701,22 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.chk_dialog_hyphen_fix.grid(row=9, column=0, padx=5, pady=5, sticky="w")
 
+        # Option: Fix Misplaced Chars
+        self.chk_fix_misplaced_chars = ctk.CTkCheckBox(
+            preprocess_parent,
+            text="Fix Misplaced Chars (e.g., ؟سلام ➔ سلام؟) - (Triggers Post-Process UTF-8)",
+            font=font_bold,
+            command=self.on_preprocess_dependency_toggle,
+        )
+        self.chk_fix_misplaced_chars.grid(row=10, column=0, padx=5, pady=5, sticky="w")
+
         # Remove standalone dots at start/end of lines
         self.chk_remove_standalone_dots = ctk.CTkCheckBox(
             preprocess_parent,
             text="Remove Standalone Dots at the beginning and end of lines (e.g., .سلام. ➔ سلام)",
             font=font_bold,
         )
-        self.chk_remove_standalone_dots.grid(row=10, column=0, padx=5, pady=5, sticky="w")
+        self.chk_remove_standalone_dots.grid(row=11, column=0, padx=5, pady=5, sticky="w")
 
         # Option: Remove Unneeded Spaces
         self.chk_remove_unneeded_spaces = ctk.CTkCheckBox(
@@ -717,7 +724,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             text="Remove Unneeded Spaces (Converts multiple spaces into one)",
             font=font_bold,
         )
-        self.chk_remove_unneeded_spaces.grid(row=11, column=0, padx=5, pady=5, sticky="w")
+        self.chk_remove_unneeded_spaces.grid(row=12, column=0, padx=5, pady=5, sticky="w")
 
         # Checkbox for English question mark and comma to Persian conversion
         self.chk_persian_question_mark_and_comma = ctk.CTkCheckBox(
@@ -726,7 +733,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             font=font_bold,
             command=self.on_preprocess_dependency_toggle,
         )
-        self.chk_persian_question_mark_and_comma.grid(row=12, column=0, padx=5, pady=5, sticky="w")
+        self.chk_persian_question_mark_and_comma.grid(row=13, column=0, padx=5, pady=5, sticky="w")
 
         # Checkbox for Arabic characters to Persian conversion
         self.chk_arabic_char = ctk.CTkCheckBox(
@@ -735,7 +742,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             font=font_bold,
             command=self.on_preprocess_dependency_toggle,
         )
-        self.chk_arabic_char.grid(row=13, column=0, padx=5, pady=5, sticky="w")
+        self.chk_arabic_char.grid(row=14, column=0, padx=5, pady=5, sticky="w")
 
         # Checkbox for Arabic numerals to Persian numerals conversion
         self.chk_arabic_num = ctk.CTkCheckBox(
@@ -744,7 +751,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             font=font_bold,
             command=self.on_preprocess_dependency_toggle,
         )
-        self.chk_arabic_num.grid(row=14, column=0, padx=5, pady=5, sticky="w")
+        self.chk_arabic_num.grid(row=15, column=0, padx=5, pady=5, sticky="w")
 
         # Checkbox for English numerals conditionally
         self.chk_english_num = ctk.CTkCheckBox(
@@ -753,7 +760,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             font=font_bold,
             command=self.on_preprocess_dependency_toggle,
         )
-        self.chk_english_num.grid(row=15, column=0, padx=5, pady=5, sticky="w")
+        self.chk_english_num.grid(row=16, column=0, padx=5, pady=5, sticky="w")
 
         # --- Process Tab ---
         self.process_inner_frame = CTkDualScrollableFrame(self.tab_process)
@@ -965,7 +972,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.single_process_btn.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
 
-        # Register the File Process Button as a Drag and Drop target for files
+        # Register the Single File Process Button as a Drag and Drop target for files
         self.single_process_btn.drop_target_register(DND_FILES)
         self.single_process_btn.dnd_bind("<<Drop>>", self.on_file_drop)
 
@@ -1041,6 +1048,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             or self.chk_dash_fixes.get() == 1
             or self.chk_comments_fixes.get() == 1
             or self.chk_dialog_hyphen_fix.get() == 1
+            or self.chk_fix_misplaced_chars.get() == 1
         ):
             self.chk_encode_utf8.select()
         self.save_config()
@@ -1062,6 +1070,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             self.chk_dash_fixes.deselect()
             self.chk_comments_fixes.deselect()
             self.chk_dialog_hyphen_fix.deselect()
+            self.chk_fix_misplaced_chars.deselect()
         self.save_config()
 
     def on_reformat_dependency_toggle(self):
@@ -1231,6 +1240,11 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             self.chk_dialog_hyphen_fix.select()
         else:
             self.chk_dialog_hyphen_fix.deselect()
+
+        if config.get("fix_misplaced_chars", 1) == 1:
+            self.chk_fix_misplaced_chars.select()
+        else:
+            self.chk_fix_misplaced_chars.deselect()
 
         if config.get("remove_standalone_dots", 1) == 1:
             self.chk_remove_standalone_dots.select()
@@ -1419,6 +1433,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             "dash_fixes": self.chk_dash_fixes.get(),
             "comments_fixes": self.chk_comments_fixes.get(),
             "dialog_hyphen_fix": self.chk_dialog_hyphen_fix.get(),
+            "fix_misplaced_chars": self.chk_fix_misplaced_chars.get(),
             "remove_standalone_dots": self.chk_remove_standalone_dots.get(),
             "persian_question_mark_and_comma": self.chk_persian_question_mark_and_comma.get(),
             "arabic_char_to_persian": self.chk_arabic_char.get(),
@@ -1492,6 +1507,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         self.chk_arabic_char.select()
         self.chk_arabic_num.select()
         self.chk_english_num.select()
+        self.chk_fix_misplaced_chars.select()
 
         self.chk_bypass.select()
         self.txt_bypass.configure(state="normal")
@@ -1697,6 +1713,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             "dash_fixes": self.chk_dash_fixes.get(),
             "comments_fixes": self.chk_comments_fixes.get(),
             "dialog_hyphen_fix": self.chk_dialog_hyphen_fix.get(),
+            "fix_misplaced_chars": self.chk_fix_misplaced_chars.get(),
             "remove_standalone_dots": self.chk_remove_standalone_dots.get(),
             "persian_question_mark_and_comma": self.chk_persian_question_mark_and_comma.get(),
             "arabic_char_to_persian": self.chk_arabic_char.get(),
