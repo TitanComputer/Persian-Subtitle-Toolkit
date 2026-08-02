@@ -834,6 +834,12 @@ dialog_hyphen_fix_list = [
 
 # Structure of rule lists for formatting processing parsed exactly from XML files
 misplaced_chars_rules = [
+    # Misplaced: Leading Ellipsis
+    (
+        re.compile(r"^((?:-\s*)?)…\s*(.+?)(\s*-\s*)?$"),
+        lambda m: f"{m.group(1) or ''}{m.group(2)}…{m.group(3) or ''}",
+        True,
+    ),
     # Misplaced: One Line (1)
     (
         re.compile(
