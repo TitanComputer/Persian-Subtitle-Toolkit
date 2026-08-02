@@ -211,3 +211,6 @@ __marimo__/
 
 *.exe
 main.*/
+convert.py
+generated_rules.py
+*.xml
