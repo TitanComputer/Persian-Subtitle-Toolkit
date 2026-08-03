@@ -850,6 +850,12 @@ dialog_hyphen_fix_list = [
 
 # Structure of rule lists for formatting processing parsed exactly from XML files
 misplaced_chars_rules = [
+    # Normalize spaced ellipsis sequences to 3 standard dots
+    (
+        re.compile(r"\.\s*\.\s*\."),
+        r"...",
+        True,
+    ),
     # Misplaced: Leading Ellipsis
     (
         re.compile(r"^([\u202a-\u202e\u200e\u200f]?)((?:-\s*)?)(?:…|\.{3})\s*(.+?)(\s*-\s*)?$"),
