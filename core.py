@@ -159,8 +159,16 @@ def fix_inconsistent_dialog_hyphens(blocks):
 
     for block in blocks:
         text_lines = block.get("text_lines", [])
+        # Preserve dialogue blocks that still contain trailing dialogue markers
+        if any(text_line.strip().endswith("-") for text_line in text_lines):
+            continue
 
-        if len(text_lines) < 2:
+        if len(text_lines) == 1:
+            dialog_match = dialog_prefix_pattern.match(text_lines[0])
+
+            if dialog_match:
+                text_lines[0] = dialog_match.group("prefix") + text_lines[0][dialog_match.end() :]
+
             continue
 
         dialog_matches = [dialog_prefix_pattern.match(text_line) for text_line in text_lines]
