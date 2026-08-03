@@ -154,7 +154,7 @@ def parse_srt_blocks(lines):
 def fix_inconsistent_dialog_hyphens(blocks):
     """Removes leading dialogue hyphens from multi-line blocks unless every line starts with one."""
     dialog_prefix_pattern = re.compile(
-        r"""^(?P<prefix>(?:<[^<>]+>|[\s\u200b-\u200f\u202a-\u202e\ufeff])*)(?P<hyphen>-)\s*"""
+        r"""^(?P<prefix>(?:<[^<>]+>|[\s\u200b-\u200f\u202a-\u202e\ufeff♪♫♭♯])*)(?P<hyphen>-)\s*"""
     )
 
     for block in blocks:
