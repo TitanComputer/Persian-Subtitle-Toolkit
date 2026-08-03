@@ -1635,6 +1635,18 @@ misplaced_chars_rules = [
         ),
         True,
     ),
+    # Remove unmatched closing guillemet
+    (
+        re.compile(r"^(?!.*«).*»"),
+        lambda m: m.group(0).replace("»", ""),
+        True,
+    ),
+    # Remove unmatched opening guillemet
+    (
+        re.compile(r"^(?!.*»).*«"),
+        lambda m: m.group(0).replace("«", ""),
+        True,
+    ),
 ]
 
 # Regex patterns to identify timecodes and index lines accurately
