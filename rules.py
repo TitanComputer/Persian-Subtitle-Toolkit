@@ -850,6 +850,12 @@ dialog_hyphen_fix_list = [
 
 # Structure of rule lists for formatting processing parsed exactly from XML files
 misplaced_chars_rules = [
+    # Remove misplaced leading plus sign when not followed by a digit
+    (
+        re.compile(r"^\+(?!\d)"),
+        r"",
+        True,
+    ),
     # Normalize spaced ellipsis sequences to 3 standard dots
     (
         re.compile(r"\.\s*\.\s*\."),
