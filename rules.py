@@ -1613,3 +1613,12 @@ misplaced_chars_rules = [
 timecode_pattern = re.compile(r"^\d{2}:\d{2}:\d{2},\d{3}\s*-->\s*\d{2}:\d{2}:\d{2},\d{3}")
 index_pattern = re.compile(r"^\d+\s*$")
 empty_tag_pattern = re.compile(r"<([a-zA-Z1-6]+)\b[^>]*>\s*</\1>", re.IGNORECASE)
+
+# Pre-compile heavy regex patterns used in line processing to avoid O(n) recompilation overhead
+zw_space = r"[\s\u200c\u200d\u200e\u200f\ufeff]"
+start_dot_pattern = re.compile(rf"^((?:{zw_space}|<[^>]+>)*(?:-\s*)?)\.(?!{zw_space}*[.\-:;!?؟،,*~_|]){zw_space}*")
+end_dot_pattern = re.compile(
+    rf"(?<![.\-:;!?؟،,*~_|\s\u200c\u200d\u200e\u200f\ufeff]){zw_space}*\.(?=(?:{zw_space}|</[^>]+>)*(?:\r\n|\n)?$)"
+)
+html_tag_split_pattern = re.compile(r"(<[^>]+>)")
+isolated_eng_num_pattern = re.compile(r"(?<![a-zA-Z0-9])(\d+)(?![a-zA-Z0-9])")

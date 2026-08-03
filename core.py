@@ -260,15 +260,6 @@ class SubtitleProcessor:
 
         post_trim_spaces = self.options.get("post_trim_spaces", 1)
 
-        # Pre-compile heavy regex patterns used in line processing to avoid O(n) recompilation overhead
-        zw_space = r"[\s\u200c\u200d\u200e\u200f\ufeff]"
-        start_dot_pattern = re.compile(rf"^((?:{zw_space}|<[^>]+>)*)\.(?!{zw_space}*[.\-:;!?؟،,*~_|]){zw_space}*")
-        end_dot_pattern = re.compile(
-            rf"(?<![.\-:;!?؟،,*~_|\s\u200c\u200d\u200e\u200f\ufeff]){zw_space}*\.(?=(?:{zw_space}|</[^>]+>)*(?:\r\n|\n)?$)"
-        )
-        html_tag_split_pattern = re.compile(r"(<[^>]+>)")
-        isolated_eng_num_pattern = re.compile(r"(?<![a-zA-Z0-9])(\d+)(?![a-zA-Z0-9])")
-
         start_time = time.time()
         for file_path in srt_files_paths:
             filename = os.path.basename(file_path)
