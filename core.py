@@ -89,30 +89,6 @@ def ms_to_timecode(ms):
     return f"{hours:02d}:{minutes:02d}:{seconds:02d},{millis:03d}"
 
 
-def fix_inconsistent_dialog_hyphens(blocks):
-    """Removes leading dialogue hyphens from multi-line blocks unless every line starts with one."""
-    dialog_prefix_pattern = re.compile(
-        r"""^(?P<prefix>(?:<[^<>]+>|[\s\u200b-\u200f\u202a-\u202e\ufeff])*)(?P<hyphen>-)\s*"""
-    )
-
-    for block in blocks:
-        text_lines = block.get("text_lines", [])
-
-        if len(text_lines) < 2:
-            continue
-
-        dialog_matches = [dialog_prefix_pattern.match(text_line) for text_line in text_lines]
-
-        if all(dialog_matches):
-            continue
-
-        for line_index, dialog_match in enumerate(dialog_matches):
-            if dialog_match:
-                text_lines[line_index] = dialog_match.group("prefix") + text_lines[line_index][dialog_match.end() :]
-
-    return blocks
-
-
 def parse_srt_blocks(lines):
     """Parses raw lines of an SRT file into a list of block dictionaries."""
     blocks = []
@@ -171,6 +147,30 @@ def parse_srt_blocks(lines):
             )
         else:
             i += 1
+
+    return blocks
+
+
+def fix_inconsistent_dialog_hyphens(blocks):
+    """Removes leading dialogue hyphens from multi-line blocks unless every line starts with one."""
+    dialog_prefix_pattern = re.compile(
+        r"""^(?P<prefix>(?:<[^<>]+>|[\s\u200b-\u200f\u202a-\u202e\ufeff])*)(?P<hyphen>-)\s*"""
+    )
+
+    for block in blocks:
+        text_lines = block.get("text_lines", [])
+
+        if len(text_lines) < 2:
+            continue
+
+        dialog_matches = [dialog_prefix_pattern.match(text_line) for text_line in text_lines]
+
+        if all(dialog_matches):
+            continue
+
+        for line_index, dialog_match in enumerate(dialog_matches):
+            if dialog_match:
+                text_lines[line_index] = dialog_match.group("prefix") + text_lines[line_index][dialog_match.end() :]
 
     return blocks
 
