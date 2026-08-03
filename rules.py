@@ -1589,6 +1589,24 @@ misplaced_chars_rules = [
         r"\g<1>\g<2>\g<3>\g<4>",
         True,
     ),
+    # Misplaced: Trailing dash -> move inside outermost tags and music symbols
+    (
+        re.compile(
+            r"^([\u202a-\u202e\u200e\u200f]*)"  # Group 1: Directional tags (RLE, LRE, etc.)
+            r"((?:[\s♪♫♭♯]|</?[a-zA-Z0-9]+>)*)"  # Group 2: Outermost formatting/music symbols
+            r"(?:-\s*)?"  # Ignore existing duplicate dash if present
+            r"(.+?)"  # Group 3: Core sentence
+            r"\s*-\s*"  # The misplaced trailing dash
+            r"((?:[\u202a-\u202e\u200e\u200f\s♪♫♭♯]|</?[a-zA-Z0-9]+>)*)$"  # Group 4: Trailing formatting/music
+        ),
+        lambda m: (
+            f"{m.group(1) or ''}"
+            f"{m.group(2).rstrip() + ' ' if m.group(2) and any(c in m.group(2) for c in '♪♫♭♯') else (m.group(2) or '')}"
+            f"- {m.group(3)}"
+            f"{' ' + m.group(4).lstrip() if m.group(4) and any(c in m.group(4) for c in '♪♫♭♯') else (m.group(4) or '')}"
+        ),
+        True,
+    ),
 ]
 
 # Regex patterns to identify timecodes and index lines accurately
