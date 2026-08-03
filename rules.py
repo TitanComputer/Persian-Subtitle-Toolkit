@@ -1573,10 +1573,20 @@ misplaced_chars_rules = [
     ),
     # Normalize Ellipsis Character to 3 standard dots without changing spaces
     (re.compile(r"…"), r"...", True),
-    # Remove exactly TWO dots '..' completely without touching single dots or ellipsis (3+ dots)
+    # Delete exactly TWO dots '..' at the beginning
     (
-        re.compile(r"(?<!\.)\.{2}(?!\.)"),
-        "",
+        re.compile(
+            r"^([\u202a-\u202e\u200e\u200f]*)((?:-\s*)?)(?<!\.)\.{2}(?!\.)\s*(.*?)([\u202a-\u202e\u200e\u200f]*)$"
+        ),
+        r"\g<1>\g<2>\g<3>\g<4>",
+        True,
+    ),
+    # Delete exactly TWO dots '..' at the end (e.g., before a dash or at string end)
+    (
+        re.compile(
+            r"^([\u202a-\u202e\u200e\u200f]*)(.*?)\s*(?<!\.)\.{2}(?!\.)\s*((?:-\s*)?)([\u202a-\u202e\u200e\u200f]*)$"
+        ),
+        r"\g<1>\g<2>\g<3>\g<4>",
         True,
     ),
 ]
