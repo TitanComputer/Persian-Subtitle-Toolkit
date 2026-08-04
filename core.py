@@ -707,6 +707,26 @@ class SubtitleProcessor:
                                 log_msg = f"Line {index} modified | Option: Pre-Process English Numerals | Before: |{b_clean}| -> After: |{c_clean}|"
                                 Logger.log_subtitle_change(current_file_dir, filename, log_msg)
 
+                    # 4. Convert Space to Invisible Space conditionally
+                    if self.options.get("space_to_invisible_space", 1) and not is_timecode_or_index:
+                        before_space_zwnj = current_line
+                        temp_line = current_line
+
+                        for rule_pattern, replace_with, is_regex in space_to_invisible_space_rules:
+                            if is_regex:
+                                temp_line = rule_pattern.sub(replace_with, temp_line)
+                            else:
+                                temp_line = temp_line.replace(rule_pattern, replace_with)
+
+                        current_line = temp_line
+                        if current_line != before_space_zwnj:
+                            file_has_changes = True
+                            if self.options.get("detailed_subtitle_logs", 1):
+                                b_clean = before_space_zwnj.rstrip("\n")
+                                c_clean = current_line.rstrip("\n")
+                                log_msg = f"Line {index} modified | Option: Pre-Process Space to Invisible Space | Before: |{b_clean}| -> After: |{c_clean}|"
+                                Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+
                     # --- Process Options ---
                     is_bypassed = False
                     if bypass_enabled:

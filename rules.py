@@ -1649,6 +1649,1050 @@ misplaced_chars_rules = [
     ),
 ]
 
+space_to_invisible_space_rules = [
+    # Space to Invisible Space 0
+    (re.compile(r"(\b[\b\w]+\b)( +)\b(ها)\b"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space 0
+    (re.compile(r"(\b[\b\w]+\b)( +)\b(های)\b"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space 0
+    (re.compile(r"(\b[\b\w]+\b)( +)\b(هایِ)\b"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space 0
+    (re.compile(r"(\b[\b\w]+\b)( +)\b(هایی)\b"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space 0
+    (re.compile(r"(\b[\b\w]+\b)( +)\b(هاش)\b"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space 0
+    (re.compile(r"(\b[\b\w]+\b)( +)\b(هاشون)\b"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space 0
+    (re.compile(r"(\b[\b\w]+\b)( +)\b(هات)\b"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space 0
+    (re.compile(r"(\b[\b\w]+\b)( +)\b(هاتون)\b"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space 0
+    (re.compile(r"(\b[\b\w]+\b)( +)\b(ی)\b"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space 0
+    (re.compile(r"(\b[\b\w]+\b)( +)\b(ات)\b"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space 0 - 1
+    (re.compile(r"(\b[\b\w]+\b)( +)\b(ام)\b"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space 0 - 2
+    (re.compile(r"(\w)(‌)(ام)(\.)( *)([0-9\w]{1,3})( *)(\.)"), r"\g<1> \g<3>\g<4>\g<5>\g<6>\g<7>\g<8>", True),
+    # Space to Invisible Space 0 - 3
+    (re.compile(r"(\w)(‌)(اِم)(\.)( *)([0-9\w]{1,3})( *)(\.)"), r"\g<1> \g<3>\g<4>\g<5>\g<6>\g<7>\g<8>", True),
+    # Space to Invisible Space 0
+    (re.compile(r"(\b[\b\w]+\b)( +)\b(اند)\b"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space 0
+    (re.compile(r"(\b[\b\w]+\b)( +)\b(اش)\b"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space 0
+    (re.compile(r"(\b[\b\w]+\b)( +)\b(ایم)\b"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space 0
+    (re.compile(r"(\b[\b\w]+\b)( +)\b(ایه)\b"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space 0
+    (re.compile(r"(\b[\b\w]+\b)( +)\b(اید)\b"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space 0
+    (re.compile(r"\b ای "), r"‌ای ", True),
+    # Space to Invisible Space 0
+    (re.compile(r"\b ای،"), r"‌ای،", True),
+    # Space to Invisible Space 0
+    (re.compile(r"\b ای\."), r"‌ای.", True),
+    # Space to Invisible Space 0
+    (re.compile(r"\b ای\r\n"), r"‌ای\n", True),
+    # Space to Invisible Space 0
+    (re.compile(r"\b ای$"), r"‌ای", True),
+    # Space to Invisible Space 0
+    (re.compile(r"\b ای -\r\n"), r"‌ای -\n", True),
+    # Space to Invisible Space 0
+    (re.compile(r"\b ای -$"), r"‌ای -", True),
+    # Space to Invisible Space 0
+    (re.compile(r"\b ای؟\r\n"), r"‌ای؟\n", True),
+    # Space to Invisible Space 0
+    (re.compile(r"\b ای؟$"), r"‌ای؟", True),
+    # Space to Invisible Space 0
+    (re.compile(r"\b ای؟ -\r\n"), r"‌ای؟ -\n", True),
+    # Space to Invisible Space 0
+    (re.compile(r"\b ای؟ -$"), r"‌ای؟ -", True),
+    # Space to Invisible Space 0
+    (re.compile(r"(\w)( )(ای)( -)*([\r\n\-\،\؟\"\!\<\>])"), r"\g<1>‌\g<3>\g<4>\g<5>", True),
+    # Space to Invisible Space 0
+    (re.compile(r"(\w)( )(ای)( -)*$"), r"\g<1>‌\g<3>\g<4>", True),
+    # Space to Invisible Space 0 - 1
+    (re.compile(r"(\w)( )(ای)(\.)([\"\.\(\)\[\]\{\} ])"), r"\g<1>‌\g<3>\g<4>\g<5>", True),
+    # Space to Invisible Space 0 - 2
+    (re.compile(r"(\w)(‌)(ای)(\.)( *)([0-9\w]{1,3})( *)(\.)"), r"\g<1> \g<3>\g<4>\g<5>\g<6>\g<7>\g<8>", True),
+    # Space to Invisible Space 0
+    (re.compile(r"(ی)( )(ایه)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space 0
+    (re.compile(r"\b([^\u0000-\u007F]{3,20})( )(ش)( )"), r"\g<1>‌\g<3>\g<4>", True),
+    # Space to Invisible Space 0 - z
+    (re.compile(r"(کار)( *)(ها)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space 0 - z
+    (re.compile(r"(دیگه)(‌)(این)"), r"\g<1> \g<3>", True),
+    # Space to Invisible Space 0 - z
+    (re.compile(r"\b(..)(‌)(ای)\b"), r"\g<1> \g<3>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"^می "), r"می‌", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"\r\nمی "), r"\nمی‌", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(بر)( *)(ن*)(می)( *)(گرد)"), r"\g<1>\g<2>\g<4>\g<5>‌\g<7>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(بر)( *)(ن*)(می)(\p{Cf})(گرد)"), r"\g<1>\g<2>\g<4>\g<5>\g<6>\g<7>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(بر)( *)(ن*)(می)( *)(گشت)"), r"\g<1>\g<2>\g<4>\g<5>‌\g<7>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(بر)( *)(ن*)(می)( *)(داشت)"), r"\g<1>\g<2>\g<4>\g<5>‌\g<7>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(بر)( *)(ن*)(می)( *)(دار)"), r"\g<1>\g<2>\g<4>\g<5>‌\g<7>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(در)( *)(ن*)(می)( *)(اورد)"), r"\g<1>\g<2>\g<4>\g<5>‌\g<7>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(ده)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(آد)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(داد)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(شیم)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(کشم)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(بود)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(دارن)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(شه)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(شویم)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(کشه)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(گذاریم)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(برد)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(گذارید)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(شید)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(گذارم)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(با)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(فروخت)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(خوا)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(دو)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(تون)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(کن)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(گیر)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(مون)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(بی)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(پرس)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(دید)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(گشت)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(پوش)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(میر)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(بر)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(کر)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(شد)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(گفت)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(بوس)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(خارون)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(گرد)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(فهم)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(داد)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(گرد)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(ترسی)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(ترس)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(ترسم)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(کشیم)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(پذیرم)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(افت)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(شناس)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(ذاشت)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(گذار)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(کشت)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(شو)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(اومد)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(آید)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(ارزن)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(آیند)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(بود)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(آور)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(پرن)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(چشی)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(رقصم)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(کشن)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(فروش)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(خور)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(گذر)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(گرفت)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(جنگ)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(شنید)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(رفت)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(خون)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(شناخ)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(دیم)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(زن)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(دین)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(زدم)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(رفت)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(شین)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(رسن)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(اُفتن)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(چرخی)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(ریز)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(چرخم)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(درخشه)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(رسه)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(جوی)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(کشی)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(کشم)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(رسون)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(رسی)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(کند)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(کنی)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(کنم)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(فرست)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(داری)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(بندم)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(بندی)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(بندن)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(بندند)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(بندید)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(اورد)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(سازم)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(سازی)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(سازن)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(نگرم)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(نگری)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(نگرن)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(ساخت)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(رقص)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(دارم)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(خرم)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(داشت)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(رسد)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(شنوی)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(بینی)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(بینم)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(داره)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(خری)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(خره)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(پیوندم)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(پیوندی)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space or Missing Space to Invisible Space
+    (re.compile(r"(\b)(ن*)(می)( *)(پیوندن)"), r"\g<1>\g<2>\g<3>‌\g<5>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(پدر)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(مادر)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(نظ)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(صبرانه)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(رحم)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(سیم)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(ارزش)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(دردسر)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(دقت)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(سابقه)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(نهایت)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(شرف)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(سواد)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(عیب)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(فایده)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(توجه)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(خطر)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(ثبات)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(صلاحیت)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(تفاوت)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(ادب)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(عدالتی)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(عقل)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(نتیجه)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(نقص)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(حساب)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(ضرر)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(عاطفه)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(حرکت)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(شعور)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(اعتبار)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(مصرف)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(جنبه)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(خیال)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(موقع)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(مزه)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(استفاده)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(گناه)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(طرف)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(درنگ)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(اهمیت)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(احترامی)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(غیرت)\b"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b( )(تر)( )\b"), r"‌\g<2>\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b تر "), r"‌تر ", True),
+    # Space to Invisible Space
+    (re.compile(r"\b ترین\b"), r"‌ترین", True),
+    # Space to Invisible Space
+    (re.compile(r"\b تر\r\n"), r"‌تر\n", True),
+    # Space to Invisible Space
+    (re.compile(r"\b تر$"), r"‌تر", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(جدی)( *)(تر)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(ضعیف)( *)(تر)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(قوی)( *)(تر)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(مهم)( *)(تر)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(کامل)( *)(تر)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(پایین)( *)(تر)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(عجیب)( *)(تر)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(قدیمی)( *)(تر)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(باهوش)( *)(تر)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(راحت)( *)(تر)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(سخت)( *)(تر)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(پیشرفته)( *)(تر)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(نزدیک)( *)(ترین)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(زردچوبه)( *)(ای)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(هسته)( *)(ای)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(آماده)( *)(ای)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(ناسازگاری)( *)(ای)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(زیرکانه)( *)(ای)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(توانایی)( *)(ای)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(اسلحه)( *)(ای)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(کشنده)( *)(ای)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(جایزه)( *)(ای)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(قوی)( *)(ای)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(نقشه)( *)(ای)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(سازگاری)( *)(ای)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(کاره)( *)(ای)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(عادلانه)( *)(ای)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"(\b)(آدم)( *)(ها)( )"), r"\g<1>\g<2>‌\g<4>\g<5>", True),
+    # Space to Invisible Space
+    (re.compile(r"(\b)(آدم)( *)(های)( )"), r"\g<1>\g<2>‌\g<4>\g<5>", True),
+    # Space to Invisible Space
+    (re.compile(r"(\b)(آدم)( *)(هایی)( )"), r"\g<1>\g<2>‌\g<4>\g<5>", True),
+    # Space to Invisible Space
+    (re.compile(r"(\b)(واکنش)( *)(ها)( )"), r"\g<1>\g<2>‌\g<4>\g<5>", True),
+    # Space to Invisible Space
+    (re.compile(r"(\b)(واکنش)( *)(های)( )"), r"\g<1>\g<2>‌\g<4>\g<5>", True),
+    # Space to Invisible Space
+    (re.compile(r"(\b)(واکنش)( *)(هایی)( )"), r"\g<1>\g<2>‌\g<4>\g<5>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(ماشین)( *)(ها)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(مهارت)( *)(ها)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(یادداشت)( *)(ها)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(مکان)( *)(ها)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"(فسیل)( *)(ها)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"(جنگل)( *)(ها)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(شبیه)( *)(ساز)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(غارت)( *)(گری)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(واقع)( *)(گرا)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(خون)( *)(ریزی)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(برنامه)( *)(نویس)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(پایه)( *)(ریزی)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(لپ)( *)(تاپ)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(پیشرفته)( *)(شون)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(پیش)( *)(بینی)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(آتش)( *)(سوزی)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(آتیش)( *)(سوزی)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(خارق)( *)(العاده)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(فوق)( *)(العاده)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(هیچ)( *)(کدام)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(هیچ)( *)(کدوم)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(فیزیک)( *)(دان)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(نظاره)( *)(گر)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(شعبده)( *)(باز)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(راه)( *)(اندازی)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(فیزیک)( *)(دان)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(لیاقت)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(قانون)( *)(شکن)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(وحشی)( *)(گری)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(گوجه)( *)(فرنگی)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(فارغ)( *)(التحصیل)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(آشغال)( *)(دونی)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(شیمی)( *)(دان)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(جمع)( *)(آوری)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(دانش)( *)(آموز)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(هیچ)( *)(گونه)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(مرگ)( *)(آور)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بچه)( *)(گونه)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(ساده)( *)(لو)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(هیچ)( *)(چیز)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(توافق)( *)(نامه)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(غیب)( *)(گو)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(معدن)( *)(یاب)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(خجالت)( *)(زده)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بچه)( *)(گانه)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(درجه)( *)(بندی)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(فعال)( *)(ساز)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(انتقام)( *)(جو)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(هیچ)( *)(کس)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(رئیس)( *)(جمهور)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بن)( *)(بست)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(آزادی)( *)(خواه)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(مسئولیت)( *)(پذیر)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(دنباله)( *)(دار)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بهره)( *)(مند)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(هلی)( *)(کوپتر)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(قوی)( *)(سازی)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(روزنامه)( *)(نگار)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(آینده)( *)(سازان)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(علاقه)( *)(مند)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(رییس)( *)(جمهور)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(قدرت)( *)(مند)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(سرمایه)( *)(گذار)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(خوش)( *)(بین)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(غم)( *)(انگیز)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(مامان)( *)(بزرگ)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(گران)( *)(بها)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(آتش)( *)(نشان)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(قهوه)( *)(ساز)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(ایده)( *)(آل)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(شگفت)( *)(انگیز)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(اندازه)( *)(گیری)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(جمع)( *)(بندی)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(اختیار)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(جواب)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(جنایت)( *)(کاران)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(توهم)( *)(زا)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(شوخ)( *)(طبع)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(پیشرفته)( *)(مون)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(هدف)( *)(مند)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(جوش)( *)(کار)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(چرخ)( *)(ها)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(سخت)( *)(افزار)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(عکس)( *)(العمل)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(شگفت)( *)(آور)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(خارق)( *)(العاد)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(خنده)( *)(دار)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(لذت)( *)(بخش)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(توهین)( *)(آمیز)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(فریم)( *)(ورک)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(طبقه)( *)(بندی)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(جهش)( *)(یافته)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(ملال)( *)(آور)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(غوطه)( *)(ور)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(پیش)( *)(گو)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(هیچ)( *)(وقت)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بچه)( *)(دار)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(حواس)( *)(پرت)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(انتها)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بین)( *)(الملل)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(شوکه)( *)(کننده)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(نرم)( *)(افزار)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(همین)( *)(طور)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(چهره)( *)(یاب)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(به هیچ)( *)(وجه)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(شرط)( *)(بندی)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(برنامه)( *)(ریزی)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(جاه)( *)(طلب)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(دعوت)( *)(نامه)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(حرفه)( *)(ای‌اند)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بی)( *)(پایان)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(برنامه)( *)(ریز)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بذله)( *)(گویی)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(چای)( *)(ساز)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(پورت)( *)(لند)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(آی)( *)(پد)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(آینده)( *)(نگری)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(آی)( *)(پاد)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(بادی)( *)(گارد)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(اسلحه)( *)(ساز)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(دروغ)( *)(گو)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(وطن)( *)(پرست)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(واقع)( *)(بین)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(راست)( *)(گو)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(پشت)( *)(بام)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(آسیب)( *)(پذیر)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(قطب)( *)(نما)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(غیر)( *)(قانونی)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(جهت)( *)(یاب)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(آفتاب)( *)(پرست)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(عقب)( *)(مونده)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(دائم)( *)(الخمر)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(هیجان)( *)(انگیز)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(هدف)( *)(گیری)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(عقب)( *)(مانده)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(عقب)( *)(موندست)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(عقب)( *)(ماندست)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(سرعت)( *)(سنج)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(طیف)( *)(سنج)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(ارتفاع)( *)(سنج)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(حرارت)( *)(سنج)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(شتاب)( *)(سنج)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(رقت)( *)(انگیز)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"(گیاه)( *)(خوار)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"(گوشت)( *)(خوار)"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(حرفه)( *)(ای)\b"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(حرفه)( *)(ایه)\b"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(زنجیره)( *)(ای)\b"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(زیاده)( *)(روی)\b"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(خشک)( *)(شویی)\b"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(شگفت)( *)(زده)\b"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(سیب)( *)(زمینی)\b"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(باغ)( *)(وحش)\b"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(الهام)( *)(بخش)\b"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(پس)( *)(انداز)\b"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(خفه)( *)(خون)\b"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(پیاده)( *)(روی)\b"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(مالتی)( *)(وِرس)\b"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(خوشمزه)( *)(ایه)\b"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(حسابی)( )(ای)( )"), r"\g<1>‌\g<3>\g<4>", True),
+    # Space to Invisible Space
+    (re.compile(r"(آینده)( *)(نگر)\b"), r"\g<1>‌\g<3>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(غیر)( *)(حرفه)( *)(ای)"), r"\g<1>‌\g<3>‌\g<5>", True),
+    # Space to Invisible Space
+    (re.compile(r"\b(جا)( *)(به)( *)(جا)"), r"\g<1>‌\g<3>‌\g<5>", True),
+    # No Invisible Space
+    (re.compile(r"\b(نیو)( )(جرسی)"), r"\g<1>\g<3>", True),
+    # No Invisible Space
+    (re.compile(r"\b(نمی)( )(آره)"), r"\g<1>\g<3>", True),
+    # No Invisible Space
+    (re.compile(r"\b(نمی)( )(دم)"), r"\g<1>\g<3>", True),
+    # No Invisible Space
+    (re.compile(r"\b(بر)( )(میام)"), r"\g<1>\g<3>", True),
+    # No Invisible Space
+    (re.compile(r"\b(بد)( *)(بینانه)\b"), r"\g<1>\g<3>", True),
+    # No Invisible Space
+    (re.compile(r"\b(مادر)( *)(بزرگ)"), r"\g<1>\g<3>", True),
+    # No Invisible Space
+    (re.compile(r"\b(سوء)( *)(استفاده)"), r"\g<1>\g<3>", True),
+    # No Invisible Space
+    (re.compile(r"\b(بابا)( *)(بزرگ)"), r"\g<1>\g<3>", True),
+    # No Invisible Space
+    (re.compile(r"\b(نا)( *)(امید)"), r"\g<1>\g<3>", True),
+    # No Invisible Space
+    (re.compile(r"\b(زیر)( *)(زمین)"), r"\g<1>\g<3>", True),
+    # No Invisible Space
+    (re.compile(r"\b(پدر)( *)(بزرگ)"), r"\g<1>\g<3>", True),
+    # No Invisible Space
+    (re.compile(r"\b(گاو)( *)(صندوق)"), r"\g<1>\g<3>", True),
+    # No Invisible Space
+    (re.compile(r"\b(غیر)( *)(عملی)"), r"\g<1>\g<3>", True),
+    # No Invisible Space
+    (re.compile(r"\b(غیر)( *)(مجاز)"), r"\g<1>\g<3>", True),
+    # No Invisible Space
+    (re.compile(r"\b(غیر)( *)(ممکن)"), r"\g<1>\g<3>", True),
+    # No Invisible Space
+    (re.compile(r"\b(فنا)( *)(ناپذیر)"), r"\g<1>\g<3>", True),
+    # No Invisible Space
+    (re.compile(r"\b(فنا)( *)(پذیر)"), r"\g<1>\g<3>", True),
+    # No Invisible Space
+    (re.compile(r"\b(بالا)( *)(تر)"), r"\g<1>\g<3>", True),
+    # No Invisible Space
+    (re.compile(r"\b(دور)( *)(ترین)"), r"\g<1>\g<3>", True),
+    # No Invisible Space
+    (re.compile(r"\b(جدید)( *)(تر)"), r"\g<1>\g<3>", True),
+    # No Invisible Space
+    (re.compile(r"\b(طلا)( *)(یاب)"), r"\g<1>\g<3>", True),
+    # No Invisible Space
+    (re.compile(r"\b(فلز)( *)(یاب)"), r"\g<1>\g<3>", True),
+    # No Invisible Space
+    (re.compile(r"\b(دما)( *)(سنج)"), r"\g<1>\g<3>", True),
+    # No Invisible Space
+    (re.compile(r"\b(فشار)( *)(سنج)"), r"\g<1>\g<3>", True),
+    # No Invisible Space
+    (re.compile(r"\b(خود)( *)(کفا)"), r"\g<1>\g<3>", True),
+    # No Invisible Space
+    (re.compile(r"(بر)( *)(می‌گرد)"), r"\g<1>\g<3>", True),
+    # No Invisible Space
+    (re.compile(r"(عذر)( *)(خواهی)"), r"\g<1>\g<3>", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"‌‌‌"), r"‌", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"‌‌"), r"‌", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"(\b)(ن*)(می)(‌)+(دید)(\b+)"), r"\g<1>\g<2>\g<3>\g<5>\g<6>", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"‌ای بابا"), r" ای بابا", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"‌ای کاش"), r" ای کاش", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"‌ای روزگار"), r" ای روزگار", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"‌ای خدا"), r" ای خدا", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"‌ای پروردگار"), r" ای پروردگار", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"خد ای "), r"خدای ", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"خد‌ ای "), r"خدای ", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"با‌ای"), r"با ای", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"امی‌دوار"), r"امیدوار", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"‌ای میل "), r" ایمیل ", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"آی‌ای"), r"آی ای", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"بسیار خبه"), r"خیلی خوبه", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"بسیار خب شد"), r"خیلی خوب شد", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"احترامی‌ک"), r"احترامی ک", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"‌ها‌ها"), r" ها ها", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r" بی‌است"), r" بی است", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r" بی استعداد"), r" بی‌استعداد", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"می مون"), r"میمون", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"می‌مون\b"), r"میمون", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"می‌دون\b"), r"میدون", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"می‌دون"), r"میدون", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"میدونم"), r"می‌دونم", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"میدونیم"), r"می‌دونیم", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"میدونن"), r"می‌دونن", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"میدونند"), r"می‌دونند", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"میدونی"), r"می‌دونی", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"میدونست"), r"می‌دونست", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"نمیدونه"), r"نمی‌دونه", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"می‌کروب"), r"میکروب", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"می‌تو "), r"می تو ", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"می‌کروفون"), r"میکروفون", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"می‌شیگان"), r"میشیگان", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"‌فروشگاه"), r" فروشگاه", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"می‌گه "), r"میگه ", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"می‌دی\r\n"), r"میدی\n", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"می‌دی$"), r"میدی", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"می‌دوِ"), r"میدوِ", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"لبی‌تر"), r"لبی تر", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"کمی‌"), r"کمی ", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"زخمی‌کن"), r"زخمی کن", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"آکادمی‌گف"), r"آکادمی گف", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"رسمی‌ش"), r"رسمی ش", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"می‌مونه\b"), r"میمونه", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"می‌مون‌ها\b"), r"میمون‌ها", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"می‌مون‌های\b"), r"میمون‌های", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"می‌مونها\b"), r"میمون‌ها", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"می‌مونهای\b"), r"میمون‌های", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"می‌دون‌ها\b"), r"میدون‌ها", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"می‌دون‌های\b"), r"میدون‌های", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"می‌دونها\b"), r"میدون‌ها", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"می‌دونهای\b"), r"میدون‌های", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"می‌کرو"), r"میکرو", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"می‌ده "), r"میده ", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"می‌رن "), r"میرن ", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"می‌گه "), r"میگه ", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"می‌گن "), r"میگن ", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"می‌گی "), r"میگی ", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"می‌شد "), r"میشد ", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"می‌شم "), r"میشم ", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"سخت‌ترک"), r"سخت ترک", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"قدیمیمون"), r"قدیمی‌مون", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"‌تر و تمیز"), r" تر و تمیز", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"فسیل‌هاست"), r"فسیل هاست", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"جنگل‌هاست"), r"جنگل هاست", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"نمی ری"), r"نمیری", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"نمی شه"), r"نمیشه", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"میامیام"), r"میامی‌ام", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"حسابی‌"), r"حسابی ", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"‌تر و تازه"), r" تر و تازه", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"-‌ی"), r"- ی", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"\bرُمیها "), r"رُمی‌ها ", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"‌هات داگ"), r" هات داگ", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"چستر‌ای"), r"چستر اِی", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r" به‌ام"), r" به ام", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"ماه می‌"), r"ماه می ", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"راک‌اند رول"), r"راک اند رول", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"(‌+)(ها)([^\u0000-\u007F]{4})"), r" \g<2>\g<3>", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"(‌)(هات)( *)(داگ)"), r"\g<2>\g<3>\g<4>", True),
+    # Fixes of "Space to Invisible Space"
+    (re.compile(r"\b([^\u0000-\u007F]{1,1})(‌)(اش)"), r"\g<1> \g<3>", True),
+    # Remove Invisible Space if There is Only Two Chars After It 1
+    (re.compile(r"(\b)(ن)*(می)(‌)(..)(\b)"), r"\g<1>\g<2>\g<3>\g<5>\g<6>", True),
+    # Remove Invisible Space if There is Only Two Chars After It 2
+    (re.compile(r"(\b)(ن)*(می)(‏)(..)(\b)"), r"\g<1>\g<2>\g<3>\g<5>\g<6>", True),
+]
+
+
 # Regex patterns to identify timecodes and index lines accurately
 timecode_pattern = re.compile(r"^\d{2}:\d{2}:\d{2},\d{3}\s*-->\s*\d{2}:\d{2}:\d{2},\d{3}")
 index_pattern = re.compile(r"^\d+\s*$")
