@@ -599,7 +599,7 @@ class SubtitleProcessor:
                         # Regex patterns are pre-compiled outside the main loop for performance
 
                         # Remove standalone dot at the start of the line (ignores HTML tags & zero-width chars prefix)
-                        current_line = start_dot_pattern.sub(r"\1", current_line)
+                        current_line = start_dot_pattern.sub(r"\1\2", current_line)
 
                         # Remove standalone dot at the end of the line (ignores HTML tags & zero-width chars suffix)
                         current_line = end_dot_pattern.sub("", current_line)

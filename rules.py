@@ -2873,7 +2873,9 @@ empty_tag_pattern = re.compile(r"<([a-zA-Z1-6]+)\b[^>]*>\s*</\1>", re.IGNORECASE
 
 # Pre-compile heavy regex patterns used in line processing to avoid O(n) recompilation overhead
 zw_space = r"[\s\u200c\u200d\u200e\u200f\ufeff]"
-start_dot_pattern = re.compile(rf"^((?:{zw_space}|<[^>]+>)*(?:-\s*)?)\.(?!{zw_space}*[.\-:;!?؟،,*~_|]){zw_space}*")
+start_dot_pattern = re.compile(
+    rf"^((?:{zw_space}|<[^>]+>)*(?:-\s*)?)\.\s*(-\s*)?(?!{zw_space}*[.:;!?؟،,*~_|]){zw_space}*"
+)
 end_dot_pattern = re.compile(
     rf"(?<![.\-:;!?؟،,*~_|\s\u200c\u200d\u200e\u200f\ufeff]){zw_space}*\.(?=(?:{zw_space}|</[^>]+>)*(?:\r\n|\n)?$)"
 )
