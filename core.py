@@ -2,6 +2,7 @@ from utils import *
 from rules import *
 import os
 import time
+import datetime
 
 
 def build_flexible_regex(word):
@@ -277,7 +278,17 @@ class SubtitleProcessor:
             output_dir = os.path.join(current_file_dir, "Outputs")
             os.makedirs(output_dir, exist_ok=True)
 
-            Logger.log_process(f"Identified file: {filename}", current_file_dir)
+            # Initialize timestamped log buffers for the current file to aggregate disk I/O
+            class TimestampedLogBuffer(list):
+                def append(self, message):
+                    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    super().append((timestamp, message))
+
+            file_process_logs = TimestampedLogBuffer()
+            file_subtitle_logs = TimestampedLogBuffer()
+            file_has_changes = False
+
+            file_process_logs.append(f"Identified file: {filename}")
 
             try:
                 # Smart encoding reader. Tries multiple encodings to handle UTF-16, UTF-8, ANSI, etc.
@@ -299,7 +310,7 @@ class SubtitleProcessor:
                     with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                         lines = f.readlines()
 
-                Logger.log_process(f"Identified encoding: {file_encoding}", current_file_dir)
+                file_process_logs.append(f"Identified encoding: {file_encoding}")
 
                 # Pre-parse blocks to identify and isolate valid text lines from timecodes/indexes
                 parsed_blocks_for_index = parse_srt_blocks(lines)
@@ -308,10 +319,9 @@ class SubtitleProcessor:
                     valid_text_indices.update(b.get("text_indices", []))
 
                 processed_lines = []
-                file_has_changes = False
 
                 if self.options.get("detailed_subtitle_logs", 1):
-                    Logger.log_subtitle_change(current_file_dir, filename, f"Started tracking changes for: {filename}")
+                    file_subtitle_logs.append(f"Started tracking changes for: {filename}")
 
                 for index, line in enumerate(lines, start=1):
                     self.total_lines_processed += 1
@@ -340,7 +350,7 @@ class SubtitleProcessor:
                             orig_clean = original_line.rstrip("\n")
                             curr_clean = current_line.rstrip("\n")
                             log_msg = f"Line {index} modified | Option: Pre-Process Trim Spaces | Before: |{orig_clean}| -> After: |{curr_clean}|"
-                            Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+                            file_subtitle_logs.append(log_msg)
 
                     # Option: Fix Misplaced Chars processing and logging
                     if self.options.get("fix_misplaced_chars", 1) and not is_timecode_or_index:
@@ -371,7 +381,7 @@ class SubtitleProcessor:
                                 b_clean = before_misplaced.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
                                 log_msg = f"Line {index} modified | Option: Pre-Process Fix Misplaced Chars | Before: |{b_clean}| -> After: |{c_clean}|"
-                                Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+                                file_subtitle_logs.append(log_msg)
 
                     # Apply Pre-Process Option: Fix Abbreviations
                     if self.options.get("fix_abbreviations", 1) and not is_timecode_or_index:
@@ -397,7 +407,7 @@ class SubtitleProcessor:
                                 b_clean = before_abbr.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
                                 log_msg = f"Line {index} modified | Option: Pre-Process Fix Abbreviations | Before: |{b_clean}| -> After: |{c_clean}|"
-                                Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+                                file_subtitle_logs.append(log_msg)
 
                     # Apply Pre-Process Option: Comma Fixes
                     if self.options.get("comma_fixes", 1) and not is_timecode_or_index:
@@ -420,7 +430,7 @@ class SubtitleProcessor:
                                 b_clean = before_comma.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
                                 log_msg = f"Line {index} modified | Option: Pre-Process Comma Fixes | Before: |{b_clean}| -> After: |{c_clean}|"
-                                Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+                                file_subtitle_logs.append(log_msg)
 
                     # Apply Pre-Process Option: Exclamation Mark Fixes
                     if self.options.get("exclamation_fixes", 1) and not is_timecode_or_index:
@@ -441,7 +451,7 @@ class SubtitleProcessor:
                                 b_clean = before_excl.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
                                 log_msg = f"Line {index} modified | Option: Pre-Process Exclamation Mark Fixes | Before: |{b_clean}| -> After: |{c_clean}|"
-                                Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+                                file_subtitle_logs.append(log_msg)
 
                     # Apply Pre-Process Option: Parentheses Fixes
                     if self.options.get("parentheses_fixes", 1) and not is_timecode_or_index:
@@ -462,7 +472,7 @@ class SubtitleProcessor:
                                 b_clean = before_paren.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
                                 log_msg = f"Line {index} modified | Option: Pre-Process Parentheses Fixes | Before: |{b_clean}| -> After: |{c_clean}|"
-                                Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+                                file_subtitle_logs.append(log_msg)
 
                     # Apply Pre-Process Option: Question Mark Fixes
                     if self.options.get("question_mark_fixes", 1) and not is_timecode_or_index:
@@ -483,7 +493,7 @@ class SubtitleProcessor:
                                 b_clean = before_qm.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
                                 log_msg = f"Line {index} modified | Option: Pre-Process Question Mark Fixes | Before: |{b_clean}| -> After: |{c_clean}|"
-                                Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+                                file_subtitle_logs.append(log_msg)
 
                     # Double-Quotes Fixes processing and logging
                     if self.options.get("double_quotes_fixes", 1) == 1 and not is_timecode_or_index:
@@ -524,11 +534,8 @@ class SubtitleProcessor:
                             if self.options.get("detailed_subtitle_logs", 1):
                                 b_clean = before_dq.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
-                                Logger.log_subtitle_change(
-                                    current_file_dir,
-                                    filename,
-                                    f"Line {index} modified | Option: Pre-Process Double-Quotes Fixes | Before: |{b_clean}| -> After: |{c_clean}|",
-                                )
+                                log_msg = f"Line {index} modified | Option: Pre-Process Double-Quotes Fixes | Before: |{b_clean}| -> After: |{c_clean}|"
+                                file_subtitle_logs.append(log_msg)
 
                     # Dash Fixes processing and logging
                     if self.options.get("dash_fixes", 1) == 1 and not is_timecode_or_index:
@@ -545,11 +552,8 @@ class SubtitleProcessor:
                             if self.options.get("detailed_subtitle_logs", 1):
                                 b_clean = before_dash.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
-                                Logger.log_subtitle_change(
-                                    current_file_dir,
-                                    filename,
-                                    f"Line {index} modified | Option: Pre-Process Dash Fixes | Before: |{b_clean}| -> After: |{c_clean}|",
-                                )
+                                log_msg = f"Line {index} modified | Option: Pre-Process Dash Fixes | Before: |{b_clean}| -> After: |{c_clean}|"
+                                file_subtitle_logs.append(log_msg)
 
                     # Comments Fixes processing and logging
                     if self.options.get("comments_fixes", 1) == 1 and not is_timecode_or_index:
@@ -566,11 +570,8 @@ class SubtitleProcessor:
                             if self.options.get("detailed_subtitle_logs", 1):
                                 b_clean = before_com.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
-                                Logger.log_subtitle_change(
-                                    current_file_dir,
-                                    filename,
-                                    f"Line {index} modified | Option: Pre-Process Comments Fixes | Before: |{b_clean}| -> After: |{c_clean}|",
-                                )
+                                log_msg = f"Line {index} modified | Option: Pre-Process Comments Fixes | Before: |{b_clean}| -> After: |{c_clean}|"
+                                file_subtitle_logs.append(log_msg)
 
                     # Dialog Hyphen Fix processing and logging
                     if self.options.get("dialog_hyphen_fix", 1) == 1 and not is_timecode_or_index:
@@ -587,11 +588,8 @@ class SubtitleProcessor:
                             if self.options.get("detailed_subtitle_logs", 1):
                                 b_clean = before_dh.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
-                                Logger.log_subtitle_change(
-                                    current_file_dir,
-                                    filename,
-                                    f"Line {index} modified | Option: Pre-Process Dialog Hyphen Fix | Before: |{b_clean}| -> After: |{c_clean}|",
-                                )
+                                log_msg = f"Line {index} modified | Option: Pre-Process Dialog Hyphen Fix | Before: |{b_clean}| -> After: |{c_clean}|"
+                                file_subtitle_logs.append(log_msg)
 
                     # Apply Pre-Process Option: Remove Standalone Dots
                     if self.options.get("remove_standalone_dots", 1) and not is_timecode_or_index:
@@ -612,7 +610,7 @@ class SubtitleProcessor:
                                 b_clean = before_dots.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
                                 log_msg = f"Line {index} modified | Option: Pre-Process Remove Standalone Dots | Before: |{b_clean}| -> After: |{c_clean}|"
-                                Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+                                file_subtitle_logs.append(log_msg)
 
                     # Apply Pre-Process Option: Remove Unneeded Spaces (Aligned with XML rules)
                     if self.options.get("remove_unneeded_spaces", 1) and not is_timecode_or_index:
@@ -630,7 +628,7 @@ class SubtitleProcessor:
                                 b_clean = before_unneeded.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
                                 log_msg = f"Line {index} modified | Option: Pre-Process Remove Unneeded Spaces | Before: |{b_clean}| -> After: |{c_clean}|"
-                                Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+                                file_subtitle_logs.append(log_msg)
 
                     # Option: Convert English Question Marks and Commas to Persian
                     if self.options.get("persian_question_mark_and_comma", 1) and not is_timecode_or_index:
@@ -646,7 +644,7 @@ class SubtitleProcessor:
                                 b_clean = before_q.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
                                 log_msg = f"Line {index} modified | Option: Pre-Process Persian Question Mark and Comma | Before: |{b_clean}| -> After: |{c_clean}|"
-                                Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+                                file_subtitle_logs.append(log_msg)
 
                     # 1. Convert Arabic Characters to Persian
                     if self.options.get("arabic_char_to_persian", 1):
@@ -659,7 +657,7 @@ class SubtitleProcessor:
                                 b_clean = before_char.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
                                 log_msg = f"Line {index} modified | Option: Pre-Process Arabic Chars | Before: |{b_clean}| -> After: |{c_clean}|"
-                                Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+                                file_subtitle_logs.append(log_msg)
 
                     # 2. Convert Arabic Numerals to Persian Numerals
                     if self.options.get("arabic_num_to_persian", 1):
@@ -672,7 +670,7 @@ class SubtitleProcessor:
                                 b_clean = before_anum.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
                                 log_msg = f"Line {index} modified | Option: Pre-Process Arabic Numerals | Before: |{b_clean}| -> After: |{c_clean}|"
-                                Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+                                file_subtitle_logs.append(log_msg)
 
                     # 3. Convert English Numerals to Persian Numerals conditionally
                     if self.options.get("english_num_to_persian", 1) and not is_timecode_or_index:
@@ -705,7 +703,7 @@ class SubtitleProcessor:
                                 b_clean = before_enum.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
                                 log_msg = f"Line {index} modified | Option: Pre-Process English Numerals | Before: |{b_clean}| -> After: |{c_clean}|"
-                                Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+                                file_subtitle_logs.append(log_msg)
 
                     # 4. Convert Space to Invisible Space conditionally
                     if self.options.get("space_to_invisible_space", 1) and not is_timecode_or_index:
@@ -725,7 +723,7 @@ class SubtitleProcessor:
                                 b_clean = before_space_zwnj.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
                                 log_msg = f"Line {index} modified | Option: Pre-Process Space to Invisible Space | Before: |{b_clean}| -> After: |{c_clean}|"
-                                Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+                                file_subtitle_logs.append(log_msg)
 
                     # 5. Fix Common Hexre Typo Errors conditionally
                     if self.options.get("hexre_fixes", 1) and not is_timecode_or_index:
@@ -745,7 +743,7 @@ class SubtitleProcessor:
                                 b_clean = before_hexre.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
                                 log_msg = f"Line {index} modified | Option: Pre-Process Hexre Typo Fixes | Before: |{b_clean}| -> After: |{c_clean}|"
-                                Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+                                file_subtitle_logs.append(log_msg)
 
                     # --- Process Options ---
                     is_bypassed = False
@@ -755,7 +753,7 @@ class SubtitleProcessor:
                                 is_bypassed = True
                                 if self.options.get("detailed_subtitle_logs", 1):
                                     log_msg = f'Line {index} bypassed | Matched "{word}" in Bypass List. No further process changes applied.'
-                                    Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+                                    file_subtitle_logs.append(log_msg)
                                 break
 
                     if not is_bypassed:
@@ -770,7 +768,7 @@ class SubtitleProcessor:
                                     if self.options.get("detailed_subtitle_logs", 1):
                                         curr_clean = current_line.rstrip("\n")
                                         log_msg = f'Line {index} removed | Matched "{word}" in Remove List. Entire line deleted. The line was: "{curr_clean}"'
-                                        Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+                                        file_subtitle_logs.append(log_msg)
                                     current_line = None
                                     break
 
@@ -790,7 +788,7 @@ class SubtitleProcessor:
                                             before_clean = before_replace.rstrip("\n")
                                             curr_clean = current_line.rstrip("\n")
                                             log_msg = f'Line {index} modified | Option: Replace List (Matched "{word}") | Before: |{before_clean}| -> After: |{curr_clean}|'
-                                            Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+                                            file_subtitle_logs.append(log_msg)
 
                         # --- Post-Process Options ---
                         # Apply Post-Process Option: Trim Spaces
@@ -804,7 +802,7 @@ class SubtitleProcessor:
                                     before_clean = before_post.rstrip("\n")
                                     curr_clean = current_line.rstrip("\n")
                                     log_msg = f"Line {index} modified | Option: Post-Process Trim Spaces | Before: |{before_clean}| -> After: |{curr_clean}|"
-                                    Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+                                    file_subtitle_logs.append(log_msg)
 
                         # Option: Post-Process Remove Empty Tags
                         if self.options.get("remove_empty_tags", 1) and current_line:
@@ -819,7 +817,7 @@ class SubtitleProcessor:
                                     b_clean = before_tags.rstrip("\n")
                                     c_clean = current_line.rstrip("\n")
                                     log_msg = f"Line {index} modified | Option: Post-Process Remove Empty Tags | Before: |{b_clean}| -> After: |{c_clean}|"
-                                    Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+                                    file_subtitle_logs.append(log_msg)
 
                     # Finally, append the line if it wasn't removed completely
                     if current_line is not None:
@@ -868,7 +866,7 @@ class SubtitleProcessor:
                                     b_start = b["start_str"]
                                     b_end = b["end_str"]
                                     log_msg = f'Subtitle block removed | Option: Remove Negative Timecodes | Index: "{b_index}" | Timecode: "{b_start} --> {b_end}"'
-                                    Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+                                    file_subtitle_logs.append(log_msg)
                             else:
                                 filtered_blocks.append(b)
                         blocks = filtered_blocks
@@ -885,7 +883,7 @@ class SubtitleProcessor:
                                     b_start = b["start_str"]
                                     b_end = b["end_str"]
                                     log_msg = f'Subtitle block removed | Option: Remove Empty Subtitles | Index: "{b_index}" | Timecode: "{b_start} --> {b_end}"'
-                                    Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+                                    file_subtitle_logs.append(log_msg)
                             else:
                                 filtered_blocks.append(b)
                         blocks = filtered_blocks
@@ -918,7 +916,7 @@ class SubtitleProcessor:
                                     file_has_changes = True
                                     if self.options.get("detailed_subtitle_logs", 1):
                                         log_msg = f'Intro credit subtitle added | Timecode: "{ms_to_timecode(200)} --> {ms_to_timecode(200 + dur_ms)}"'
-                                        Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+                                        file_subtitle_logs.append(log_msg)
                                 else:
                                     first_start_ms = blocks[0]["start_ms"]
                                     if first_start_ms >= required_space:
@@ -936,7 +934,7 @@ class SubtitleProcessor:
                                         file_has_changes = True
                                         if self.options.get("detailed_subtitle_logs", 1):
                                             log_msg = f'Intro credit subtitle added at beginning | Timecode: "{ms_to_timecode(start_time_ms)} --> {ms_to_timecode(end_time_ms)}"'
-                                            Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+                                            file_subtitle_logs.append(log_msg)
                                     else:
                                         inserted = False
                                         for k in range(len(blocks) - 1):
@@ -959,7 +957,7 @@ class SubtitleProcessor:
                                                 file_has_changes = True
                                                 if self.options.get("detailed_subtitle_logs", 1):
                                                     log_msg = f'Intro credit subtitle added at gap after block {k + 1} | Timecode: "{ms_to_timecode(start_time_ms)} --> {ms_to_timecode(end_time_ms)}"'
-                                                    Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+                                                    file_subtitle_logs.append(log_msg)
                                                 break
 
                                         if not inserted:
@@ -978,7 +976,7 @@ class SubtitleProcessor:
                                             file_has_changes = True
                                             if self.options.get("detailed_subtitle_logs", 1):
                                                 log_msg = f'Intro credit subtitle added at the end | Timecode: "{ms_to_timecode(start_time_ms)} --> {ms_to_timecode(end_time_ms)}"'
-                                                Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+                                                file_subtitle_logs.append(log_msg)
 
                     # Option: Reformat & Renumber Subtitles
                     if self.options.get("reformat_renumber", 1):
@@ -995,7 +993,7 @@ class SubtitleProcessor:
 
                         if self.options.get("detailed_subtitle_logs", 1):
                             log_msg = f"Reformat & Renumber completed | Total blocks renumbered: {len(blocks)}"
-                            Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+                            file_subtitle_logs.append(log_msg)
 
                 # Option: Post-Process Force RTL (Remove control chars and force Right-To-Left)
                 # Executed after reformat and renumber block as requested
@@ -1071,7 +1069,7 @@ class SubtitleProcessor:
                                         before_clean = before_post.rstrip("\n")
                                         curr_clean = clean_text.rstrip("\n")
                                         log_msg = f"Line {index} modified | Option: RTL Trim Spaces | Before: |{before_clean}| -> After: |{curr_clean}|"
-                                        Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+                                        file_subtitle_logs.append(log_msg)
 
                             # Apply Post-Process Option: Smart RTL Enforcement
                             if clean_text.strip():
@@ -1127,7 +1125,7 @@ class SubtitleProcessor:
                                     before_clean = original_text_line.rstrip("\n")
                                     curr_clean = clean_text.rstrip("\n")
                                     log_msg = f"Line {index} modified | Option: Smart RTL Enforcement | Before: |{before_clean}| -> After: |{curr_clean}|"
-                                    Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+                                    file_subtitle_logs.append(log_msg)
                                 rtl_modified_lines_count += 1
 
                             rtl_processed_lines.append(clean_text)
@@ -1135,7 +1133,7 @@ class SubtitleProcessor:
                     # Log total RTL changes once at the end if any lines were modified
                     if rtl_modified_lines_count > 0 and self.options.get("detailed_subtitle_logs", 1):
                         log_msg = f"Total subtitle lines RTL formatted: {rtl_modified_lines_count}"
-                        Logger.log_subtitle_change(current_file_dir, filename, log_msg)
+                        file_subtitle_logs.append(log_msg)
 
                     processed_lines = rtl_processed_lines
 
@@ -1150,24 +1148,54 @@ class SubtitleProcessor:
                 with open(output_file_path, "w", encoding=out_encoding) as f:
                     f.writelines(processed_lines)
 
-                Logger.log_process(f"Processed and saved successfully: {output_filename}", current_file_dir)
+                file_process_logs.append(f"Processed and saved successfully: {output_filename}")
                 if self.options.get("detailed_subtitle_logs", 1):
-                    Logger.log_subtitle_change(
-                        current_file_dir, filename, f"Finished tracking. Total changes occurred: {file_has_changes}"
-                    )
+                    file_subtitle_logs.append(f"Finished tracking. Total changes occurred: {file_has_changes}")
 
                 # Post processing clean up option: Delete Original
                 if self.options.get("delete_original", 0):
                     os.remove(file_path)
-                    Logger.log_process(f"Original file deleted by request: {filename}", current_file_dir)
+                    file_process_logs.append(f"Original file deleted by request: {filename}")
 
                 # Increment successful tracking counter
                 self.successful_count += 1
 
             except Exception as e:
-                Logger.log_process(f"Failed to process file {filename} due to: {str(e)}", current_file_dir)
+                file_process_logs.append(f"Failed to process file {filename} due to: {str(e)}")
                 # Increment failed tracking counter
                 self.failed_count += 1
+
+            finally:
+                # Flush timestamped process logs while preserving the timestamp captured at append time
+                if file_process_logs and current_file_dir and os.path.isdir(current_file_dir):
+                    process_log_dir = os.path.join(current_file_dir, "Logs")
+                    os.makedirs(process_log_dir, exist_ok=True)
+                    process_log_file = os.path.join(process_log_dir, "process-logs.txt")
+
+                    try:
+                        with open(process_log_file, "a", encoding="utf-8") as f:
+                            for timestamp, message in file_process_logs:
+                                f.write(f"[{timestamp}] {message}\n")
+                    except Exception as e:
+                        print(f"Process logging failed: {e}")
+
+                # Flush timestamped subtitle logs while preserving the timestamp captured at append time
+                if (
+                    file_subtitle_logs
+                    and self.options.get("detailed_subtitle_logs", 1)
+                    and current_file_dir
+                    and os.path.isdir(current_file_dir)
+                ):
+                    subtitle_log_dir = os.path.join(current_file_dir, "Logs", "Subtitle-Logs")
+                    os.makedirs(subtitle_log_dir, exist_ok=True)
+                    subtitle_log_file = os.path.join(subtitle_log_dir, f"{filename}_changelogs.txt")
+
+                    try:
+                        with open(subtitle_log_file, "a", encoding="utf-8") as f:
+                            for timestamp, message in file_subtitle_logs:
+                                f.write(f"[{timestamp}] {message}\n")
+                    except Exception as e:
+                        print(f"Subtitle detailed logging failed: {e}")
 
         self.elapsed_time = time.time() - start_time
 

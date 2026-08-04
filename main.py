@@ -774,8 +774,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         # Option: Fix Common Hexre Typo Errors
         self.chk_hexre_fixes = ctk.CTkCheckBox(
             preprocess_parent,
-            # Using unicode for (e.g., \u0628\u0631\u0627\u06cc\u0647 \u2794 \u0628\u0631\u0627\u06cc\u0650) -> "برایه ➔ برایِ"
-            text="Fix Common Hexre Typo Errors (e.g., \u0628\u0631\u0627\u06cc\u0647 \u2794 \u0628\u0631\u0627\u06cc\u0650) - (Triggers Post-Process UTF-8)",
+            text="Fix Common Hexre Typo Errors (e.g., برایه ➔ برایِ) - (Triggers Post-Process UTF-8)",
             font=font_bold,
             command=self.on_preprocess_dependency_toggle,
         )
