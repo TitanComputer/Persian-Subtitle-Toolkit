@@ -2,7 +2,42 @@ from utils import *
 from rules import *
 import os
 import time
-import datetime
+
+
+def _extract_required_literal(pattern):
+    """Extracts a conservative mandatory literal prefix from a regex pattern."""
+    pattern_text = getattr(pattern, "pattern", "")
+    if not pattern_text.startswith(r"\b"):
+        return None
+
+    cursor = 2
+    if cursor < len(pattern_text) and pattern_text[cursor] == "(":
+        cursor += 1
+
+    literal_chars = []
+    while cursor < len(pattern_text):
+        char = pattern_text[cursor]
+        if char in "()[]{}|*+?\\.^$":
+            break
+        literal_chars.append(char)
+        cursor += 1
+
+    literal = "".join(literal_chars)
+    return literal or None
+
+
+def _prepare_rule_fast_paths(rule_list):
+    """Adds safe literal guards to regex rules without changing rule order."""
+    prepared_rules = []
+    for rule_pattern, replace_with, is_regex in rule_list:
+        required_literal = _extract_required_literal(rule_pattern) if is_regex else rule_pattern
+        prepared_rules.append((rule_pattern, replace_with, is_regex, required_literal))
+    return prepared_rules
+
+
+# Precompute safe literal guards for the largest rule groups.
+SPACE_TO_INVISIBLE_SPACE_FAST_RULES = _prepare_rule_fast_paths(space_to_invisible_space_rules)
+HEXRE_FAST_RULES = _prepare_rule_fast_paths(hexre_rules_list)
 
 
 def build_flexible_regex(word):
@@ -710,7 +745,14 @@ class SubtitleProcessor:
                         before_space_zwnj = current_line
                         temp_line = current_line
 
-                        for rule_pattern, replace_with, is_regex in space_to_invisible_space_rules:
+                        for (
+                            rule_pattern,
+                            replace_with,
+                            is_regex,
+                            required_literal,
+                        ) in SPACE_TO_INVISIBLE_SPACE_FAST_RULES:
+                            if required_literal is not None and required_literal not in temp_line:
+                                continue
                             if is_regex:
                                 temp_line = rule_pattern.sub(replace_with, temp_line)
                             else:
@@ -730,7 +772,9 @@ class SubtitleProcessor:
                         before_hexre = current_line
                         temp_line = current_line
 
-                        for rule_pattern, replace_with, is_regex in hexre_rules_list:
+                        for rule_pattern, replace_with, is_regex, required_literal in HEXRE_FAST_RULES:
+                            if required_literal is not None and required_literal not in temp_line:
+                                continue
                             if is_regex:
                                 temp_line = rule_pattern.sub(replace_with, temp_line)
                             else:
