@@ -1617,7 +1617,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
                 messagebox.showinfo("Success", "Settings have been imported and applied successfully.")
 
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to import settings: {str(e)}")
+            messagebox.showerror("Error", f"Failed to import settings: \n\n{str(e)}")
 
     def export_settings(self):
         # Generate unique filename
@@ -1644,10 +1644,10 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
                 json.dump(config_data, f, indent=4)
 
             self.write_log(f"Settings exported successfully to: {file_path}")
-            messagebox.showinfo("Success", f"Settings exported to:\n{file_path}")
+            messagebox.showinfo("Success", f"Settings exported to:\n\n{file_path}")
 
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to export settings: {str(e)}")
+            messagebox.showerror("Error", f"Failed to export settings: \n\n{str(e)}")
 
     def _reset_settings(self):
         self.write_log("Settings reset to default.")
