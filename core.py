@@ -682,7 +682,7 @@ class SubtitleProcessor:
                                 file_subtitle_logs.append(log_msg)
 
                     # 1. Convert Arabic Characters to Persian
-                    if self.options.get("arabic_char_to_persian", 1):
+                    if self.options.get("arabic_char_to_persian", 1) and not is_timecode_or_index:
                         before_char = current_line
                         for k, v in arabic_to_persian_chars.items():
                             current_line = current_line.replace(k, v)
@@ -695,7 +695,7 @@ class SubtitleProcessor:
                                 file_subtitle_logs.append(log_msg)
 
                     # 2. Convert Arabic Numerals to Persian Numerals
-                    if self.options.get("arabic_num_to_persian", 1):
+                    if self.options.get("arabic_num_to_persian", 1) and not is_timecode_or_index:
                         before_anum = current_line
                         for k, v in arabic_numerals.items():
                             current_line = current_line.replace(k, v)
@@ -834,34 +834,34 @@ class SubtitleProcessor:
                                             log_msg = f'Line {index} modified | Option: Replace List (Matched "{word}") | Before: |{before_clean}| -> After: |{curr_clean}|'
                                             file_subtitle_logs.append(log_msg)
 
-                        # --- Post-Process Options ---
-                        # Apply Post-Process Option: Trim Spaces
-                        if post_trim_spaces and current_line:
-                            before_post = current_line
-                            current_line = trim_line_spaces(current_line)
+                    # --- Post-Process Options ---
+                    # Apply Post-Process Option: Trim Spaces
+                    if post_trim_spaces and current_line and not is_timecode_or_index:
+                        before_post = current_line
+                        current_line = trim_line_spaces(current_line)
 
-                            if current_line != before_post:
-                                file_has_changes = True
-                                if self.options.get("detailed_subtitle_logs", 1):
-                                    before_clean = before_post.rstrip("\n")
-                                    curr_clean = current_line.rstrip("\n")
-                                    log_msg = f"Line {index} modified | Option: Post-Process Trim Spaces | Before: |{before_clean}| -> After: |{curr_clean}|"
-                                    file_subtitle_logs.append(log_msg)
+                        if current_line != before_post:
+                            file_has_changes = True
+                            if self.options.get("detailed_subtitle_logs", 1):
+                                before_clean = before_post.rstrip("\n")
+                                curr_clean = current_line.rstrip("\n")
+                                log_msg = f"Line {index} modified | Option: Post-Process Trim Spaces | Before: |{before_clean}| -> After: |{curr_clean}|"
+                                file_subtitle_logs.append(log_msg)
 
-                        # Option: Post-Process Remove Empty Tags
-                        if self.options.get("remove_empty_tags", 1) and current_line:
-                            before_tags = current_line
-                            temp_line = current_line
-                            while empty_tag_pattern.search(temp_line):
-                                temp_line = empty_tag_pattern.sub("", temp_line)
-                            current_line = temp_line
-                            if current_line != before_tags:
-                                file_has_changes = True
-                                if self.options.get("detailed_subtitle_logs", 1):
-                                    b_clean = before_tags.rstrip("\n")
-                                    c_clean = current_line.rstrip("\n")
-                                    log_msg = f"Line {index} modified | Option: Post-Process Remove Empty Tags | Before: |{b_clean}| -> After: |{c_clean}|"
-                                    file_subtitle_logs.append(log_msg)
+                    # Option: Post-Process Remove Empty Tags
+                    if self.options.get("remove_empty_tags", 1) and current_line and not is_timecode_or_index:
+                        before_tags = current_line
+                        temp_line = current_line
+                        while empty_tag_pattern.search(temp_line):
+                            temp_line = empty_tag_pattern.sub("", temp_line)
+                        current_line = temp_line
+                        if current_line != before_tags:
+                            file_has_changes = True
+                            if self.options.get("detailed_subtitle_logs", 1):
+                                b_clean = before_tags.rstrip("\n")
+                                c_clean = current_line.rstrip("\n")
+                                log_msg = f"Line {index} modified | Option: Post-Process Remove Empty Tags | Before: |{b_clean}| -> After: |{c_clean}|"
+                                file_subtitle_logs.append(log_msg)
 
                     # Finally, append the line if it wasn't removed completely
                     if current_line is not None:
