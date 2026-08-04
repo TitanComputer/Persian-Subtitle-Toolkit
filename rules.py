@@ -1649,6 +1649,23 @@ misplaced_chars_rules = [
     ),
 ]
 
+# Rules for common Persian Hexre mistakes (Only obvious and safe replacements)
+# Structure: (Pattern, Replacement, is_regex)
+hexre_rules_list = [
+    # Explicit mistakes
+    (re.compile(r"\bبرایه\b"), r"برایِ", True),
+    (re.compile(r"\bتویه\b"), r"تویِ", True),
+    # Ownership pronouns fix (e.g., ماله من -> مالِ من)
+    (re.compile(r"\bماله (من|تو|ما|شما|اونا|اینا|اون|این|کی)\b"), r"مالِ \1", True),
+    # Space between words ending in 'ه' and 'ی' (Converting to Half-Space standard logically)
+    (re.compile(r"\bدرباره ی\b"), r"درباره‌ی", True),
+    (re.compile(r"\bواسه ی\b"), r"واسه‌ی", True),
+    (re.compile(r"\bخونه ی\b"), r"خونه‌ی", True),
+    (re.compile(r"\bدیگه ای\b"), r"دیگه‌ای", True),
+    (re.compile(r"\bاندازه ی\b"), r"اندازه‌ی", True),
+    (re.compile(r"\bنتیجه ی\b"), r"نتیجه‌ی", True),
+]
+
 space_to_invisible_space_rules = [
     # Space to Invisible Space 0
     (re.compile(r"(\b[\b\w]+\b)( +)\b(ها)\b"), r"\g<1>‌\g<3>", True),

@@ -771,6 +771,16 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.chk_space_to_invisible_space.grid(row=17, column=0, padx=5, pady=5, sticky="w")
 
+        # Option: Fix Common Hexre Errors
+        self.chk_hexre_fixes = ctk.CTkCheckBox(
+            preprocess_parent,
+            # Using unicode for (e.g., \u0628\u0631\u0627\u06cc\u0647 \u2794 \u0628\u0631\u0627\u06cc\u0650) -> "برایه ➔ برایِ"
+            text="Fix Common Hexre Errors (e.g., \u0628\u0631\u0627\u06cc\u0647 \u2794 \u0628\u0631\u0627\u06cc\u0650) - (Triggers Post-Process UTF-8)",
+            font=font_bold,
+            command=self.on_preprocess_dependency_toggle,
+        )
+        self.chk_hexre_fixes.grid(row=18, column=0, padx=5, pady=5, sticky="w")
+
         # --- Process Tab ---
         self.process_inner_frame = CTkDualScrollableFrame(self.tab_process)
         self.process_inner_frame.grid(row=0, column=0, padx=0, pady=0, sticky="nsew")
@@ -1048,6 +1058,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             or self.chk_arabic_num.get() == 1
             or self.chk_english_num.get() == 1
             or self.chk_space_to_invisible_space.get() == 1
+            or self.chk_hexre_fixes.get() == 1
             or self.chk_force_rtl.get() == 1
             or self.chk_fix_abbreviations.get() == 1
             or self.chk_comma_fixes.get() == 1
@@ -1071,6 +1082,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             self.chk_arabic_num.deselect()
             self.chk_english_num.deselect()
             self.chk_space_to_invisible_space.deselect()
+            self.chk_hexre_fixes.deselect()
             self.chk_force_rtl.deselect()
             self.chk_fix_abbreviations.deselect()
             self.chk_comma_fixes.deselect()
@@ -1287,6 +1299,11 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         else:
             self.chk_space_to_invisible_space.deselect()
 
+        if config.get("hexre_fixes", 1) == 1:
+            self.chk_hexre_fixes.select()
+        else:
+            self.chk_hexre_fixes.deselect()
+
         # Process Tab Loading
         if config.get("bypass_enabled", 1) == 1:
             self.chk_bypass.select()
@@ -1456,6 +1473,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             "arabic_num_to_persian": self.chk_arabic_num.get(),
             "english_num_to_persian": self.chk_english_num.get(),
             "space_to_invisible_space": self.chk_space_to_invisible_space.get(),
+            "hexre_fixes": self.chk_hexre_fixes.get(),
             "bypass_enabled": self.chk_bypass.get(),
             "bypass_list": getattr(self.txt_bypass, "_original_text", ""),
             "remove_enabled": self.chk_remove.get(),
@@ -1525,6 +1543,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         self.chk_arabic_num.select()
         self.chk_english_num.select()
         self.chk_space_to_invisible_space.select()
+        self.chk_hexre_fixes.select()
         self.chk_fix_misplaced_chars.select()
 
         self.chk_bypass.select()
@@ -1738,6 +1757,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             "arabic_num_to_persian": self.chk_arabic_num.get(),
             "english_num_to_persian": self.chk_english_num.get(),
             "space_to_invisible_space": self.chk_space_to_invisible_space.get(),
+            "hexre_fixes": self.chk_hexre_fixes.get(),
             "bypass_enabled": self.chk_bypass.get(),
             "bypass_list": getattr(self.txt_bypass, "_original_text", ""),
             "remove_enabled": self.chk_remove.get(),
