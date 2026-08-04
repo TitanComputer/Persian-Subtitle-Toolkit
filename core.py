@@ -727,7 +727,7 @@ class SubtitleProcessor:
                                 log_msg = f"Line {index} modified | Option: Pre-Process Space to Invisible Space | Before: |{b_clean}| -> After: |{c_clean}|"
                                 Logger.log_subtitle_change(current_file_dir, filename, log_msg)
 
-                    # 5. Fix Common Hexre Errors conditionally
+                    # 5. Fix Common Hexre Typo Errors conditionally
                     if self.options.get("hexre_fixes", 1) and not is_timecode_or_index:
                         before_hexre = current_line
                         temp_line = current_line
@@ -744,7 +744,7 @@ class SubtitleProcessor:
                             if self.options.get("detailed_subtitle_logs", 1):
                                 b_clean = before_hexre.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
-                                log_msg = f"Line {index} modified | Option: Pre-Process Hexre Fixes | Before: |{b_clean}| -> After: |{c_clean}|"
+                                log_msg = f"Line {index} modified | Option: Pre-Process Hexre Typo Fixes | Before: |{b_clean}| -> After: |{c_clean}|"
                                 Logger.log_subtitle_change(current_file_dir, filename, log_msg)
 
                     # --- Process Options ---
