@@ -423,6 +423,9 @@ class SubtitleProcessor:
                 if detailed_logs_enabled:
                     file_subtitle_logs.append(f"Started tracking changes for: {filename}")
 
+                timecode_match = timecode_pattern.match
+                index_match = index_pattern.match
+
                 for index, line in enumerate(lines, start=1):
                     self.total_lines_processed += 1
 
@@ -436,9 +439,7 @@ class SubtitleProcessor:
                     line_is_pure_english = is_pure_english(current_line)
 
                     # Check if line is standard subtitle timecode or index number
-                    is_timecode_or_index = bool(
-                        timecode_pattern.match(current_line) or index_pattern.match(current_line)
-                    )
+                    is_timecode_or_index = bool(timecode_match(current_line) or index_match(current_line))
 
                     # Apply Pre-Process Option: Trim Spaces
                     if opt_trim_spaces:
@@ -1189,7 +1190,7 @@ class SubtitleProcessor:
                     )
 
                     for index, line in enumerate(processed_lines, start=1):
-                        if index_pattern.match(line) or timecode_pattern.match(line) or not line.strip():
+                        if index_match(line) or timecode_match(line) or not line.strip():
                             rtl_processed_lines.append(line)
                         else:
                             original_text_line = line
