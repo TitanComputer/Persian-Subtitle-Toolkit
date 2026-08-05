@@ -387,8 +387,13 @@ class SubtitleProcessor:
                             log_msg = f"Line {index} modified | Option: Pre-Process Trim Spaces | Before: |{orig_clean}| -> After: |{curr_clean}|"
                             file_subtitle_logs.append(log_msg)
 
+                    # Skip text processing entirely for timecode or index lines
+                    if is_timecode_or_index:
+                        processed_lines.append(current_line)
+                        continue
+
                     # Option: Fix Misplaced Chars processing and logging
-                    if self.options.get("fix_misplaced_chars", 1) and not is_timecode_or_index:
+                    if self.options.get("fix_misplaced_chars", 1):
                         before_misplaced = current_line
                         temp_line = current_line
 
@@ -419,7 +424,7 @@ class SubtitleProcessor:
                                 file_subtitle_logs.append(log_msg)
 
                     # Apply Pre-Process Option: Fix Abbreviations
-                    if self.options.get("fix_abbreviations", 1) and not is_timecode_or_index:
+                    if self.options.get("fix_abbreviations", 1):
                         before_abbr = current_line
                         temp_line = current_line
 
@@ -445,7 +450,7 @@ class SubtitleProcessor:
                                 file_subtitle_logs.append(log_msg)
 
                     # Apply Pre-Process Option: Comma Fixes
-                    if self.options.get("comma_fixes", 1) and not is_timecode_or_index:
+                    if self.options.get("comma_fixes", 1):
                         before_comma = current_line
                         temp_line = current_line
 
@@ -468,7 +473,7 @@ class SubtitleProcessor:
                                 file_subtitle_logs.append(log_msg)
 
                     # Apply Pre-Process Option: Exclamation Mark Fixes
-                    if self.options.get("exclamation_fixes", 1) and not is_timecode_or_index:
+                    if self.options.get("exclamation_fixes", 1):
                         before_excl = current_line
                         temp_line = current_line
 
@@ -489,7 +494,7 @@ class SubtitleProcessor:
                                 file_subtitle_logs.append(log_msg)
 
                     # Apply Pre-Process Option: Parentheses Fixes
-                    if self.options.get("parentheses_fixes", 1) and not is_timecode_or_index:
+                    if self.options.get("parentheses_fixes", 1):
                         before_paren = current_line
                         temp_line = current_line
 
@@ -510,7 +515,7 @@ class SubtitleProcessor:
                                 file_subtitle_logs.append(log_msg)
 
                     # Apply Pre-Process Option: Question Mark Fixes
-                    if self.options.get("question_mark_fixes", 1) and not is_timecode_or_index:
+                    if self.options.get("question_mark_fixes", 1):
                         before_qm = current_line
                         temp_line = current_line
 
@@ -531,7 +536,7 @@ class SubtitleProcessor:
                                 file_subtitle_logs.append(log_msg)
 
                     # Double-Quotes Fixes processing and logging
-                    if self.options.get("double_quotes_fixes", 1) == 1 and not is_timecode_or_index:
+                    if self.options.get("double_quotes_fixes", 1) == 1:
                         before_dq = current_line
                         temp_line = current_line
                         for rule_pattern, replace_with, is_regex in double_quotes_rules_list:
@@ -573,7 +578,7 @@ class SubtitleProcessor:
                                 file_subtitle_logs.append(log_msg)
 
                     # Dash Fixes processing and logging
-                    if self.options.get("dash_fixes", 1) == 1 and not is_timecode_or_index:
+                    if self.options.get("dash_fixes", 1) == 1:
                         before_dash = current_line
                         temp_line = current_line
                         for rule_pattern, replace_with, is_regex in dash_rules_list:
@@ -591,7 +596,7 @@ class SubtitleProcessor:
                                 file_subtitle_logs.append(log_msg)
 
                     # Comments Fixes processing and logging
-                    if self.options.get("comments_fixes", 1) == 1 and not is_timecode_or_index:
+                    if self.options.get("comments_fixes", 1) == 1:
                         before_com = current_line
                         temp_line = current_line
                         for rule_pattern, replace_with, is_regex in comments_rules_list:
@@ -609,7 +614,7 @@ class SubtitleProcessor:
                                 file_subtitle_logs.append(log_msg)
 
                     # Dialog Hyphen Fix processing and logging
-                    if self.options.get("dialog_hyphen_fix", 1) == 1 and not is_timecode_or_index:
+                    if self.options.get("dialog_hyphen_fix", 1) == 1:
                         before_dh = current_line
                         temp_line = current_line
                         for rule_pattern, replace_with, is_regex in dialog_hyphen_fix_list:
@@ -627,7 +632,7 @@ class SubtitleProcessor:
                                 file_subtitle_logs.append(log_msg)
 
                     # Apply Pre-Process Option: Remove Standalone Dots
-                    if self.options.get("remove_standalone_dots", 1) and not is_timecode_or_index:
+                    if self.options.get("remove_standalone_dots", 1):
                         before_dots = current_line
 
                         # Whitespace + Zero-Width & Invisible Formatting Characters (\u200c=ZWNJ, \u200d=ZWJ, \u200e=LRM, \u200f=RLM, \ufeff=BOM)
@@ -648,7 +653,7 @@ class SubtitleProcessor:
                                 file_subtitle_logs.append(log_msg)
 
                     # Apply Pre-Process Option: Remove Unneeded Spaces (Aligned with XML rules)
-                    if self.options.get("remove_unneeded_spaces", 1) and not is_timecode_or_index:
+                    if self.options.get("remove_unneeded_spaces", 1):
                         before_unneeded = current_line
                         temp_line = current_line
 
@@ -666,7 +671,7 @@ class SubtitleProcessor:
                                 file_subtitle_logs.append(log_msg)
 
                     # Option: Convert English Question Marks and Commas to Persian
-                    if self.options.get("persian_question_mark_and_comma", 1) and not is_timecode_or_index:
+                    if self.options.get("persian_question_mark_and_comma", 1):
                         before_q = current_line
                         current_line = current_line.replace("?", "؟")
 
@@ -682,7 +687,7 @@ class SubtitleProcessor:
                                 file_subtitle_logs.append(log_msg)
 
                     # 1. Convert Arabic Characters to Persian
-                    if self.options.get("arabic_char_to_persian", 1) and not is_timecode_or_index:
+                    if self.options.get("arabic_char_to_persian", 1):
                         before_char = current_line
                         for k, v in arabic_to_persian_chars.items():
                             current_line = current_line.replace(k, v)
@@ -695,7 +700,7 @@ class SubtitleProcessor:
                                 file_subtitle_logs.append(log_msg)
 
                     # 2. Convert Arabic Numerals to Persian Numerals
-                    if self.options.get("arabic_num_to_persian", 1) and not is_timecode_or_index:
+                    if self.options.get("arabic_num_to_persian", 1):
                         before_anum = current_line
                         for k, v in arabic_numerals.items():
                             current_line = current_line.replace(k, v)
@@ -708,7 +713,7 @@ class SubtitleProcessor:
                                 file_subtitle_logs.append(log_msg)
 
                     # 3. Convert English Numerals to Persian Numerals conditionally
-                    if self.options.get("english_num_to_persian", 1) and not is_timecode_or_index:
+                    if self.options.get("english_num_to_persian", 1):
                         # Skip lines that are just whitespace or empty
                         if not current_line.strip():
                             continue
@@ -741,7 +746,7 @@ class SubtitleProcessor:
                                 file_subtitle_logs.append(log_msg)
 
                     # 4. Convert Space to Invisible Space conditionally
-                    if self.options.get("space_to_invisible_space", 1) and not is_timecode_or_index:
+                    if self.options.get("space_to_invisible_space", 1):
                         before_space_zwnj = current_line
                         temp_line = current_line
 
@@ -768,7 +773,7 @@ class SubtitleProcessor:
                                 file_subtitle_logs.append(log_msg)
 
                     # 5. Fix Common Hexre Typo Errors conditionally
-                    if self.options.get("hexre_fixes", 1) and not is_timecode_or_index:
+                    if self.options.get("hexre_fixes", 1):
                         before_hexre = current_line
                         temp_line = current_line
 
@@ -836,7 +841,7 @@ class SubtitleProcessor:
 
                     # --- Post-Process Options ---
                     # Apply Post-Process Option: Trim Spaces
-                    if post_trim_spaces and current_line and not is_timecode_or_index:
+                    if post_trim_spaces and current_line:
                         before_post = current_line
                         current_line = trim_line_spaces(current_line)
 
@@ -849,7 +854,7 @@ class SubtitleProcessor:
                                 file_subtitle_logs.append(log_msg)
 
                     # Option: Post-Process Remove Empty Tags
-                    if self.options.get("remove_empty_tags", 1) and current_line and not is_timecode_or_index:
+                    if self.options.get("remove_empty_tags", 1) and current_line:
                         before_tags = current_line
                         temp_line = current_line
                         while empty_tag_pattern.search(temp_line):
