@@ -732,24 +732,24 @@ class SubtitleProcessor:
                     # Apply Pre-Process Option: Remove Unneeded Spaces (Aligned with XML rules)
                     # Fast path guard: Requires at least one space or tab character.
                     if opt_remove_unneeded_spaces and any(c in current_line for c in " \n\t"):
-                        before_unneeded = current_line
                         temp_line = current_line
 
                         for pattern, replacement, desc in unneeded_rules:
+                            step_before = temp_line
                             temp_line = pattern.sub(replacement, temp_line)
 
-                        current_line = temp_line
+                            if temp_line != step_before:
+                                file_has_changes = True
+                                _log_change(
+                                    index,
+                                    "Pre-Process Remove Unneeded Spaces",
+                                    step_before,
+                                    temp_line,
+                                    file_subtitle_logs,
+                                    detailed_logs_enabled,
+                                )
 
-                        if current_line != before_unneeded:
-                            file_has_changes = True
-                            _log_change(
-                                index,
-                                "Pre-Process Remove Unneeded Spaces",
-                                before_unneeded,
-                                current_line,
-                                file_subtitle_logs,
-                                detailed_logs_enabled,
-                            )
+                        current_line = temp_line
 
                     # Option: Convert English Question Marks and Commas to Persian
                     # Fast path guard: Look for target English characters before attempting translation.
