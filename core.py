@@ -39,6 +39,11 @@ def _prepare_rule_fast_paths(rule_list):
 SPACE_TO_INVISIBLE_SPACE_FAST_RULES = _prepare_rule_fast_paths(space_to_invisible_space_rules)
 HEXRE_FAST_RULES = _prepare_rule_fast_paths(hexre_rules_list)
 
+HTML_TAG_RE = re.compile(r"<[^>]+>")
+ZERO_WIDTH_RE = re.compile(r"[\u200b\u200c\u200d\ufeff]")
+NON_ASCII_RE = re.compile(r"[^\x00-\x7F]")
+MUSIC_SYMBOLS_RE = re.compile(r"[♪♬♫]")
+
 ARABIC_CHAR_TRANS = str.maketrans(arabic_to_persian_chars)
 ARABIC_NUM_TRANS = str.maketrans(arabic_numerals)
 CTRL_CHAR_TRANS = str.maketrans("", "", "\u200e\u200f\u202a\u202b\u202c\u202d\u202e")
@@ -1219,15 +1224,15 @@ class SubtitleProcessor:
                                 line_ending = clean_text[len(line_stripped) :]
 
                                 # Remove HTML tags AND invisible zero-width chars temporarily to check boundaries accurately
-                                text_no_tags = re.sub(r"<[^>]+>", "", line_stripped)
-                                text_no_tags = re.sub(r"[\u200b\u200c\u200d\ufeff]", "", text_no_tags).strip()
+                                text_no_tags = HTML_TAG_RE.sub("", line_stripped)
+                                text_no_tags = ZERO_WIDTH_RE.sub("", text_no_tags).strip()
 
                                 if text_no_tags:
                                     # Ignore music symbols when detecting non-English content
-                                    text_for_language_check = re.sub(r"[♪♬♫]", "", text_no_tags).strip()
+                                    text_for_language_check = MUSIC_SYMBOLS_RE.sub("", text_no_tags).strip()
 
                                     # Check if the line contains any non-ASCII (non-English) characters
-                                    has_non_english = bool(re.search(r"[^\x00-\x7F]", text_for_language_check))
+                                    has_non_english = bool(NON_ASCII_RE.search(text_for_language_check))
 
                                     if has_non_english:
                                         # Fix visually typed punctuation at the start of the line
@@ -1238,7 +1243,7 @@ class SubtitleProcessor:
                                             )
 
                                             # Re-evaluate text_no_tags after modification
-                                            text_no_tags = re.sub(r"<[^>]+>", "", line_stripped)
+                                            text_no_tags = HTML_TAG_RE.sub("", line_stripped)
                                             text_no_tags = re.sub(
                                                 r"[\u200b\u200c\u200d\ufeff]", "", text_no_tags
                                             ).strip()
