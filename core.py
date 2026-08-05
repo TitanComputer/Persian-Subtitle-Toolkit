@@ -48,6 +48,22 @@ def _log_change(index, opt_name, before, after, logs_buffer, detailed_logs_enabl
         logs_buffer.append(f"Line {index} modified | Option: {opt_name} | Before: |{b_clean}| -> After: |{c_clean}|")
 
 
+def apply_rule_set(text, rules):
+    """Applies mixed regex/literal rules."""
+    for rule_pattern, replace_with, is_regex in rules:
+        if is_regex:
+            text = rule_pattern.sub(replace_with, text)
+        else:
+            text = text.replace(rule_pattern, replace_with)
+    return text
+
+
+class TimestampedLogBuffer(list):
+    def append(self, message):
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        super().append((timestamp, message))
+
+
 def build_flexible_regex(word):
     """
     Creates a regex pattern that ignores spaces, dots, zero-width non-joiners (\u200c),
@@ -318,6 +334,7 @@ class SubtitleProcessor:
         opt_english_num_to_persian = self.options.get("english_num_to_persian", 1)
         opt_space_to_invisible_space = self.options.get("space_to_invisible_space", 1)
         opt_hexre_fixes = self.options.get("hexre_fixes", 1)
+
         opt_post_trim_spaces = self.options.get("post_trim_spaces", 1)
         opt_remove_empty_tags = self.options.get("remove_empty_tags", 1)
         opt_remove_negative_timecodes = self.options.get("remove_negative_timecodes", 1)
@@ -332,15 +349,27 @@ class SubtitleProcessor:
         # Extract Process configuration variables
         bypass_list = [w.strip() for w in self.options.get("bypass_list", "").split("\n") if w.strip()]
         # Pre-compile regexes for bypass list to optimize performance
-        bypass_regexes = [(w, build_flexible_regex(w)) for w in bypass_list if build_flexible_regex(w)]
+        bypass_regexes = []
+        for w in bypass_list:
+            regex = build_flexible_regex(w)
+            if regex:
+                bypass_regexes.append((w, regex))
 
         remove_list = [w.strip() for w in self.options.get("remove_list", "").split("\n") if w.strip()]
         # Pre-compile regexes for remove list to optimize performance
-        remove_regexes = [(w, build_flexible_regex(w)) for w in remove_list if build_flexible_regex(w)]
+        remove_regexes = []
+        for w in remove_list:
+            regex = build_flexible_regex(w)
+            if regex:
+                remove_regexes.append((w, regex))
 
         replace_list = [w.strip() for w in self.options.get("replace_list", "").split("\n") if w.strip()]
         # Pre-compile regexes for replace list to optimize performance
-        replace_regexes = [(w, build_flexible_regex(w)) for w in replace_list if build_flexible_regex(w)]
+        replace_regexes = []
+        for w in replace_list:
+            regex = build_flexible_regex(w)
+            if regex:
+                replace_regexes.append((w, regex))
 
         start_time = time.time()
         for file_path in srt_files_paths:
@@ -350,13 +379,7 @@ class SubtitleProcessor:
             # Define output directory path dynamically for the current file
             output_dir = os.path.join(current_file_dir, "Outputs")
             os.makedirs(output_dir, exist_ok=True)
-
             # Initialize timestamped log buffers for the current file to aggregate disk I/O
-            class TimestampedLogBuffer(list):
-                def append(self, message):
-                    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    super().append((timestamp, message))
-
             file_process_logs = TimestampedLogBuffer()
             file_subtitle_logs = TimestampedLogBuffer()
             file_has_changes = False
@@ -447,11 +470,7 @@ class SubtitleProcessor:
                                 line_ending = "\n"
                             temp_line = temp_line[: -len(line_ending)]
 
-                        for rule_pattern, replace_with, is_regex in misplaced_chars_rules:
-                            if is_regex:
-                                temp_line = rule_pattern.sub(replace_with, temp_line)
-                            else:
-                                temp_line = temp_line.replace(rule_pattern, replace_with)
+                        temp_line = apply_rule_set(temp_line, misplaced_chars_rules)
 
                         temp_line += line_ending
                         current_line = temp_line
@@ -477,11 +496,7 @@ class SubtitleProcessor:
                             temp_line = english_abbr_pattern.sub("", temp_line)
 
                         # Apply specific imported XML abbreviation rules
-                        for rule_pattern, replace_with, is_regex in abbreviation_rules:
-                            if is_regex:
-                                temp_line = rule_pattern.sub(replace_with, temp_line)
-                            else:
-                                temp_line = temp_line.replace(rule_pattern, replace_with)
+                        temp_line = apply_rule_set(temp_line, abbreviation_rules)
 
                         current_line = temp_line
 
@@ -503,11 +518,7 @@ class SubtitleProcessor:
 
                         # Apply comma rules only if the line is not purely English
                         if not is_pure_english(temp_line):
-                            for rule_pattern, replace_with, is_regex in comma_rules_list:
-                                if is_regex:
-                                    temp_line = rule_pattern.sub(replace_with, temp_line)
-                                else:
-                                    temp_line = temp_line.replace(rule_pattern, replace_with)
+                            temp_line = apply_rule_set(temp_line, comma_rules_list)
 
                         current_line = temp_line
 
@@ -527,11 +538,7 @@ class SubtitleProcessor:
                         before_excl = current_line
                         temp_line = current_line
 
-                        for rule_pattern, replace_with, is_regex in exclamation_rules_list:
-                            if is_regex:
-                                temp_line = rule_pattern.sub(replace_with, temp_line)
-                            else:
-                                temp_line = temp_line.replace(rule_pattern, replace_with)
+                        temp_line = apply_rule_set(temp_line, exclamation_rules_list)
 
                         current_line = temp_line
 
@@ -551,11 +558,7 @@ class SubtitleProcessor:
                         before_paren = current_line
                         temp_line = current_line
 
-                        for rule_pattern, replace_with, is_regex in parentheses_rules_list:
-                            if is_regex:
-                                temp_line = rule_pattern.sub(replace_with, temp_line)
-                            else:
-                                temp_line = temp_line.replace(rule_pattern, replace_with)
+                        temp_line = apply_rule_set(temp_line, parentheses_rules_list)
 
                         current_line = temp_line
 
@@ -575,11 +578,7 @@ class SubtitleProcessor:
                         before_qm = current_line
                         temp_line = current_line
 
-                        for rule_pattern, replace_with, is_regex in question_mark_rules_list:
-                            if is_regex:
-                                temp_line = rule_pattern.sub(replace_with, temp_line)
-                            else:
-                                temp_line = temp_line.replace(rule_pattern, replace_with)
+                        temp_line = apply_rule_set(temp_line, question_mark_rules_list)
 
                         current_line = temp_line
 
@@ -598,11 +597,7 @@ class SubtitleProcessor:
                     if opt_double_quotes_fixes:
                         before_dq = current_line
                         temp_line = current_line
-                        for rule_pattern, replace_with, is_regex in double_quotes_rules_list:
-                            if is_regex:
-                                temp_line = rule_pattern.sub(replace_with, temp_line)
-                            else:
-                                temp_line = temp_line.replace(rule_pattern, replace_with)
+                        temp_line = apply_rule_set(temp_line, double_quotes_rules_list)
 
                         # Handle misplaced opening quote at start of line
                         if (
@@ -643,11 +638,7 @@ class SubtitleProcessor:
                     if opt_dash_fixes:
                         before_dash = current_line
                         temp_line = current_line
-                        for rule_pattern, replace_with, is_regex in dash_rules_list:
-                            if is_regex:
-                                temp_line = rule_pattern.sub(replace_with, temp_line)
-                            else:
-                                temp_line = temp_line.replace(rule_pattern, replace_with)
+                        temp_line = apply_rule_set(temp_line, dash_rules_list)
                         current_line = temp_line
                         if current_line != before_dash:
                             file_has_changes = True
@@ -664,11 +655,7 @@ class SubtitleProcessor:
                     if opt_comments_fixes:
                         before_com = current_line
                         temp_line = current_line
-                        for rule_pattern, replace_with, is_regex in comments_rules_list:
-                            if is_regex:
-                                temp_line = rule_pattern.sub(replace_with, temp_line)
-                            else:
-                                temp_line = temp_line.replace(rule_pattern, replace_with)
+                        temp_line = apply_rule_set(temp_line, comments_rules_list)
                         current_line = temp_line
                         if current_line != before_com:
                             file_has_changes = True
@@ -685,11 +672,7 @@ class SubtitleProcessor:
                     if opt_dialog_hyphen_fix:
                         before_dh = current_line
                         temp_line = current_line
-                        for rule_pattern, replace_with, is_regex in dialog_hyphen_fix_list:
-                            if is_regex:
-                                temp_line = rule_pattern.sub(replace_with, temp_line)
-                            else:
-                                temp_line = temp_line.replace(rule_pattern, replace_with)
+                        temp_line = apply_rule_set(temp_line, dialog_hyphen_fix_list)
                         current_line = temp_line
                         if current_line != before_dh:
                             file_has_changes = True
