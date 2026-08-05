@@ -40,6 +40,14 @@ SPACE_TO_INVISIBLE_SPACE_FAST_RULES = _prepare_rule_fast_paths(space_to_invisibl
 HEXRE_FAST_RULES = _prepare_rule_fast_paths(hexre_rules_list)
 
 
+def _log_change(index, opt_name, before, after, logs_buffer, detailed_logs_enabled):
+    """Standardized logger to keep subtitle tracking uniform and DRY."""
+    if detailed_logs_enabled and before != after:
+        b_clean = before.rstrip("\n")
+        c_clean = after.rstrip("\n")
+        logs_buffer.append(f"Line {index} modified | Option: {opt_name} | Before: |{b_clean}| -> After: |{c_clean}|")
+
+
 def build_flexible_regex(word):
     """
     Creates a regex pattern that ignores spaces, dots, zero-width non-joiners (\u200c),
@@ -411,11 +419,14 @@ class SubtitleProcessor:
                     # Log Pre-Process Changes
                     if current_line != original_line:
                         file_has_changes = True
-                        if detailed_logs_enabled:
-                            orig_clean = original_line.rstrip("\n")
-                            curr_clean = current_line.rstrip("\n")
-                            log_msg = f"Line {index} modified | Option: Pre-Process Trim Spaces | Before: |{orig_clean}| -> After: |{curr_clean}|"
-                            file_subtitle_logs.append(log_msg)
+                        _log_change(
+                            index,
+                            "Pre-Process Trim Spaces",
+                            original_line,
+                            current_line,
+                            file_subtitle_logs,
+                            detailed_logs_enabled,
+                        )
 
                     # Skip text processing entirely for timecode or index lines
                     if is_timecode_or_index:
@@ -447,11 +458,14 @@ class SubtitleProcessor:
 
                         if current_line != before_misplaced:
                             file_has_changes = True
-                            if detailed_logs_enabled:
-                                b_clean = before_misplaced.rstrip("\n")
-                                c_clean = current_line.rstrip("\n")
-                                log_msg = f"Line {index} modified | Option: Pre-Process Fix Misplaced Chars | Before: |{b_clean}| -> After: |{c_clean}|"
-                                file_subtitle_logs.append(log_msg)
+                            _log_change(
+                                index,
+                                "Pre-Process Fix Misplaced Chars",
+                                before_misplaced,
+                                current_line,
+                                file_subtitle_logs,
+                                detailed_logs_enabled,
+                            )
 
                     # Apply Pre-Process Option: Fix Abbreviations
                     if opt_fix_abbreviations:
@@ -473,11 +487,14 @@ class SubtitleProcessor:
 
                         if current_line != before_abbr:
                             file_has_changes = True
-                            if detailed_logs_enabled:
-                                b_clean = before_abbr.rstrip("\n")
-                                c_clean = current_line.rstrip("\n")
-                                log_msg = f"Line {index} modified | Option: Pre-Process Fix Abbreviations | Before: |{b_clean}| -> After: |{c_clean}|"
-                                file_subtitle_logs.append(log_msg)
+                            _log_change(
+                                index,
+                                "Pre-Process Fix Abbreviations",
+                                before_abbr,
+                                current_line,
+                                file_subtitle_logs,
+                                detailed_logs_enabled,
+                            )
 
                     # Apply Pre-Process Option: Comma Fixes
                     if opt_comma_fixes:
@@ -496,11 +513,14 @@ class SubtitleProcessor:
 
                         if current_line != before_comma:
                             file_has_changes = True
-                            if detailed_logs_enabled:
-                                b_clean = before_comma.rstrip("\n")
-                                c_clean = current_line.rstrip("\n")
-                                log_msg = f"Line {index} modified | Option: Pre-Process Comma Fixes | Before: |{b_clean}| -> After: |{c_clean}|"
-                                file_subtitle_logs.append(log_msg)
+                            _log_change(
+                                index,
+                                "Pre-Process Comma Fixes",
+                                before_comma,
+                                current_line,
+                                file_subtitle_logs,
+                                detailed_logs_enabled,
+                            )
 
                     # Apply Pre-Process Option: Exclamation Mark Fixes
                     if opt_exclamation_fixes:
@@ -517,11 +537,14 @@ class SubtitleProcessor:
 
                         if current_line != before_excl:
                             file_has_changes = True
-                            if detailed_logs_enabled:
-                                b_clean = before_excl.rstrip("\n")
-                                c_clean = current_line.rstrip("\n")
-                                log_msg = f"Line {index} modified | Option: Pre-Process Exclamation Mark Fixes | Before: |{b_clean}| -> After: |{c_clean}|"
-                                file_subtitle_logs.append(log_msg)
+                            _log_change(
+                                index,
+                                "Pre-Process Exclamation Mark Fixes",
+                                before_excl,
+                                current_line,
+                                file_subtitle_logs,
+                                detailed_logs_enabled,
+                            )
 
                     # Apply Pre-Process Option: Parentheses Fixes
                     if opt_parentheses_fixes:
@@ -538,11 +561,14 @@ class SubtitleProcessor:
 
                         if current_line != before_paren:
                             file_has_changes = True
-                            if detailed_logs_enabled:
-                                b_clean = before_paren.rstrip("\n")
-                                c_clean = current_line.rstrip("\n")
-                                log_msg = f"Line {index} modified | Option: Pre-Process Parentheses Fixes | Before: |{b_clean}| -> After: |{c_clean}|"
-                                file_subtitle_logs.append(log_msg)
+                            _log_change(
+                                index,
+                                "Pre-Process Parentheses Fixes",
+                                before_paren,
+                                current_line,
+                                file_subtitle_logs,
+                                detailed_logs_enabled,
+                            )
 
                     # Apply Pre-Process Option: Question Mark Fixes
                     if opt_question_mark_fixes:
@@ -559,11 +585,14 @@ class SubtitleProcessor:
 
                         if current_line != before_qm:
                             file_has_changes = True
-                            if detailed_logs_enabled:
-                                b_clean = before_qm.rstrip("\n")
-                                c_clean = current_line.rstrip("\n")
-                                log_msg = f"Line {index} modified | Option: Pre-Process Question Mark Fixes | Before: |{b_clean}| -> After: |{c_clean}|"
-                                file_subtitle_logs.append(log_msg)
+                            _log_change(
+                                index,
+                                "Pre-Process Question Mark Fixes",
+                                before_qm,
+                                current_line,
+                                file_subtitle_logs,
+                                detailed_logs_enabled,
+                            )
 
                     # Double-Quotes Fixes processing and logging
                     if opt_double_quotes_fixes:
@@ -601,11 +630,14 @@ class SubtitleProcessor:
                         current_line = temp_line
                         if current_line != before_dq:
                             file_has_changes = True
-                            if detailed_logs_enabled:
-                                b_clean = before_dq.rstrip("\n")
-                                c_clean = current_line.rstrip("\n")
-                                log_msg = f"Line {index} modified | Option: Pre-Process Double-Quotes Fixes | Before: |{b_clean}| -> After: |{c_clean}|"
-                                file_subtitle_logs.append(log_msg)
+                            _log_change(
+                                index,
+                                "Pre-Process Double-Quotes Fixes",
+                                before_dq,
+                                current_line,
+                                file_subtitle_logs,
+                                detailed_logs_enabled,
+                            )
 
                     # Dash Fixes processing and logging
                     if opt_dash_fixes:
@@ -619,11 +651,14 @@ class SubtitleProcessor:
                         current_line = temp_line
                         if current_line != before_dash:
                             file_has_changes = True
-                            if detailed_logs_enabled:
-                                b_clean = before_dash.rstrip("\n")
-                                c_clean = current_line.rstrip("\n")
-                                log_msg = f"Line {index} modified | Option: Pre-Process Dash Fixes | Before: |{b_clean}| -> After: |{c_clean}|"
-                                file_subtitle_logs.append(log_msg)
+                            _log_change(
+                                index,
+                                "Pre-Process Dash Fixes",
+                                before_dash,
+                                current_line,
+                                file_subtitle_logs,
+                                detailed_logs_enabled,
+                            )
 
                     # Comments Fixes processing and logging
                     if opt_comments_fixes:
@@ -637,11 +672,14 @@ class SubtitleProcessor:
                         current_line = temp_line
                         if current_line != before_com:
                             file_has_changes = True
-                            if detailed_logs_enabled:
-                                b_clean = before_com.rstrip("\n")
-                                c_clean = current_line.rstrip("\n")
-                                log_msg = f"Line {index} modified | Option: Pre-Process Comments Fixes | Before: |{b_clean}| -> After: |{c_clean}|"
-                                file_subtitle_logs.append(log_msg)
+                            _log_change(
+                                index,
+                                "Pre-Process Comments Fixes",
+                                before_com,
+                                current_line,
+                                file_subtitle_logs,
+                                detailed_logs_enabled,
+                            )
 
                     # Dialog Hyphen Fix processing and logging
                     if opt_dialog_hyphen_fix:
@@ -655,11 +693,14 @@ class SubtitleProcessor:
                         current_line = temp_line
                         if current_line != before_dh:
                             file_has_changes = True
-                            if detailed_logs_enabled:
-                                b_clean = before_dh.rstrip("\n")
-                                c_clean = current_line.rstrip("\n")
-                                log_msg = f"Line {index} modified | Option: Pre-Process Dialog Hyphen Fix | Before: |{b_clean}| -> After: |{c_clean}|"
-                                file_subtitle_logs.append(log_msg)
+                            _log_change(
+                                index,
+                                "Pre-Process Dialog Hyphen Fix",
+                                before_dh,
+                                current_line,
+                                file_subtitle_logs,
+                                detailed_logs_enabled,
+                            )
 
                     # Apply Pre-Process Option: Remove Standalone Dots
                     if opt_remove_standalone_dots:
@@ -676,11 +717,14 @@ class SubtitleProcessor:
 
                         if current_line != before_dots:
                             file_has_changes = True
-                            if detailed_logs_enabled:
-                                b_clean = before_dots.rstrip("\n")
-                                c_clean = current_line.rstrip("\n")
-                                log_msg = f"Line {index} modified | Option: Pre-Process Remove Standalone Dots | Before: |{b_clean}| -> After: |{c_clean}|"
-                                file_subtitle_logs.append(log_msg)
+                            _log_change(
+                                index,
+                                "Pre-Process Remove Standalone Dots",
+                                before_dots,
+                                current_line,
+                                file_subtitle_logs,
+                                detailed_logs_enabled,
+                            )
 
                     # Apply Pre-Process Option: Remove Unneeded Spaces (Aligned with XML rules)
                     if opt_remove_unneeded_spaces:
@@ -694,11 +738,14 @@ class SubtitleProcessor:
 
                         if current_line != before_unneeded:
                             file_has_changes = True
-                            if detailed_logs_enabled:
-                                b_clean = before_unneeded.rstrip("\n")
-                                c_clean = current_line.rstrip("\n")
-                                log_msg = f"Line {index} modified | Option: Pre-Process Remove Unneeded Spaces | Before: |{b_clean}| -> After: |{c_clean}|"
-                                file_subtitle_logs.append(log_msg)
+                            _log_change(
+                                index,
+                                "Pre-Process Remove Unneeded Spaces",
+                                before_unneeded,
+                                current_line,
+                                file_subtitle_logs,
+                                detailed_logs_enabled,
+                            )
 
                     # Option: Convert English Question Marks and Commas to Persian
                     if opt_persian_question_mark_and_comma:
@@ -710,11 +757,14 @@ class SubtitleProcessor:
 
                         if current_line != before_q:
                             file_has_changes = True
-                            if detailed_logs_enabled:
-                                b_clean = before_q.rstrip("\n")
-                                c_clean = current_line.rstrip("\n")
-                                log_msg = f"Line {index} modified | Option: Pre-Process Persian Question Mark and Comma | Before: |{b_clean}| -> After: |{c_clean}|"
-                                file_subtitle_logs.append(log_msg)
+                            _log_change(
+                                index,
+                                "Pre-Process Persian Question Mark and Comma",
+                                before_q,
+                                current_line,
+                                file_subtitle_logs,
+                                detailed_logs_enabled,
+                            )
 
                     # 1. Convert Arabic Characters to Persian
                     if opt_arabic_char_to_persian:
@@ -723,11 +773,14 @@ class SubtitleProcessor:
                             current_line = current_line.replace(k, v)
                         if current_line != before_char:
                             file_has_changes = True
-                            if detailed_logs_enabled:
-                                b_clean = before_char.rstrip("\n")
-                                c_clean = current_line.rstrip("\n")
-                                log_msg = f"Line {index} modified | Option: Pre-Process Arabic Chars | Before: |{b_clean}| -> After: |{c_clean}|"
-                                file_subtitle_logs.append(log_msg)
+                            _log_change(
+                                index,
+                                "Pre-Process Arabic Chars",
+                                before_char,
+                                current_line,
+                                file_subtitle_logs,
+                                detailed_logs_enabled,
+                            )
 
                     # 2. Convert Arabic Numerals to Persian Numerals
                     if opt_arabic_num_to_persian:
@@ -736,11 +789,14 @@ class SubtitleProcessor:
                             current_line = current_line.replace(k, v)
                         if current_line != before_anum:
                             file_has_changes = True
-                            if detailed_logs_enabled:
-                                b_clean = before_anum.rstrip("\n")
-                                c_clean = current_line.rstrip("\n")
-                                log_msg = f"Line {index} modified | Option: Pre-Process Arabic Numerals | Before: |{b_clean}| -> After: |{c_clean}|"
-                                file_subtitle_logs.append(log_msg)
+                            _log_change(
+                                index,
+                                "Pre-Process Arabic Numerals",
+                                before_anum,
+                                current_line,
+                                file_subtitle_logs,
+                                detailed_logs_enabled,
+                            )
 
                     # 3. Convert English Numerals to Persian Numerals conditionally
                     if opt_english_num_to_persian:
@@ -769,11 +825,14 @@ class SubtitleProcessor:
                         current_line = "".join(parts)
                         if current_line != before_enum:
                             file_has_changes = True
-                            if detailed_logs_enabled:
-                                b_clean = before_enum.rstrip("\n")
-                                c_clean = current_line.rstrip("\n")
-                                log_msg = f"Line {index} modified | Option: Pre-Process English Numerals | Before: |{b_clean}| -> After: |{c_clean}|"
-                                file_subtitle_logs.append(log_msg)
+                            _log_change(
+                                index,
+                                "Pre-Process English Numerals",
+                                before_enum,
+                                current_line,
+                                file_subtitle_logs,
+                                detailed_logs_enabled,
+                            )
 
                     # 4. Convert Space to Invisible Space conditionally
                     if opt_space_to_invisible_space:
@@ -796,11 +855,14 @@ class SubtitleProcessor:
                         current_line = temp_line
                         if current_line != before_space_zwnj:
                             file_has_changes = True
-                            if detailed_logs_enabled:
-                                b_clean = before_space_zwnj.rstrip("\n")
-                                c_clean = current_line.rstrip("\n")
-                                log_msg = f"Line {index} modified | Option: Pre-Process Space to Invisible Space | Before: |{b_clean}| -> After: |{c_clean}|"
-                                file_subtitle_logs.append(log_msg)
+                            _log_change(
+                                index,
+                                "Pre-Process Space to Invisible Space",
+                                before_space_zwnj,
+                                current_line,
+                                file_subtitle_logs,
+                                detailed_logs_enabled,
+                            )
 
                     # 5. Fix Common Hexre Typo Errors conditionally
                     if opt_hexre_fixes:
@@ -818,11 +880,14 @@ class SubtitleProcessor:
                         current_line = temp_line
                         if current_line != before_hexre:
                             file_has_changes = True
-                            if detailed_logs_enabled:
-                                b_clean = before_hexre.rstrip("\n")
-                                c_clean = current_line.rstrip("\n")
-                                log_msg = f"Line {index} modified | Option: Pre-Process Hexre Typo Fixes | Before: |{b_clean}| -> After: |{c_clean}|"
-                                file_subtitle_logs.append(log_msg)
+                            _log_change(
+                                index,
+                                "Pre-Process Hexre Typo Fixes",
+                                before_hexre,
+                                current_line,
+                                file_subtitle_logs,
+                                detailed_logs_enabled,
+                            )
 
                     # --- Process Options ---
                     is_bypassed = False
@@ -863,11 +928,14 @@ class SubtitleProcessor:
                                     current_line = reg.sub("", current_line)
                                     if current_line != before_replace:
                                         file_has_changes = True
-                                        if detailed_logs_enabled:
-                                            before_clean = before_replace.rstrip("\n")
-                                            curr_clean = current_line.rstrip("\n")
-                                            log_msg = f'Line {index} modified | Option: Replace List (Matched "{word}") | Before: |{before_clean}| -> After: |{curr_clean}|'
-                                            file_subtitle_logs.append(log_msg)
+                                        _log_change(
+                                            index,
+                                            f'Replace List (Matched "{word}")',
+                                            before_replace,
+                                            current_line,
+                                            file_subtitle_logs,
+                                            detailed_logs_enabled,
+                                        )
 
                     # --- Post-Process Options ---
                     # Apply Post-Process Option: Trim Spaces
@@ -877,11 +945,14 @@ class SubtitleProcessor:
 
                         if current_line != before_post:
                             file_has_changes = True
-                            if detailed_logs_enabled:
-                                before_clean = before_post.rstrip("\n")
-                                curr_clean = current_line.rstrip("\n")
-                                log_msg = f"Line {index} modified | Option: Post-Process Trim Spaces | Before: |{before_clean}| -> After: |{curr_clean}|"
-                                file_subtitle_logs.append(log_msg)
+                            _log_change(
+                                index,
+                                "Post-Process Trim Spaces",
+                                before_post,
+                                current_line,
+                                file_subtitle_logs,
+                                detailed_logs_enabled,
+                            )
 
                     # Option: Post-Process Remove Empty Tags
                     if opt_remove_empty_tags and current_line:
@@ -892,11 +963,14 @@ class SubtitleProcessor:
                         current_line = temp_line
                         if current_line != before_tags:
                             file_has_changes = True
-                            if detailed_logs_enabled:
-                                b_clean = before_tags.rstrip("\n")
-                                c_clean = current_line.rstrip("\n")
-                                log_msg = f"Line {index} modified | Option: Post-Process Remove Empty Tags | Before: |{b_clean}| -> After: |{c_clean}|"
-                                file_subtitle_logs.append(log_msg)
+                            _log_change(
+                                index,
+                                "Post-Process Remove Empty Tags",
+                                before_tags,
+                                current_line,
+                                file_subtitle_logs,
+                                detailed_logs_enabled,
+                            )
 
                     # Finally, append the line if it wasn't removed completely
                     if current_line is not None:
@@ -1144,11 +1218,14 @@ class SubtitleProcessor:
                                 clean_text = trim_line_spaces(clean_text)
                                 if before_post != clean_text:
                                     file_has_changes = True
-                                    if detailed_logs_enabled:
-                                        before_clean = before_post.rstrip("\n")
-                                        curr_clean = clean_text.rstrip("\n")
-                                        log_msg = f"Line {index} modified | Option: RTL Trim Spaces | Before: |{before_clean}| -> After: |{curr_clean}|"
-                                        file_subtitle_logs.append(log_msg)
+                                    _log_change(
+                                        index,
+                                        "RTL Trim Spaces",
+                                        before_post,
+                                        clean_text,
+                                        file_subtitle_logs,
+                                        detailed_logs_enabled,
+                                    )
 
                             # Apply Post-Process Option: Smart RTL Enforcement
                             if clean_text.strip():
@@ -1200,12 +1277,15 @@ class SubtitleProcessor:
 
                             if clean_text != original_text_line:
                                 file_has_changes = True
-                                if detailed_logs_enabled:
-                                    before_clean = original_text_line.rstrip("\n")
-                                    curr_clean = clean_text.rstrip("\n")
-                                    log_msg = f"Line {index} modified | Option: Smart RTL Enforcement | Before: |{before_clean}| -> After: |{curr_clean}|"
-                                    file_subtitle_logs.append(log_msg)
                                 rtl_modified_lines_count += 1
+                                _log_change(
+                                    index,
+                                    "Smart RTL Enforcement",
+                                    original_text_line,
+                                    clean_text,
+                                    file_subtitle_logs,
+                                    detailed_logs_enabled,
+                                )
 
                             rtl_processed_lines.append(clean_text)
 
