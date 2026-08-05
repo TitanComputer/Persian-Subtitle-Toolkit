@@ -304,6 +304,9 @@ class SubtitleProcessor:
 
         post_trim_spaces = self.options.get("post_trim_spaces", 1)
 
+        # Cache the detailed subtitle logs option to avoid repeated dictionary lookups
+        detailed_logs_enabled = self.options.get("detailed_subtitle_logs", 1)
+
         start_time = time.time()
         for file_path in srt_files_paths:
             filename = os.path.basename(file_path)
@@ -355,7 +358,7 @@ class SubtitleProcessor:
 
                 processed_lines = []
 
-                if self.options.get("detailed_subtitle_logs", 1):
+                if detailed_logs_enabled:
                     file_subtitle_logs.append(f"Started tracking changes for: {filename}")
 
                 for index, line in enumerate(lines, start=1):
@@ -381,7 +384,7 @@ class SubtitleProcessor:
                     # Log Pre-Process Changes
                     if current_line != original_line:
                         file_has_changes = True
-                        if self.options.get("detailed_subtitle_logs", 1):
+                        if detailed_logs_enabled:
                             orig_clean = original_line.rstrip("\n")
                             curr_clean = current_line.rstrip("\n")
                             log_msg = f"Line {index} modified | Option: Pre-Process Trim Spaces | Before: |{orig_clean}| -> After: |{curr_clean}|"
@@ -417,7 +420,7 @@ class SubtitleProcessor:
 
                         if current_line != before_misplaced:
                             file_has_changes = True
-                            if self.options.get("detailed_subtitle_logs", 1):
+                            if detailed_logs_enabled:
                                 b_clean = before_misplaced.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
                                 log_msg = f"Line {index} modified | Option: Pre-Process Fix Misplaced Chars | Before: |{b_clean}| -> After: |{c_clean}|"
@@ -443,7 +446,7 @@ class SubtitleProcessor:
 
                         if current_line != before_abbr:
                             file_has_changes = True
-                            if self.options.get("detailed_subtitle_logs", 1):
+                            if detailed_logs_enabled:
                                 b_clean = before_abbr.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
                                 log_msg = f"Line {index} modified | Option: Pre-Process Fix Abbreviations | Before: |{b_clean}| -> After: |{c_clean}|"
@@ -466,7 +469,7 @@ class SubtitleProcessor:
 
                         if current_line != before_comma:
                             file_has_changes = True
-                            if self.options.get("detailed_subtitle_logs", 1):
+                            if detailed_logs_enabled:
                                 b_clean = before_comma.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
                                 log_msg = f"Line {index} modified | Option: Pre-Process Comma Fixes | Before: |{b_clean}| -> After: |{c_clean}|"
@@ -487,7 +490,7 @@ class SubtitleProcessor:
 
                         if current_line != before_excl:
                             file_has_changes = True
-                            if self.options.get("detailed_subtitle_logs", 1):
+                            if detailed_logs_enabled:
                                 b_clean = before_excl.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
                                 log_msg = f"Line {index} modified | Option: Pre-Process Exclamation Mark Fixes | Before: |{b_clean}| -> After: |{c_clean}|"
@@ -508,7 +511,7 @@ class SubtitleProcessor:
 
                         if current_line != before_paren:
                             file_has_changes = True
-                            if self.options.get("detailed_subtitle_logs", 1):
+                            if detailed_logs_enabled:
                                 b_clean = before_paren.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
                                 log_msg = f"Line {index} modified | Option: Pre-Process Parentheses Fixes | Before: |{b_clean}| -> After: |{c_clean}|"
@@ -529,7 +532,7 @@ class SubtitleProcessor:
 
                         if current_line != before_qm:
                             file_has_changes = True
-                            if self.options.get("detailed_subtitle_logs", 1):
+                            if detailed_logs_enabled:
                                 b_clean = before_qm.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
                                 log_msg = f"Line {index} modified | Option: Pre-Process Question Mark Fixes | Before: |{b_clean}| -> After: |{c_clean}|"
@@ -571,7 +574,7 @@ class SubtitleProcessor:
                         current_line = temp_line
                         if current_line != before_dq:
                             file_has_changes = True
-                            if self.options.get("detailed_subtitle_logs", 1):
+                            if detailed_logs_enabled:
                                 b_clean = before_dq.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
                                 log_msg = f"Line {index} modified | Option: Pre-Process Double-Quotes Fixes | Before: |{b_clean}| -> After: |{c_clean}|"
@@ -589,7 +592,7 @@ class SubtitleProcessor:
                         current_line = temp_line
                         if current_line != before_dash:
                             file_has_changes = True
-                            if self.options.get("detailed_subtitle_logs", 1):
+                            if detailed_logs_enabled:
                                 b_clean = before_dash.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
                                 log_msg = f"Line {index} modified | Option: Pre-Process Dash Fixes | Before: |{b_clean}| -> After: |{c_clean}|"
@@ -607,7 +610,7 @@ class SubtitleProcessor:
                         current_line = temp_line
                         if current_line != before_com:
                             file_has_changes = True
-                            if self.options.get("detailed_subtitle_logs", 1):
+                            if detailed_logs_enabled:
                                 b_clean = before_com.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
                                 log_msg = f"Line {index} modified | Option: Pre-Process Comments Fixes | Before: |{b_clean}| -> After: |{c_clean}|"
@@ -625,7 +628,7 @@ class SubtitleProcessor:
                         current_line = temp_line
                         if current_line != before_dh:
                             file_has_changes = True
-                            if self.options.get("detailed_subtitle_logs", 1):
+                            if detailed_logs_enabled:
                                 b_clean = before_dh.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
                                 log_msg = f"Line {index} modified | Option: Pre-Process Dialog Hyphen Fix | Before: |{b_clean}| -> After: |{c_clean}|"
@@ -646,7 +649,7 @@ class SubtitleProcessor:
 
                         if current_line != before_dots:
                             file_has_changes = True
-                            if self.options.get("detailed_subtitle_logs", 1):
+                            if detailed_logs_enabled:
                                 b_clean = before_dots.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
                                 log_msg = f"Line {index} modified | Option: Pre-Process Remove Standalone Dots | Before: |{b_clean}| -> After: |{c_clean}|"
@@ -664,7 +667,7 @@ class SubtitleProcessor:
 
                         if current_line != before_unneeded:
                             file_has_changes = True
-                            if self.options.get("detailed_subtitle_logs", 1):
+                            if detailed_logs_enabled:
                                 b_clean = before_unneeded.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
                                 log_msg = f"Line {index} modified | Option: Pre-Process Remove Unneeded Spaces | Before: |{b_clean}| -> After: |{c_clean}|"
@@ -680,7 +683,7 @@ class SubtitleProcessor:
 
                         if current_line != before_q:
                             file_has_changes = True
-                            if self.options.get("detailed_subtitle_logs", 1):
+                            if detailed_logs_enabled:
                                 b_clean = before_q.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
                                 log_msg = f"Line {index} modified | Option: Pre-Process Persian Question Mark and Comma | Before: |{b_clean}| -> After: |{c_clean}|"
@@ -693,7 +696,7 @@ class SubtitleProcessor:
                             current_line = current_line.replace(k, v)
                         if current_line != before_char:
                             file_has_changes = True
-                            if self.options.get("detailed_subtitle_logs", 1):
+                            if detailed_logs_enabled:
                                 b_clean = before_char.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
                                 log_msg = f"Line {index} modified | Option: Pre-Process Arabic Chars | Before: |{b_clean}| -> After: |{c_clean}|"
@@ -706,7 +709,7 @@ class SubtitleProcessor:
                             current_line = current_line.replace(k, v)
                         if current_line != before_anum:
                             file_has_changes = True
-                            if self.options.get("detailed_subtitle_logs", 1):
+                            if detailed_logs_enabled:
                                 b_clean = before_anum.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
                                 log_msg = f"Line {index} modified | Option: Pre-Process Arabic Numerals | Before: |{b_clean}| -> After: |{c_clean}|"
@@ -739,7 +742,7 @@ class SubtitleProcessor:
                         current_line = "".join(parts)
                         if current_line != before_enum:
                             file_has_changes = True
-                            if self.options.get("detailed_subtitle_logs", 1):
+                            if detailed_logs_enabled:
                                 b_clean = before_enum.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
                                 log_msg = f"Line {index} modified | Option: Pre-Process English Numerals | Before: |{b_clean}| -> After: |{c_clean}|"
@@ -766,7 +769,7 @@ class SubtitleProcessor:
                         current_line = temp_line
                         if current_line != before_space_zwnj:
                             file_has_changes = True
-                            if self.options.get("detailed_subtitle_logs", 1):
+                            if detailed_logs_enabled:
                                 b_clean = before_space_zwnj.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
                                 log_msg = f"Line {index} modified | Option: Pre-Process Space to Invisible Space | Before: |{b_clean}| -> After: |{c_clean}|"
@@ -788,7 +791,7 @@ class SubtitleProcessor:
                         current_line = temp_line
                         if current_line != before_hexre:
                             file_has_changes = True
-                            if self.options.get("detailed_subtitle_logs", 1):
+                            if detailed_logs_enabled:
                                 b_clean = before_hexre.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
                                 log_msg = f"Line {index} modified | Option: Pre-Process Hexre Typo Fixes | Before: |{b_clean}| -> After: |{c_clean}|"
@@ -800,7 +803,7 @@ class SubtitleProcessor:
                         for word, reg in bypass_regexes:
                             if reg.search(current_line):
                                 is_bypassed = True
-                                if self.options.get("detailed_subtitle_logs", 1):
+                                if detailed_logs_enabled:
                                     log_msg = f'Line {index} bypassed | Matched "{word}" in Bypass List. No further process changes applied.'
                                     file_subtitle_logs.append(log_msg)
                                 break
@@ -814,7 +817,7 @@ class SubtitleProcessor:
                                 if reg.search(current_line):
                                     is_removed = True
                                     file_has_changes = True
-                                    if self.options.get("detailed_subtitle_logs", 1):
+                                    if detailed_logs_enabled:
                                         curr_clean = current_line.rstrip("\n")
                                         log_msg = f'Line {index} removed | Matched "{word}" in Remove List. Entire line deleted. The line was: "{curr_clean}"'
                                         file_subtitle_logs.append(log_msg)
@@ -833,7 +836,7 @@ class SubtitleProcessor:
                                     current_line = reg.sub("", current_line)
                                     if current_line != before_replace:
                                         file_has_changes = True
-                                        if self.options.get("detailed_subtitle_logs", 1):
+                                        if detailed_logs_enabled:
                                             before_clean = before_replace.rstrip("\n")
                                             curr_clean = current_line.rstrip("\n")
                                             log_msg = f'Line {index} modified | Option: Replace List (Matched "{word}") | Before: |{before_clean}| -> After: |{curr_clean}|'
@@ -847,7 +850,7 @@ class SubtitleProcessor:
 
                         if current_line != before_post:
                             file_has_changes = True
-                            if self.options.get("detailed_subtitle_logs", 1):
+                            if detailed_logs_enabled:
                                 before_clean = before_post.rstrip("\n")
                                 curr_clean = current_line.rstrip("\n")
                                 log_msg = f"Line {index} modified | Option: Post-Process Trim Spaces | Before: |{before_clean}| -> After: |{curr_clean}|"
@@ -862,7 +865,7 @@ class SubtitleProcessor:
                         current_line = temp_line
                         if current_line != before_tags:
                             file_has_changes = True
-                            if self.options.get("detailed_subtitle_logs", 1):
+                            if detailed_logs_enabled:
                                 b_clean = before_tags.rstrip("\n")
                                 c_clean = current_line.rstrip("\n")
                                 log_msg = f"Line {index} modified | Option: Post-Process Remove Empty Tags | Before: |{b_clean}| -> After: |{c_clean}|"
@@ -910,7 +913,7 @@ class SubtitleProcessor:
                                 or b["end_str"].startswith("-")
                             ):
                                 file_has_changes = True
-                                if self.options.get("detailed_subtitle_logs", 1):
+                                if detailed_logs_enabled:
                                     b_index = b["index"]
                                     b_start = b["start_str"]
                                     b_end = b["end_str"]
@@ -927,7 +930,7 @@ class SubtitleProcessor:
                             text_content = "".join(b["text_lines"]).strip()
                             if not text_content:
                                 file_has_changes = True
-                                if self.options.get("detailed_subtitle_logs", 1):
+                                if detailed_logs_enabled:
                                     b_index = b["index"]
                                     b_start = b["start_str"]
                                     b_end = b["end_str"]
@@ -963,7 +966,7 @@ class SubtitleProcessor:
                                     }
                                     blocks.append(new_block)
                                     file_has_changes = True
-                                    if self.options.get("detailed_subtitle_logs", 1):
+                                    if detailed_logs_enabled:
                                         log_msg = f'Intro credit subtitle added | Timecode: "{ms_to_timecode(200)} --> {ms_to_timecode(200 + dur_ms)}"'
                                         file_subtitle_logs.append(log_msg)
                                 else:
@@ -981,7 +984,7 @@ class SubtitleProcessor:
                                         }
                                         blocks.insert(0, new_block)
                                         file_has_changes = True
-                                        if self.options.get("detailed_subtitle_logs", 1):
+                                        if detailed_logs_enabled:
                                             log_msg = f'Intro credit subtitle added at beginning | Timecode: "{ms_to_timecode(start_time_ms)} --> {ms_to_timecode(end_time_ms)}"'
                                             file_subtitle_logs.append(log_msg)
                                     else:
@@ -1004,7 +1007,7 @@ class SubtitleProcessor:
                                                 blocks.insert(k + 1, new_block)
                                                 inserted = True
                                                 file_has_changes = True
-                                                if self.options.get("detailed_subtitle_logs", 1):
+                                                if detailed_logs_enabled:
                                                     log_msg = f'Intro credit subtitle added at gap after block {k + 1} | Timecode: "{ms_to_timecode(start_time_ms)} --> {ms_to_timecode(end_time_ms)}"'
                                                     file_subtitle_logs.append(log_msg)
                                                 break
@@ -1023,7 +1026,7 @@ class SubtitleProcessor:
                                             }
                                             blocks.append(new_block)
                                             file_has_changes = True
-                                            if self.options.get("detailed_subtitle_logs", 1):
+                                            if detailed_logs_enabled:
                                                 log_msg = f'Intro credit subtitle added at the end | Timecode: "{ms_to_timecode(start_time_ms)} --> {ms_to_timecode(end_time_ms)}"'
                                                 file_subtitle_logs.append(log_msg)
 
@@ -1040,7 +1043,7 @@ class SubtitleProcessor:
                             reformatted_lines.append("\n")
                         processed_lines = reformatted_lines
 
-                        if self.options.get("detailed_subtitle_logs", 1):
+                        if detailed_logs_enabled:
                             log_msg = f"Reformat & Renumber completed | Total blocks renumbered: {len(blocks)}"
                             file_subtitle_logs.append(log_msg)
 
@@ -1114,7 +1117,7 @@ class SubtitleProcessor:
                                 clean_text = trim_line_spaces(clean_text)
                                 if before_post != clean_text:
                                     file_has_changes = True
-                                    if self.options.get("detailed_subtitle_logs", 1):
+                                    if detailed_logs_enabled:
                                         before_clean = before_post.rstrip("\n")
                                         curr_clean = clean_text.rstrip("\n")
                                         log_msg = f"Line {index} modified | Option: RTL Trim Spaces | Before: |{before_clean}| -> After: |{curr_clean}|"
@@ -1170,7 +1173,7 @@ class SubtitleProcessor:
 
                             if clean_text != original_text_line:
                                 file_has_changes = True
-                                if self.options.get("detailed_subtitle_logs", 1):
+                                if detailed_logs_enabled:
                                     before_clean = original_text_line.rstrip("\n")
                                     curr_clean = clean_text.rstrip("\n")
                                     log_msg = f"Line {index} modified | Option: Smart RTL Enforcement | Before: |{before_clean}| -> After: |{curr_clean}|"
@@ -1180,7 +1183,7 @@ class SubtitleProcessor:
                             rtl_processed_lines.append(clean_text)
 
                     # Log total RTL changes once at the end if any lines were modified
-                    if rtl_modified_lines_count > 0 and self.options.get("detailed_subtitle_logs", 1):
+                    if rtl_modified_lines_count > 0 and detailed_logs_enabled:
                         log_msg = f"Total subtitle lines RTL formatted: {rtl_modified_lines_count}"
                         file_subtitle_logs.append(log_msg)
 
@@ -1198,7 +1201,7 @@ class SubtitleProcessor:
                     f.writelines(processed_lines)
 
                 file_process_logs.append(f"Processed and saved successfully: {output_filename}")
-                if self.options.get("detailed_subtitle_logs", 1):
+                if detailed_logs_enabled:
                     file_subtitle_logs.append(f"Finished tracking. Total changes occurred: {file_has_changes}")
 
                 # Post processing clean up option: Delete Original
@@ -1231,7 +1234,7 @@ class SubtitleProcessor:
                 # Flush timestamped subtitle logs while preserving the timestamp captured at append time
                 if (
                     file_subtitle_logs
-                    and self.options.get("detailed_subtitle_logs", 1)
+                    and detailed_logs_enabled
                     and current_file_dir
                     and os.path.isdir(current_file_dir)
                 ):
