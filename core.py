@@ -468,7 +468,8 @@ class SubtitleProcessor:
                         continue
 
                     # Option: Fix Misplaced Chars processing and logging
-                    if opt_fix_misplaced_chars:
+                    # Fast path guard: Check if common punctuation exists before running rules.
+                    if opt_fix_misplaced_chars and any(c in current_line for c in ":؛!?؟.,،-»«"):
                         before_misplaced = current_line
                         temp_line = current_line
 
@@ -523,7 +524,8 @@ class SubtitleProcessor:
                             )
 
                     # Apply Pre-Process Option: Comma Fixes
-                    if opt_comma_fixes:
+                    # Fast path guard: Check if line contains any comma format.
+                    if opt_comma_fixes and any(c in current_line for c in ",،"):
                         before_comma = current_line
                         temp_line = current_line
 
@@ -545,7 +547,8 @@ class SubtitleProcessor:
                             )
 
                     # Apply Pre-Process Option: Exclamation Mark Fixes
-                    if opt_exclamation_fixes:
+                    # Fast path guard: Check for literal exclamation mark.
+                    if opt_exclamation_fixes and "!" in current_line:
                         before_excl = current_line
                         temp_line = current_line
 
@@ -565,7 +568,8 @@ class SubtitleProcessor:
                             )
 
                     # Apply Pre-Process Option: Parentheses Fixes
-                    if opt_parentheses_fixes:
+                    # Fast path guard: Check for standard bracket types.
+                    if opt_parentheses_fixes and any(c in current_line for c in "()[]{}"):
                         before_paren = current_line
                         temp_line = current_line
 
@@ -585,7 +589,8 @@ class SubtitleProcessor:
                             )
 
                     # Apply Pre-Process Option: Question Mark Fixes
-                    if opt_question_mark_fixes:
+                    # Fast path guard: Check for English or Arabic question mark.
+                    if opt_question_mark_fixes and ("?" in current_line or "؟" in current_line):
                         before_qm = current_line
                         temp_line = current_line
 
@@ -605,7 +610,8 @@ class SubtitleProcessor:
                             )
 
                     # Double-Quotes Fixes processing and logging
-                    if opt_double_quotes_fixes:
+                    # Fast path guard: Check for double quotes existence.
+                    if opt_double_quotes_fixes and '"' in current_line:
                         before_dq = current_line
                         temp_line = current_line
                         temp_line = apply_rule_set(temp_line, double_quotes_rules_list)
@@ -646,7 +652,8 @@ class SubtitleProcessor:
                             )
 
                     # Dash Fixes processing and logging
-                    if opt_dash_fixes:
+                    # Fast path guard: Check for standard dash variations.
+                    if opt_dash_fixes and any(c in current_line for c in "-–—"):
                         before_dash = current_line
                         temp_line = current_line
                         temp_line = apply_rule_set(temp_line, dash_rules_list)
@@ -663,7 +670,8 @@ class SubtitleProcessor:
                             )
 
                     # Comments Fixes processing and logging
-                    if opt_comments_fixes:
+                    # Fast path guard: Subtitle comments typically involve brackets.
+                    if opt_comments_fixes and any(c in current_line for c in ":."):
                         before_com = current_line
                         temp_line = current_line
                         temp_line = apply_rule_set(temp_line, comments_rules_list)
@@ -697,7 +705,8 @@ class SubtitleProcessor:
                             )
 
                     # Apply Pre-Process Option: Remove Standalone Dots
-                    if opt_remove_standalone_dots:
+                    # Fast path guard: Requires at least one period.
+                    if opt_remove_standalone_dots and "." in current_line:
                         before_dots = current_line
 
                         # Whitespace + Zero-Width & Invisible Formatting Characters (\u200c=ZWNJ, \u200d=ZWJ, \u200e=LRM, \u200f=RLM, \ufeff=BOM)
@@ -721,7 +730,8 @@ class SubtitleProcessor:
                             )
 
                     # Apply Pre-Process Option: Remove Unneeded Spaces (Aligned with XML rules)
-                    if opt_remove_unneeded_spaces:
+                    # Fast path guard: Requires at least one space or tab character.
+                    if opt_remove_unneeded_spaces and any(c in current_line for c in " \n\t"):
                         before_unneeded = current_line
                         temp_line = current_line
 
@@ -742,7 +752,8 @@ class SubtitleProcessor:
                             )
 
                     # Option: Convert English Question Marks and Commas to Persian
-                    if opt_persian_question_mark_and_comma:
+                    # Fast path guard: Look for target English characters before attempting translation.
+                    if opt_persian_question_mark_and_comma and ("?" in current_line or "," in current_line):
                         before_q = current_line
                         current_line = current_line.replace("?", "؟")
 
@@ -947,7 +958,8 @@ class SubtitleProcessor:
                             )
 
                     # Option: Post-Process Remove Empty Tags
-                    if opt_remove_empty_tags and current_line:
+                    # Fast path guard: Subtitle tags inherently require < and > characters.
+                    if opt_remove_empty_tags and any(c in current_line for c in "<>"):
                         before_tags = current_line
                         temp_line = current_line
                         while empty_tag_pattern.search(temp_line):
