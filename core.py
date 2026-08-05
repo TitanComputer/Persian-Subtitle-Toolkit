@@ -286,26 +286,53 @@ class SubtitleProcessor:
             srt_files_paths = [os.path.join(self.folder_path, f) for f in srt_files]
             Logger.log_process(f"Process started. Found {len(srt_files_paths)} file(s).", self.folder_path)
 
+        # Cache ALL options to avoid thousands of dictionary lookups during line processing
+        opt_bypass_enabled = self.options.get("bypass_enabled", 1)
+        opt_remove_enabled = self.options.get("remove_enabled", 1)
+        opt_replace_enabled = self.options.get("replace_enabled", 1)
+
+        opt_trim_spaces = self.options.get("trim_spaces", 1)
+        opt_fix_misplaced_chars = self.options.get("fix_misplaced_chars", 1)
+        opt_fix_abbreviations = self.options.get("fix_abbreviations", 1)
+        opt_comma_fixes = self.options.get("comma_fixes", 1)
+        opt_exclamation_fixes = self.options.get("exclamation_fixes", 1)
+        opt_parentheses_fixes = self.options.get("parentheses_fixes", 1)
+        opt_question_mark_fixes = self.options.get("question_mark_fixes", 1)
+        opt_double_quotes_fixes = self.options.get("double_quotes_fixes", 1) == 1
+        opt_dash_fixes = self.options.get("dash_fixes", 1) == 1
+        opt_comments_fixes = self.options.get("comments_fixes", 1) == 1
+        opt_dialog_hyphen_fix = self.options.get("dialog_hyphen_fix", 1) == 1
+        opt_remove_standalone_dots = self.options.get("remove_standalone_dots", 1)
+        opt_remove_unneeded_spaces = self.options.get("remove_unneeded_spaces", 1)
+        opt_persian_question_mark_and_comma = self.options.get("persian_question_mark_and_comma", 1)
+        opt_arabic_char_to_persian = self.options.get("arabic_char_to_persian", 1)
+        opt_arabic_num_to_persian = self.options.get("arabic_num_to_persian", 1)
+        opt_english_num_to_persian = self.options.get("english_num_to_persian", 1)
+        opt_space_to_invisible_space = self.options.get("space_to_invisible_space", 1)
+        opt_hexre_fixes = self.options.get("hexre_fixes", 1)
+        opt_post_trim_spaces = self.options.get("post_trim_spaces", 1)
+        opt_remove_empty_tags = self.options.get("remove_empty_tags", 1)
+        opt_remove_negative_timecodes = self.options.get("remove_negative_timecodes", 1)
+        opt_remove_empty_subtitles = self.options.get("remove_empty_subtitles", 1)
+        opt_add_intro_credit = self.options.get("add_intro_credit", 0)
+        opt_reformat_renumber = self.options.get("reformat_renumber", 1)
+        opt_force_rtl = self.options.get("force_rtl", 1)
+        opt_encode_utf8 = self.options.get("encode_utf8", 1)
+        opt_delete_original = self.options.get("delete_original", 0)
+        detailed_logs_enabled = self.options.get("detailed_subtitle_logs", 1)
+
         # Extract Process configuration variables
-        bypass_enabled = self.options.get("bypass_enabled", 1)
         bypass_list = [w.strip() for w in self.options.get("bypass_list", "").split("\n") if w.strip()]
         # Pre-compile regexes for bypass list to optimize performance
         bypass_regexes = [(w, build_flexible_regex(w)) for w in bypass_list if build_flexible_regex(w)]
 
-        remove_enabled = self.options.get("remove_enabled", 1)
         remove_list = [w.strip() for w in self.options.get("remove_list", "").split("\n") if w.strip()]
         # Pre-compile regexes for remove list to optimize performance
         remove_regexes = [(w, build_flexible_regex(w)) for w in remove_list if build_flexible_regex(w)]
 
-        replace_enabled = self.options.get("replace_enabled", 1)
         replace_list = [w.strip() for w in self.options.get("replace_list", "").split("\n") if w.strip()]
         # Pre-compile regexes for replace list to optimize performance
         replace_regexes = [(w, build_flexible_regex(w)) for w in replace_list if build_flexible_regex(w)]
-
-        post_trim_spaces = self.options.get("post_trim_spaces", 1)
-
-        # Cache the detailed subtitle logs option to avoid repeated dictionary lookups
-        detailed_logs_enabled = self.options.get("detailed_subtitle_logs", 1)
 
         start_time = time.time()
         for file_path in srt_files_paths:
@@ -378,7 +405,7 @@ class SubtitleProcessor:
                     )
 
                     # Apply Pre-Process Option: Trim Spaces
-                    if self.options.get("trim_spaces", 1):
+                    if opt_trim_spaces:
                         current_line = trim_line_spaces(current_line)
 
                     # Log Pre-Process Changes
@@ -396,7 +423,7 @@ class SubtitleProcessor:
                         continue
 
                     # Option: Fix Misplaced Chars processing and logging
-                    if self.options.get("fix_misplaced_chars", 1):
+                    if opt_fix_misplaced_chars:
                         before_misplaced = current_line
                         temp_line = current_line
 
@@ -427,7 +454,7 @@ class SubtitleProcessor:
                                 file_subtitle_logs.append(log_msg)
 
                     # Apply Pre-Process Option: Fix Abbreviations
-                    if self.options.get("fix_abbreviations", 1):
+                    if opt_fix_abbreviations:
                         before_abbr = current_line
                         temp_line = current_line
 
@@ -453,7 +480,7 @@ class SubtitleProcessor:
                                 file_subtitle_logs.append(log_msg)
 
                     # Apply Pre-Process Option: Comma Fixes
-                    if self.options.get("comma_fixes", 1):
+                    if opt_comma_fixes:
                         before_comma = current_line
                         temp_line = current_line
 
@@ -476,7 +503,7 @@ class SubtitleProcessor:
                                 file_subtitle_logs.append(log_msg)
 
                     # Apply Pre-Process Option: Exclamation Mark Fixes
-                    if self.options.get("exclamation_fixes", 1):
+                    if opt_exclamation_fixes:
                         before_excl = current_line
                         temp_line = current_line
 
@@ -497,7 +524,7 @@ class SubtitleProcessor:
                                 file_subtitle_logs.append(log_msg)
 
                     # Apply Pre-Process Option: Parentheses Fixes
-                    if self.options.get("parentheses_fixes", 1):
+                    if opt_parentheses_fixes:
                         before_paren = current_line
                         temp_line = current_line
 
@@ -518,7 +545,7 @@ class SubtitleProcessor:
                                 file_subtitle_logs.append(log_msg)
 
                     # Apply Pre-Process Option: Question Mark Fixes
-                    if self.options.get("question_mark_fixes", 1):
+                    if opt_question_mark_fixes:
                         before_qm = current_line
                         temp_line = current_line
 
@@ -539,7 +566,7 @@ class SubtitleProcessor:
                                 file_subtitle_logs.append(log_msg)
 
                     # Double-Quotes Fixes processing and logging
-                    if self.options.get("double_quotes_fixes", 1) == 1:
+                    if opt_double_quotes_fixes:
                         before_dq = current_line
                         temp_line = current_line
                         for rule_pattern, replace_with, is_regex in double_quotes_rules_list:
@@ -581,7 +608,7 @@ class SubtitleProcessor:
                                 file_subtitle_logs.append(log_msg)
 
                     # Dash Fixes processing and logging
-                    if self.options.get("dash_fixes", 1) == 1:
+                    if opt_dash_fixes:
                         before_dash = current_line
                         temp_line = current_line
                         for rule_pattern, replace_with, is_regex in dash_rules_list:
@@ -599,7 +626,7 @@ class SubtitleProcessor:
                                 file_subtitle_logs.append(log_msg)
 
                     # Comments Fixes processing and logging
-                    if self.options.get("comments_fixes", 1) == 1:
+                    if opt_comments_fixes:
                         before_com = current_line
                         temp_line = current_line
                         for rule_pattern, replace_with, is_regex in comments_rules_list:
@@ -617,7 +644,7 @@ class SubtitleProcessor:
                                 file_subtitle_logs.append(log_msg)
 
                     # Dialog Hyphen Fix processing and logging
-                    if self.options.get("dialog_hyphen_fix", 1) == 1:
+                    if opt_dialog_hyphen_fix:
                         before_dh = current_line
                         temp_line = current_line
                         for rule_pattern, replace_with, is_regex in dialog_hyphen_fix_list:
@@ -635,7 +662,7 @@ class SubtitleProcessor:
                                 file_subtitle_logs.append(log_msg)
 
                     # Apply Pre-Process Option: Remove Standalone Dots
-                    if self.options.get("remove_standalone_dots", 1):
+                    if opt_remove_standalone_dots:
                         before_dots = current_line
 
                         # Whitespace + Zero-Width & Invisible Formatting Characters (\u200c=ZWNJ, \u200d=ZWJ, \u200e=LRM, \u200f=RLM, \ufeff=BOM)
@@ -656,7 +683,7 @@ class SubtitleProcessor:
                                 file_subtitle_logs.append(log_msg)
 
                     # Apply Pre-Process Option: Remove Unneeded Spaces (Aligned with XML rules)
-                    if self.options.get("remove_unneeded_spaces", 1):
+                    if opt_remove_unneeded_spaces:
                         before_unneeded = current_line
                         temp_line = current_line
 
@@ -674,7 +701,7 @@ class SubtitleProcessor:
                                 file_subtitle_logs.append(log_msg)
 
                     # Option: Convert English Question Marks and Commas to Persian
-                    if self.options.get("persian_question_mark_and_comma", 1):
+                    if opt_persian_question_mark_and_comma:
                         before_q = current_line
                         current_line = current_line.replace("?", "؟")
 
@@ -690,7 +717,7 @@ class SubtitleProcessor:
                                 file_subtitle_logs.append(log_msg)
 
                     # 1. Convert Arabic Characters to Persian
-                    if self.options.get("arabic_char_to_persian", 1):
+                    if opt_arabic_char_to_persian:
                         before_char = current_line
                         for k, v in arabic_to_persian_chars.items():
                             current_line = current_line.replace(k, v)
@@ -703,7 +730,7 @@ class SubtitleProcessor:
                                 file_subtitle_logs.append(log_msg)
 
                     # 2. Convert Arabic Numerals to Persian Numerals
-                    if self.options.get("arabic_num_to_persian", 1):
+                    if opt_arabic_num_to_persian:
                         before_anum = current_line
                         for k, v in arabic_numerals.items():
                             current_line = current_line.replace(k, v)
@@ -716,7 +743,7 @@ class SubtitleProcessor:
                                 file_subtitle_logs.append(log_msg)
 
                     # 3. Convert English Numerals to Persian Numerals conditionally
-                    if self.options.get("english_num_to_persian", 1):
+                    if opt_english_num_to_persian:
                         # Skip lines that are just whitespace or empty
                         if not current_line.strip():
                             continue
@@ -749,7 +776,7 @@ class SubtitleProcessor:
                                 file_subtitle_logs.append(log_msg)
 
                     # 4. Convert Space to Invisible Space conditionally
-                    if self.options.get("space_to_invisible_space", 1):
+                    if opt_space_to_invisible_space:
                         before_space_zwnj = current_line
                         temp_line = current_line
 
@@ -776,7 +803,7 @@ class SubtitleProcessor:
                                 file_subtitle_logs.append(log_msg)
 
                     # 5. Fix Common Hexre Typo Errors conditionally
-                    if self.options.get("hexre_fixes", 1):
+                    if opt_hexre_fixes:
                         before_hexre = current_line
                         temp_line = current_line
 
@@ -799,7 +826,7 @@ class SubtitleProcessor:
 
                     # --- Process Options ---
                     is_bypassed = False
-                    if bypass_enabled:
+                    if opt_bypass_enabled:
                         for word, reg in bypass_regexes:
                             if reg.search(current_line):
                                 is_bypassed = True
@@ -812,7 +839,7 @@ class SubtitleProcessor:
                         is_removed = False
 
                         # Process Option: Remove List
-                        if remove_enabled:
+                        if opt_remove_enabled:
                             for word, reg in remove_regexes:
                                 if reg.search(current_line):
                                     is_removed = True
@@ -829,7 +856,7 @@ class SubtitleProcessor:
                             continue
 
                         # Process Option: Replace List
-                        if replace_enabled and current_line:
+                        if opt_replace_enabled and current_line:
                             for word, reg in replace_regexes:
                                 if reg.search(current_line):
                                     before_replace = current_line
@@ -844,7 +871,7 @@ class SubtitleProcessor:
 
                     # --- Post-Process Options ---
                     # Apply Post-Process Option: Trim Spaces
-                    if post_trim_spaces and current_line:
+                    if opt_post_trim_spaces and current_line:
                         before_post = current_line
                         current_line = trim_line_spaces(current_line)
 
@@ -857,7 +884,7 @@ class SubtitleProcessor:
                                 file_subtitle_logs.append(log_msg)
 
                     # Option: Post-Process Remove Empty Tags
-                    if self.options.get("remove_empty_tags", 1) and current_line:
+                    if opt_remove_empty_tags and current_line:
                         before_tags = current_line
                         temp_line = current_line
                         while empty_tag_pattern.search(temp_line):
@@ -876,7 +903,7 @@ class SubtitleProcessor:
                         processed_lines.append(current_line)
 
                 # --- Block-Level Dialog Hyphen Validation ---
-                if self.options.get("dialog_hyphen_fix", 1) == 1:
+                if opt_dialog_hyphen_fix:
                     dialog_blocks = parse_srt_blocks(processed_lines)
                     dialog_blocks = fix_trailing_dialog_hyphens(dialog_blocks)
                     dialog_blocks = fix_inconsistent_dialog_hyphens(dialog_blocks)
@@ -895,15 +922,15 @@ class SubtitleProcessor:
 
                 # --- Block-Level Post-Process Operations ---
                 if (
-                    self.options.get("add_intro_credit", 0)
-                    or self.options.get("remove_negative_timecodes", 1)
-                    or self.options.get("remove_empty_subtitles", 1)
-                    or self.options.get("reformat_renumber", 1)
+                    opt_add_intro_credit
+                    or opt_remove_negative_timecodes
+                    or opt_remove_empty_subtitles
+                    or opt_reformat_renumber
                 ):
                     blocks = parse_srt_blocks(processed_lines)
 
                     # Option: Remove Negative Timecodes
-                    if self.options.get("remove_negative_timecodes", 1):
+                    if opt_remove_negative_timecodes:
                         filtered_blocks = []
                         for b in blocks:
                             if (
@@ -924,7 +951,7 @@ class SubtitleProcessor:
                         blocks = filtered_blocks
 
                     # Option: Remove Empty Subtitles
-                    if self.options.get("remove_empty_subtitles", 1):
+                    if opt_remove_empty_subtitles:
                         filtered_blocks = []
                         for b in blocks:
                             text_content = "".join(b["text_lines"]).strip()
@@ -941,7 +968,7 @@ class SubtitleProcessor:
                         blocks = filtered_blocks
 
                     # Option: Add Intro Credit Subtitle
-                    if self.options.get("add_intro_credit", 0):
+                    if opt_add_intro_credit:
                         credit_text = self.options.get("intro_credit_text", "").strip()
                         if credit_text:
                             credit_lines = [l.strip() for l in credit_text.split("\n") if l.strip()][:2]
@@ -1031,7 +1058,7 @@ class SubtitleProcessor:
                                                 file_subtitle_logs.append(log_msg)
 
                     # Option: Reformat & Renumber Subtitles
-                    if self.options.get("reformat_renumber", 1):
+                    if opt_reformat_renumber:
                         reformatted_lines = []
                         for new_idx, b in enumerate(blocks, start=1):
                             reformatted_lines.append(f"{new_idx}\n")
@@ -1049,7 +1076,7 @@ class SubtitleProcessor:
 
                 # Option: Post-Process Force RTL (Remove control chars and force Right-To-Left)
                 # Executed after reformat and renumber block as requested
-                if self.options.get("force_rtl", 1):
+                if opt_force_rtl:
                     rtl_processed_lines = []
                     rtl_modified_lines_count = 0
 
@@ -1112,7 +1139,7 @@ class SubtitleProcessor:
                                 clean_text = clean_text.replace(char, "")
 
                             # Apply RTL Trim Spaces
-                            if post_trim_spaces and clean_text:
+                            if opt_post_trim_spaces and clean_text:
                                 before_post = clean_text
                                 clean_text = trim_line_spaces(clean_text)
                                 if before_post != clean_text:
@@ -1195,7 +1222,7 @@ class SubtitleProcessor:
                 output_file_path = os.path.join(output_dir, output_filename)
 
                 # Use explicit UTF-8 if setting is enabled, otherwise use original detected encoding
-                out_encoding = "utf-8" if self.options.get("encode_utf8", 1) else file_encoding
+                out_encoding = "utf-8" if opt_encode_utf8 else file_encoding
 
                 with open(output_file_path, "w", encoding=out_encoding) as f:
                     f.writelines(processed_lines)
@@ -1205,7 +1232,7 @@ class SubtitleProcessor:
                     file_subtitle_logs.append(f"Finished tracking. Total changes occurred: {file_has_changes}")
 
                 # Post processing clean up option: Delete Original
-                if self.options.get("delete_original", 0):
+                if opt_delete_original:
                     os.remove(file_path)
                     file_process_logs.append(f"Original file deleted by request: {filename}")
 
