@@ -894,7 +894,7 @@ class SubtitleProcessor:
 
                     # --- Process Options ---
                     is_bypassed = False
-                    if opt_bypass_enabled:
+                    if opt_bypass_enabled and bypass_regexes:
                         for word, reg in bypass_regexes:
                             if reg.search(current_line):
                                 is_bypassed = True
@@ -907,7 +907,7 @@ class SubtitleProcessor:
                         is_removed = False
 
                         # Process Option: Remove List
-                        if opt_remove_enabled:
+                        if opt_remove_enabled and remove_regexes:
                             for word, reg in remove_regexes:
                                 if reg.search(current_line):
                                     is_removed = True
@@ -924,7 +924,7 @@ class SubtitleProcessor:
                             continue
 
                         # Process Option: Replace List
-                        if opt_replace_enabled and current_line:
+                        if opt_replace_enabled and replace_regexes:
                             for word, reg in replace_regexes:
                                 if reg.search(current_line):
                                     before_replace = current_line
@@ -939,7 +939,6 @@ class SubtitleProcessor:
                                             file_subtitle_logs,
                                             detailed_logs_enabled,
                                         )
-
                     # --- Post-Process Options ---
                     # Apply Post-Process Option: Trim Spaces
                     if opt_post_trim_spaces and current_line:
