@@ -39,6 +39,10 @@ def _prepare_rule_fast_paths(rule_list):
 SPACE_TO_INVISIBLE_SPACE_FAST_RULES = _prepare_rule_fast_paths(space_to_invisible_space_rules)
 HEXRE_FAST_RULES = _prepare_rule_fast_paths(hexre_rules_list)
 
+ARABIC_CHAR_TRANS = str.maketrans(arabic_to_persian_chars)
+ARABIC_NUM_TRANS = str.maketrans(arabic_numerals)
+CTRL_CHAR_TRANS = str.maketrans("", "", "\u200e\u200f\u202a\u202b\u202c\u202d\u202e")
+
 
 def _log_change(index, opt_name, before, after, logs_buffer, detailed_logs_enabled):
     """Standardized logger to keep subtitle tracking uniform and DRY."""
@@ -429,6 +433,7 @@ class SubtitleProcessor:
 
                     original_line = line
                     current_line = original_line
+                    line_is_pure_english = is_pure_english(current_line)
 
                     # Check if line is standard subtitle timecode or index number
                     is_timecode_or_index = bool(
@@ -517,7 +522,7 @@ class SubtitleProcessor:
                         temp_line = current_line
 
                         # Apply comma rules only if the line is not purely English
-                        if not is_pure_english(temp_line):
+                        if not line_is_pure_english:
                             temp_line = apply_rule_set(temp_line, comma_rules_list)
 
                         current_line = temp_line
@@ -735,7 +740,7 @@ class SubtitleProcessor:
                         before_q = current_line
                         current_line = current_line.replace("?", "؟")
 
-                        if not is_pure_english(current_line):
+                        if not line_is_pure_english:
                             current_line = current_line.replace(",", "،")
 
                         if current_line != before_q:
@@ -752,8 +757,7 @@ class SubtitleProcessor:
                     # 1. Convert Arabic Characters to Persian
                     if opt_arabic_char_to_persian:
                         before_char = current_line
-                        for k, v in arabic_to_persian_chars.items():
-                            current_line = current_line.replace(k, v)
+                        current_line = current_line.translate(ARABIC_CHAR_TRANS)
                         if current_line != before_char:
                             file_has_changes = True
                             _log_change(
@@ -768,8 +772,7 @@ class SubtitleProcessor:
                     # 2. Convert Arabic Numerals to Persian Numerals
                     if opt_arabic_num_to_persian:
                         before_anum = current_line
-                        for k, v in arabic_numerals.items():
-                            current_line = current_line.replace(k, v)
+                        current_line = current_line.translate(ARABIC_NUM_TRANS)
                         if current_line != before_anum:
                             file_has_changes = True
                             _log_change(
@@ -1192,8 +1195,7 @@ class SubtitleProcessor:
                             original_text_line = line
                             clean_text = line
 
-                            for char in ctrl_chars:
-                                clean_text = clean_text.replace(char, "")
+                            clean_text = clean_text.translate(CTRL_CHAR_TRANS)
 
                             # Apply RTL Trim Spaces
                             if opt_post_trim_spaces and clean_text:
