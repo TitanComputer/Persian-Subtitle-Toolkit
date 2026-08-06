@@ -73,6 +73,37 @@ class TimestampedLogBuffer(list):
         super().append((timestamp, message))
 
 
+def fix_misplaced_timecodes(blocks, logs_buffer, detailed_logs_enabled):
+    """Removes empty blocks and reorders blocks chronologically by start time."""
+    valid_blocks = []
+    for block in blocks:
+        # Check if block has any non-empty text lines
+        has_text = any(line.strip() for line in block.get("text_lines", []))
+        if not has_text:
+            if detailed_logs_enabled:
+                logs_buffer.append(
+                    f"Block {block.get('index', '')} removed | Option: Fix Misplaced Timecodes | Before: |{block.get('start_str')} --> {block.get('end_str')}| -> After: |[Deleted Empty Block]|"
+                )
+        else:
+            valid_blocks.append(block)
+
+    # Check if the remaining blocks are out of chronological order
+    is_out_of_order = False
+    for i in range(1, len(valid_blocks)):
+        if valid_blocks[i]["start_ms"] < valid_blocks[i - 1]["start_ms"]:
+            is_out_of_order = True
+            break
+
+    if is_out_of_order:
+        # Stable sort based on start time
+        sorted_blocks = sorted(valid_blocks, key=lambda b: b["start_ms"])
+        if detailed_logs_enabled:
+            logs_buffer.append("Option: Fix Misplaced Timecodes | Blocks were reordered chronologically.")
+        return sorted_blocks
+
+    return valid_blocks
+
+
 def build_flexible_regex(word):
     """
     Creates a regex pattern that ignores spaces, dots, zero-width non-joiners (\u200c),
@@ -347,6 +378,7 @@ class SubtitleProcessor:
         opt_post_trim_spaces = self.options.get("post_trim_spaces", 1)
         opt_remove_empty_tags = self.options.get("remove_empty_tags", 1)
         opt_remove_negative_timecodes = self.options.get("remove_negative_timecodes", 1)
+        opt_fix_misplaced_timecodes = self.options.get("fix_misplaced_timecodes", 1)
         opt_remove_empty_subtitles = self.options.get("remove_empty_subtitles", 1)
         opt_add_intro_credit = self.options.get("add_intro_credit", 0)
         opt_reformat_renumber = self.options.get("reformat_renumber", 1)
@@ -1001,6 +1033,7 @@ class SubtitleProcessor:
                 if (
                     opt_add_intro_credit
                     or opt_remove_negative_timecodes
+                    or opt_fix_misplaced_timecodes
                     or opt_remove_empty_subtitles
                     or opt_reformat_renumber
                 ):
@@ -1026,6 +1059,10 @@ class SubtitleProcessor:
                             else:
                                 filtered_blocks.append(b)
                         blocks = filtered_blocks
+
+                    # Option: Fix Misplaced Timecodes
+                    if opt_fix_misplaced_timecodes:
+                        blocks = fix_misplaced_timecodes(blocks, file_subtitle_logs, detailed_logs_enabled)
 
                     # Option: Remove Empty Subtitles
                     if opt_remove_empty_subtitles:
