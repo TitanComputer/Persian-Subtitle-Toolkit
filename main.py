@@ -1189,9 +1189,9 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
 
         # Applying maximized state after rendering with a small delay for Tkinter stability
         if config.get("is_maximized", 0) == 1:
-            self.after(50, lambda: self.state("zoomed"))
+            self.after(200, lambda: self.state("zoomed"))
         else:
-            self.after(50, lambda: self.state("normal"))
+            self.after(200, lambda: self.state("normal"))
 
         # 1. Update Path Entry first (this enables/disables the log switch state)
         folder_path = config.get("folder_path", "")
