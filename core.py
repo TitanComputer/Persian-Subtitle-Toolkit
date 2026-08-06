@@ -268,8 +268,13 @@ def fix_inconsistent_dialog_hyphens(blocks):
 
             if dialog_match:
                 remainder = text_lines[0][dialog_match.end() :]
-                # Exception: Preserve leading hyphen for inline dialogues (multiple dialogues in a single line)
-                if not re.search(r"[\s\.،!؟]-", remainder):
+                # Split single-line inline dialogues into two lines if a second dialogue hyphen exists
+                inline_match = re.search(r"^(.*?[\.،!؟\s])\s*(-\s*.*)$", remainder)
+                if inline_match:
+                    first_line = text_lines[0][: dialog_match.end()] + inline_match.group(1).rstrip()
+                    second_line = inline_match.group(2)
+                    block["text_lines"] = [first_line, second_line]
+                else:
                     text_lines[0] = dialog_match.group("prefix") + remainder
 
             continue
