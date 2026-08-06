@@ -267,7 +267,10 @@ def fix_inconsistent_dialog_hyphens(blocks):
             dialog_match = dialog_prefix_pattern.match(text_lines[0])
 
             if dialog_match:
-                text_lines[0] = dialog_match.group("prefix") + text_lines[0][dialog_match.end() :]
+                remainder = text_lines[0][dialog_match.end() :]
+                # Exception: Preserve leading hyphen for inline dialogues (multiple dialogues in a single line)
+                if not re.search(r"[\s\.،!؟]-", remainder):
+                    text_lines[0] = dialog_match.group("prefix") + remainder
 
             continue
 
