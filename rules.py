@@ -322,23 +322,21 @@ exclamation_rules_list = [
     (re.compile(r"(\b[^\u0000-\u007F]+\b)( *)(\!)( *)([^\-\<\>\"\! ])"), r"\1\3 \5", True),
     # Move leading exclamation mark to the end of the line
     (
-        re.compile(r"^([\u202a-\u202e\u200e\u200f]*)(?:<[^>]+>)*\s*!\s*(.+?)\s*([\u202a-\u202e\u200e\u200f]*)$"),
+        re.compile(
+            r"^([\u202a-\u202e\u200e\u200f]*)(?:<[^>]+>)*\s*!\s*([^\?\.\n]+?)\s*([\u202a-\u202e\u200e\u200f]*)$"
+        ),
         r"\1\2!\3",
         True,
     ),
     # Move exclamation mark from the beginning (after hyphen) to the end
     (
-        re.compile(
-            r"^([\u202a-\u202e\u200e\u200f]*)-\s*!\s*([^\!\.\?\n]+?)(?<![\.\?\!])\s*([\u202a-\u202e\u200e\u200f]*)$"
-        ),
+        re.compile(r"^([\u202a-\u202e\u200e\u200f]*)-\s*!\s*([^\?\.\n]+?)\s*([\u202a-\u202e\u200e\u200f]*)$"),
         r"\1- \2!\3",
         True,
     ),
     # Move leading exclamation mark to the end when trailing hyphen exists
     (
-        re.compile(
-            r"^([\u202a-\u202e\u200e\u200f]*)\!\s*([^\!\.\?\n]+?)(?<![\.\?\!])\s*-\s*([\u202a-\u202e\u200e\u200f]*)$"
-        ),
+        re.compile(r"^([\u202a-\u202e\u200e\u200f]*)\!\s*([^\?\.\n]+?)\s*-\s*([\u202a-\u202e\u200e\u200f]*)$"),
         r"\1\2! -\3",
         True,
     ),
