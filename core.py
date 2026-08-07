@@ -1207,9 +1207,6 @@ class SubtitleProcessor:
                     rtl_processed_lines = []
                     rtl_modified_lines_count = 0
 
-                    # Remove specific control characters
-                    ctrl_chars = ["\u200e", "\u200f", "\u202a", "\u202b", "\u202c", "\u202d", "\u202e"]
-
                     # Tuples of symbols that require RTL enforcement at boundaries
                     start_symbols = (
                         ".",
@@ -1303,11 +1300,15 @@ class SubtitleProcessor:
                                                 r"^((?:<[^>]+>\s*)*)([:؛!\?؟])\s*(.*)$", r"\1\3\2", line_stripped
                                             )
 
-                                            # Re-evaluate text_no_tags after modification
-                                            text_no_tags = HTML_TAG_RE.sub("", line_stripped)
-                                            text_no_tags = re.sub(
-                                                r"[\u200b\u200c\u200d\ufeff]", "", text_no_tags
-                                            ).strip()
+                                        # Re-evaluate text_no_tags after modification
+                                        text_no_tags = HTML_TAG_RE.sub("", line_stripped)
+                                        text_no_tags = re.sub(r"[\u200b\u200c\u200d\ufeff]", "", text_no_tags).strip()
+
+                                        # Check for music symbols before removing them to ensure they trigger RTL formatting
+                                        has_music_symbol = bool(MUSIC_SYMBOLS_RE.search(text_no_tags))
+
+                                        # Ignore music symbols for boundary checks to accurately detect punctuation
+                                        text_no_tags = MUSIC_SYMBOLS_RE.sub("", text_no_tags).strip()
 
                                         has_symbol_start = text_no_tags.startswith(start_symbols)
                                         has_symbol_end = text_no_tags.endswith(end_symbols)
@@ -1317,15 +1318,32 @@ class SubtitleProcessor:
 
                                         # Use RLE (\u202b) and PDF (\u202c) to strictly enforce RTL direction
                                         # This forces the internal bidi algorithm to treat English words and digits as embedded inside an RTL context
-                                        if has_symbol_start or has_symbol_end or has_english_or_digits:
-                                            rtl_line = "\u202b" + rtl_line + "\u202c"
+                                        if (
+                                            has_symbol_start
+                                            or has_symbol_end
+                                            or has_english_or_digits
+                                            or has_music_symbol
+                                        ):
+                                            # Place Bidi markers inside HTML tags to prevent rendering issues in players
+                                            tag_pattern = r"^((?:<[^>]+>\s*)*)(.*?)(\s*(?:<[^>]+>\s*)*)$"
+                                            tag_match = re.match(tag_pattern, rtl_line)
+                                            if tag_match:
+                                                rtl_line = (
+                                                    tag_match.group(1)
+                                                    + "\u202b"
+                                                    + tag_match.group(2)
+                                                    + "\u202c"
+                                                    + tag_match.group(3)
+                                                )
+                                            else:
+                                                rtl_line = "\u202b" + rtl_line + "\u202c"
 
                                         clean_text = rtl_line + line_ending
                                     else:
                                         # Skip RTL processing completely for fully English/ASCII lines
                                         clean_text = line_stripped + line_ending
-                                else:
-                                    clean_text = line_stripped + line_ending
+                            else:
+                                clean_text = line_stripped + line_ending
 
                             if clean_text != original_text_line:
                                 file_has_changes = True
