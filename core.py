@@ -757,10 +757,10 @@ class SubtitleProcessor:
                         # Whitespace + Zero-Width & Invisible Formatting Characters (\u200c=ZWNJ, \u200d=ZWJ, \u200e=LRM, \u200f=RLM, \ufeff=BOM)
                         # Regex patterns are pre-compiled outside the main loop for performance
 
-                        # Remove standalone dot at the start of the line (ignores HTML tags & zero-width chars prefix)
+                        # Remove standalone dot at the start of the line (ignores HTML tags, zero-width chars & music symbols prefix)
                         current_line = start_dot_pattern.sub(r"\1\2", current_line)
 
-                        # Remove standalone dot at the end of the line (ignores HTML tags & zero-width chars suffix)
+                        # Remove standalone dot at the end of the line (ignores HTML tags, zero-width chars & music symbols suffix)
                         current_line = end_dot_pattern.sub("", current_line)
 
                         if current_line != before_dots:
