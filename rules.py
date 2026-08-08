@@ -879,10 +879,13 @@ misplaced_chars_rules = [
         True,
     ),
     # Misplaced: Leading Ellipsis
+    # Updated regex to handle optional HTML tags at the start and end of the string
     (
-        re.compile(r"^(\*?)([\u202a-\u202e\u200e\u200f]?)((?:-\s*)?)(?:…|\.{3})\s*(.+?)(\s*-\s*)?(\*?)$"),
+        re.compile(
+            r"^((?:\<[^<>]+\>)*)(\*?)([\u202a-\u202e\u200e\u200f]?)((?:-\s*)?)(?:…|\.{3})\s*(.+?)(\s*-\s*)?(\*?)((?:\<[^<>]+\>)*)$"
+        ),
         # Strips existing trailing spaces and dots before appending standard 3 dots
-        lambda m: f"{m.group(1) or ''}{m.group(2) or ''}{m.group(3) or ''}{re.sub(r'[\s\.…]+$', '', m.group(4))}...{m.group(5) or ''}{m.group(6) or ''}",
+        lambda m: f"{m.group(1) or ''}{m.group(2) or ''}{m.group(3) or ''}{m.group(4) or ''}{re.sub(r'[\s\.…]+$', '', m.group(5))}...{m.group(6) or ''}{m.group(7) or ''}{m.group(8) or ''}",
         True,
     ),
     # Misplaced: One Line (1)
