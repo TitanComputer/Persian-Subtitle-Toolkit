@@ -75,7 +75,8 @@ unneeded_rules = [
         "Remove Unneeded Spaces: right after opening quote",
     ),
     (
-        re.compile(r'"([^"]+?)\s+"'),
+        # Added negative lookahead (?!\w) to prevent matching when the quote is followed by a word character (opening quote scenario)
+        re.compile(r'"([^"]+?)\s+"(?!\w)'),
         r'"\1"',
         "Remove Unneeded Spaces: right before closing quote",
     ),
