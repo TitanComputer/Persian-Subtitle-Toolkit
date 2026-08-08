@@ -742,8 +742,8 @@ class SubtitleProcessor:
                                 line_ending = "\n"
                                 temp_line = temp_line[:-1]
 
-                            # Detect leading HTML tags
-                            html_prefix_match = re.match(r"((?:<[^<>]+>)*)", temp_line)
+                            # Detect leading HTML tags and common punctuation marks
+                            html_prefix_match = re.match(r"((?:<[^<>]+>)*[\s\.\-]*)", temp_line)
                             html_prefix = html_prefix_match.group(1) if html_prefix_match else ""
 
                             content_after_html = temp_line[len(html_prefix) :]
