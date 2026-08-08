@@ -943,11 +943,20 @@ class SubtitleProcessor:
                             end = match.end()
                             text = match.string
 
-                            # Skip usernames, identifiers and similar tokens
-                            if start > 0 and text[start - 1] in "-_.":
-                                return match.group(0)
+                            # Expand left boundary
+                            left = start
+                            while left > 0 and re.match(r"[A-Za-z0-9@._\-+]", text[left - 1]):
+                                left -= 1
 
-                            if end < len(text) and text[end] in "-_.":
+                            # Expand right boundary
+                            right = end
+                            while right < len(text) and re.match(r"[A-Za-z0-9@._\-+]", text[right]):
+                                right += 1
+
+                            token = text[left:right]
+
+                            # Skip emails, usernames, identifiers, filenames and mixed English tokens
+                            if re.search(r"[A-Za-z]", token):
                                 return match.group(0)
 
                             return "".join(english_numerals.get(char, char) for char in match.group(0))
