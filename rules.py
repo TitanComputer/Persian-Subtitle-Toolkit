@@ -860,6 +860,12 @@ dialog_hyphen_fix_list = [
 
 # Structure of rule lists for formatting processing parsed exactly from XML files
 misplaced_chars_rules = [
+    # Fix misplaced asterisks enclosing the text
+    (
+        re.compile(r"^([\u202a-\u202e\u200e\u200f]*)\*+([^\*]*?)([\u202a-\u202e\u200e\u200f]*)\*+(.+)$"),
+        r"\g<1>*\g<2>\g<4>*",
+        True,
+    ),
     # Remove misplaced leading plus sign when not followed by a digit
     (
         re.compile(r"^\+(?!\d)"),
@@ -874,9 +880,9 @@ misplaced_chars_rules = [
     ),
     # Misplaced: Leading Ellipsis
     (
-        re.compile(r"^([\u202a-\u202e\u200e\u200f]?)((?:-\s*)?)(?:…|\.{3})\s*(.+?)(\s*-\s*)?$"),
+        re.compile(r"^(\*?)([\u202a-\u202e\u200e\u200f]?)((?:-\s*)?)(?:…|\.{3})\s*(.+?)(\s*-\s*)?(\*?)$"),
         # Strips existing trailing spaces and dots before appending standard 3 dots
-        lambda m: f"{m.group(1) or ''}{m.group(2) or ''}{re.sub(r'[\s\.…]+$', '', m.group(3))}...{m.group(4) or ''}",
+        lambda m: f"{m.group(1) or ''}{m.group(2) or ''}{m.group(3) or ''}{re.sub(r'[\s\.…]+$', '', m.group(4))}...{m.group(5) or ''}{m.group(6) or ''}",
         True,
     ),
     # Misplaced: One Line (1)

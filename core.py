@@ -541,7 +541,7 @@ class SubtitleProcessor:
 
                     # Option: Fix Misplaced Chars processing and logging
                     # Fast path guard: Check if common punctuation exists before running rules.
-                    if opt_fix_misplaced_chars and any(c in current_line for c in ":؛!?؟.,،-»«…"):
+                    if opt_fix_misplaced_chars and any(c in current_line for c in "*:؛!?؟.,،-»«…"):
                         before_misplaced = current_line
                         temp_line = current_line
 
