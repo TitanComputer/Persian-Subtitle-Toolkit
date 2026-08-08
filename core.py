@@ -1410,8 +1410,10 @@ class SubtitleProcessor:
 
                                         has_symbol_start = text_no_tags.startswith(start_symbols)
                                         has_symbol_end = text_no_tags.endswith(end_symbols)
-                                        has_english_or_digits = bool(re.search(r"[a-zA-Z0-9]", text_no_tags))
-
+                                        # Detect English letters, ASCII digits, Persian digits and Arabic digits
+                                        has_english_or_digits = bool(
+                                            re.search(r"[a-zA-Z0-9\u06F0-\u06F9\u0660-\u0669]", text_no_tags)
+                                        )
                                         rtl_line = line_stripped
 
                                         # Use RLE (\u202b) and PDF (\u202c) to strictly enforce RTL direction
