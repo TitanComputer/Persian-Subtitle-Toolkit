@@ -896,6 +896,17 @@ class SubtitleProcessor:
                         before_enum = current_line
 
                         def replace_eng_num(match):
+                            start = match.start()
+                            end = match.end()
+                            text = match.string
+
+                            # Skip usernames, identifiers and similar tokens
+                            if start > 0 and text[start - 1] in "-_.":
+                                return match.group(0)
+
+                            if end < len(text) and text[end] in "-_.":
+                                return match.group(0)
+
                             return "".join(english_numerals.get(char, char) for char in match.group(0))
 
                         # Split text by HTML tags to preserve numbers inside tags
@@ -903,7 +914,7 @@ class SubtitleProcessor:
                         for i in range(len(parts)):
                             # Only process parts that are not HTML tags
                             if not parts[i].startswith("<"):
-                                # Ensure numbers are not attached to English letters or other numbers on either side
+                                # Ensure numbers are not attached to English letters or identifier-like tokens
                                 parts[i] = isolated_eng_num_pattern.sub(replace_eng_num, parts[i])
 
                         current_line = "".join(parts)
