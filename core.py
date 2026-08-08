@@ -689,11 +689,7 @@ class SubtitleProcessor:
                         temp_line = apply_rule_set(temp_line, double_quotes_rules_list)
 
                         # Handle misplaced opening quote at start of line
-                        if (
-                            temp_line.count('"') == 2
-                            and temp_line.startswith('"')
-                            and not temp_line.rstrip("\r\n").endswith('"')
-                        ):
+                        if temp_line.count('"') == 2:
                             line_ending = ""
 
                             if temp_line.endswith("\r\n"):
@@ -703,20 +699,19 @@ class SubtitleProcessor:
                                 line_ending = "\n"
                                 temp_line = temp_line[:-1]
 
-                            temp_line = temp_line[1:] + '"' + line_ending
+                            # Detect leading HTML tags
+                            html_prefix_match = re.match(r"((?:<[^<>]+>)*)", temp_line)
+                            html_prefix = html_prefix_match.group(1) if html_prefix_match else ""
 
-                        # Handle misplaced quote at the end of line, moving it to start (after HTML tags)
-                        html_match = re.match(r"^(<[^>]+>)*", temp_line)
-                        html_len = html_match.end() if html_match else 0
+                            content_after_html = temp_line[len(html_prefix) :]
 
-                        if (
-                            temp_line.count('"') == 2
-                            and temp_line.rstrip("\r\n").endswith('"')
-                            and temp_line[html_len : html_len + 1] != '"'
-                        ):
-                            last_quote_idx = temp_line.rfind('"')
-                            temp_line = temp_line[:last_quote_idx] + temp_line[last_quote_idx + 1 :]
-                            temp_line = temp_line[:html_len] + '"' + temp_line[html_len:]
+                            # Case 1: Normal line starts with quote
+                            if content_after_html.startswith('"') and not content_after_html.endswith('"'):
+                                temp_line = html_prefix + content_after_html[1:] + '"' + line_ending
+
+                            # Case 2: Opening quote is misplaced at end of text while line starts with HTML tags
+                            elif not content_after_html.startswith('"') and content_after_html.endswith('"'):
+                                temp_line = html_prefix + '"' + content_after_html[:-1] + line_ending
 
                         # Handle unbalanced double quotes (odd number of quotes)
                         if temp_line.count('"') % 2 != 0:
