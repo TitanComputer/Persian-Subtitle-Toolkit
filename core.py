@@ -541,7 +541,7 @@ class SubtitleProcessor:
 
                     # Option: Fix Misplaced Chars processing and logging
                     # Fast path guard: Check if common punctuation exists before running rules.
-                    if opt_fix_misplaced_chars and any(c in current_line for c in ":؛!?؟.,،-»«"):
+                    if opt_fix_misplaced_chars and any(c in current_line for c in ":؛!?؟.,،-»«…"):
                         before_misplaced = current_line
                         temp_line = current_line
 
@@ -786,7 +786,7 @@ class SubtitleProcessor:
 
                     # Apply Pre-Process Option: Remove Standalone Dots
                     # Fast path guard: Requires at least one period.
-                    if opt_remove_standalone_dots and "." in current_line:
+                    if opt_remove_standalone_dots and any(c in current_line for c in ".…"):
                         before_dots = current_line
 
                         # Whitespace + Zero-Width & Invisible Formatting Characters (\u200c=ZWNJ, \u200d=ZWJ, \u200e=LRM, \u200f=RLM, \ufeff=BOM)
