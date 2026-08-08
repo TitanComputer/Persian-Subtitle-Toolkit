@@ -766,6 +766,10 @@ comments_rules_list = [
     (re.compile(r"""(\.\:\:)( )(\.)( *)"""), r"""\g<1>\g<2>""", True),
     (re.compile(r"""( *)(\.)( )(\:\:\.)"""), r"""\g<3>\g<4>""", True),
     (". .::", ".::", False),
+    # Remove unclosed comment marker .:: when no closing ::. exists on the line
+    (re.compile(r"""\.::(?![^\r\n]*::\.)"""), r"""""", True),
+    # Remove unmatched closing comment marker ::. when no opening .:: exists on the line
+    (re.compile(r"""^((?!.*\.::).*?)::\."""), r"""\g<1>""", True),
 ]
 
 dialog_hyphen_fix_list = [
