@@ -645,6 +645,49 @@ class SubtitleProcessor:
                         before_paren = current_line
                         temp_line = current_line
 
+                        # Normalize repeated opening brackets at the start of the visible text.
+                        # This keeps leading HTML/bidi markers intact while fixing cases like:
+                        # "(‏(text" -> "(text)"
+                        leading_prefix_match = re.match(
+                            r"^(?:[ \t\u200b-\u200f\u202a-\u202e\u2066-\u2069\ufeff]+|<[^>]+>)*",
+                            temp_line,
+                        )
+                        leading_prefix = leading_prefix_match.group(0) if leading_prefix_match else ""
+                        body = temp_line[len(leading_prefix) :]
+
+                        if body:
+                            bracket_pairs = {
+                                "(": ")",
+                                "[": "]",
+                                "{": "}",
+                            }
+
+                            first_char = body[0]
+                            if first_char in bracket_pairs:
+                                closing_char = bracket_pairs[first_char]
+
+                                # Collapse repeated opening brackets, allowing invisible RTL marks/spaces between them.
+                                body = re.sub(
+                                    rf"^(?:{re.escape(first_char)}(?:[ \t\u200b-\u200f\u202a-\u202e\u2066-\u2069\ufeff]*{re.escape(first_char)})+)",
+                                    first_char,
+                                    body,
+                                )
+
+                                # If the line has no matching closing bracket, append one at the end.
+                                if closing_char not in body:
+                                    line_ending = ""
+
+                                    if body.endswith("\r\n"):
+                                        line_ending = "\r\n"
+                                        body = body[:-2]
+                                    elif body.endswith("\n"):
+                                        line_ending = "\n"
+                                        body = body[:-1]
+
+                                    body = body + closing_char + line_ending
+
+                        temp_line = leading_prefix + body
+
                         temp_line = apply_rule_set(temp_line, parentheses_rules_list)
 
                         current_line = temp_line
