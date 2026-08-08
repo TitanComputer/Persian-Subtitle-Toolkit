@@ -705,6 +705,19 @@ class SubtitleProcessor:
 
                             temp_line = temp_line[1:] + '"' + line_ending
 
+                        # Handle misplaced quote at the end of line, moving it to start (after HTML tags)
+                        html_match = re.match(r"^(<[^>]+>)*", temp_line)
+                        html_len = html_match.end() if html_match else 0
+
+                        if (
+                            temp_line.count('"') == 2
+                            and temp_line.rstrip("\r\n").endswith('"')
+                            and temp_line[html_len : html_len + 1] != '"'
+                        ):
+                            last_quote_idx = temp_line.rfind('"')
+                            temp_line = temp_line[:last_quote_idx] + temp_line[last_quote_idx + 1 :]
+                            temp_line = temp_line[:html_len] + '"' + temp_line[html_len:]
+
                         # Handle unbalanced double quotes (odd number of quotes)
                         if temp_line.count('"') % 2 != 0:
                             # Replace the quote and any surrounding spaces/tabs with a single space
