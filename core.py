@@ -104,6 +104,32 @@ def fix_misplaced_timecodes(blocks, logs_buffer, detailed_logs_enabled):
     return valid_blocks
 
 
+def remove_duplicate_subtitles(blocks, logs_buffer, detailed_logs_enabled):
+    """Removes duplicate subtitle blocks that have identical timecodes and text."""
+    seen = set()
+    duplicate_counts = {}
+    filtered_blocks = []
+
+    for block in blocks:
+        # Create a unique key using exact timecodes and text content
+        key = (block["start_str"], block["end_str"], tuple(block["text_lines"]))
+
+        if key in seen:
+            duplicate_counts[key] = duplicate_counts.get(key, 0) + 1
+        else:
+            seen.add(key)
+            filtered_blocks.append(block)
+
+    if detailed_logs_enabled:
+        for key, count in duplicate_counts.items():
+            b_start, b_end, _ = key
+            logs_buffer.append(
+                f'Duplicate subtitles removed | Option: Remove Duplicate Subtitles | Timecode: "{b_start} --> {b_end}" | {count} duplicate(s) deleted.'
+            )
+
+    return filtered_blocks
+
+
 def build_flexible_regex(word):
     """
     Creates a regex pattern that ignores spaces, dots, zero-width non-joiners (\u200c),
@@ -392,6 +418,7 @@ class SubtitleProcessor:
         opt_remove_empty_tags = self.options.get("remove_empty_tags", 1)
         opt_remove_negative_timecodes = self.options.get("remove_negative_timecodes", 1)
         opt_fix_misplaced_timecodes = self.options.get("fix_misplaced_timecodes", 1)
+        opt_remove_duplicate_subtitles = self.options.get("remove_duplicate_subtitles", 1)
         opt_remove_empty_subtitles = self.options.get("remove_empty_subtitles", 1)
         opt_add_intro_credit = self.options.get("add_intro_credit", 0)
         opt_reformat_renumber = self.options.get("reformat_renumber", 1)
@@ -1047,6 +1074,7 @@ class SubtitleProcessor:
                     opt_add_intro_credit
                     or opt_remove_negative_timecodes
                     or opt_fix_misplaced_timecodes
+                    or opt_remove_duplicate_subtitles
                     or opt_remove_empty_subtitles
                     or opt_reformat_renumber
                 ):
@@ -1076,6 +1104,13 @@ class SubtitleProcessor:
                     # Option: Fix Misplaced Timecodes
                     if opt_fix_misplaced_timecodes:
                         blocks = fix_misplaced_timecodes(blocks, file_subtitle_logs, detailed_logs_enabled)
+
+                    # Option: Remove Duplicate Subtitles
+                    if opt_remove_duplicate_subtitles:
+                        before_dup = len(blocks)
+                        blocks = remove_duplicate_subtitles(blocks, file_subtitle_logs, detailed_logs_enabled)
+                        if len(blocks) != before_dup:
+                            file_has_changes = True
 
                     # Option: Remove Empty Subtitles
                     if opt_remove_empty_subtitles:
