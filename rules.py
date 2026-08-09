@@ -2893,7 +2893,7 @@ index_pattern = re.compile(r"^\d+\s*$")
 empty_tag_pattern = re.compile(r"<([a-zA-Z1-6]+)\b[^>]*>\s*</\1>", re.IGNORECASE)
 
 # Pre-compile heavy regex patterns used in line processing to avoid O(n) recompilation overhead
-zw_space = r"[\s\u200c\u200d\u200e\u200f\ufeff]"
+zw_space = r"[\s\u200b-\u200f\u202a-\u202e\u2066-\u2069\ufeff]"
 
 music_symbols = r"[♪♬♫♭♯]"
 
@@ -2902,7 +2902,7 @@ start_dot_pattern = re.compile(
 )
 
 end_dot_pattern = re.compile(
-    rf"(?<![.\-:;!?؟،,*~_|\s\u200c\u200d\u200e\u200f\ufeff]){zw_space}*\.(?=(?:{zw_space}|<[^>]+>|{music_symbols})*(?:\r\n|\n)?$)"
+    rf"(?<![.\-:;!?؟،,*~_|\s\u200b-\u200f\u202a-\u202e\u2066-\u2069\ufeff]){zw_space}*\.(?=(?:{zw_space}|<[^>]+>|{music_symbols})*(?:\r\n|\n)?$)"
 )
 
 html_tag_split_pattern = re.compile(r"(<[^>]+>)")

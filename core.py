@@ -851,6 +851,7 @@ class SubtitleProcessor:
                                 file_subtitle_logs,
                                 detailed_logs_enabled,
                             )
+
                     # Apply Pre-Process Option: Remove Unneeded Spaces (Aligned with XML rules)
                     # Fast path guard: Requires at least one space or tab character.
                     if opt_remove_unneeded_spaces and any(c in current_line for c in " \n\t"):
