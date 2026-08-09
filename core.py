@@ -554,7 +554,8 @@ class SubtitleProcessor:
                                 line_ending = "\n"
                             temp_line = temp_line[: -len(line_ending)]
 
-                        temp_line = apply_rule_set(temp_line, misplaced_chars_rules)
+                        if not misplaced_chars_comment_pattern.fullmatch(temp_line):
+                            temp_line = apply_rule_set(temp_line, misplaced_chars_rules)
 
                         temp_line += line_ending
                         current_line = temp_line

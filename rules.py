@@ -858,6 +858,9 @@ dialog_hyphen_fix_list = [
     (re.compile(r"""(\-)( *)(\])( *)(\-)"""), r"""\g<3>\g<4>\g<5>""", True),
 ]
 
+# Detect HTML-wrapped credit/comment lines that should not be processed by Fix Misplaced Chars
+misplaced_chars_comment_pattern = re.compile(r"^<([a-zA-Z][\w:-]*)(?:\s[^>]*)?>\s*\.:.*?:\.\s*</\1>$")
+
 # Structure of rule lists for formatting processing parsed exactly from XML files
 misplaced_chars_rules = [
     # Fix misplaced asterisks enclosing the text
