@@ -857,7 +857,8 @@ class SubtitleProcessor:
                     # Fast path guard: Requires at least one space or tab character.
                     if opt_remove_unneeded_spaces and any(c in current_line for c in " \n\t"):
                         # Skip space cleaning for subtitle comment lines with open/close markers
-                        if not re.search(r"\.{1,2}::.*::\.{1,2}", current_line):
+                        # Updated regex to support both single and double colons (e.g., .: :. or ..:: ::..)
+                        if not re.search(r"\.{1,2}:{1,2}.*?:{1,2}\.{1,2}", current_line):
                             temp_line = current_line
 
                             for pattern, replacement, desc in unneeded_rules:
