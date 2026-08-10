@@ -132,6 +132,8 @@ def remove_duplicate_subtitles(blocks, logs_buffer, detailed_logs_enabled):
 
 def fix_overlapping_timecodes(blocks, logs_buffer, detailed_logs_enabled):
     """Fixes timecode overlaps by adjusting the end time of the preceding block."""
+    has_changes = False
+
     for i in range(len(blocks) - 1):
         current_block = blocks[i]
         next_block = blocks[i + 1]
@@ -147,12 +149,14 @@ def fix_overlapping_timecodes(blocks, logs_buffer, detailed_logs_enabled):
             if current_block["end_ms"] != new_end_ms:
                 current_block["end_ms"] = new_end_ms
                 current_block["end_str"] = ms_to_timecode(new_end_ms)
+                has_changes = True
 
                 if detailed_logs_enabled:
                     logs_buffer.append(
                         f'Timecode overlap fixed | Option: Fix Overlapping Timecodes | Block {current_block.get("index", "")} | Before: "{current_block["start_str"]} --> {old_end_str}" -> After: "{current_block["start_str"]} --> {current_block["end_str"]}"'
                     )
-    return blocks
+
+    return blocks, has_changes
 
 
 def build_flexible_regex(word):
@@ -1215,7 +1219,11 @@ class SubtitleProcessor:
 
                     # Option: Fix Overlapping Timecodes
                     if opt_fix_overlapping_timecodes:
-                        blocks = fix_overlapping_timecodes(blocks, file_subtitle_logs, detailed_logs_enabled)
+                        blocks, has_changes = fix_overlapping_timecodes(
+                            blocks, file_subtitle_logs, detailed_logs_enabled
+                        )
+                        if has_changes:
+                            file_has_changes = True
 
                     # Option: Remove Empty Subtitles
                     if opt_remove_empty_subtitles:
