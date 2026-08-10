@@ -875,6 +875,15 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.chk_remove_duplicate_subtitles.grid(row=4, column=0, padx=5, pady=5, sticky="w")
 
+        # Checkbox for Fixing Overlapping Timecodes
+        self.chk_fix_overlapping_timecodes = ctk.CTkCheckBox(
+            post_parent,
+            text="Fix Overlapping Timecodes (Adjusts end timecode to prevent simultaneous display) - (Triggers Reformat & Renumber)",
+            font=font_bold,
+            command=self.on_reformat_dependency_toggle,
+        )
+        self.chk_fix_overlapping_timecodes.grid(row=5, column=0, padx=5, pady=5, sticky="w")
+
         # Checkbox for Removing Empty Subtitles
         self.chk_remove_empty_subtitles = ctk.CTkCheckBox(
             post_parent,
@@ -882,11 +891,11 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             font=font_bold,
             command=self.on_reformat_dependency_toggle,
         )
-        self.chk_remove_empty_subtitles.grid(row=5, column=0, padx=5, pady=5, sticky="w")
+        self.chk_remove_empty_subtitles.grid(row=6, column=0, padx=5, pady=5, sticky="w")
 
         # Intro Credit Subtitle Container Frame
         self.intro_credit_frame = ctk.CTkFrame(post_parent, fg_color="transparent")
-        self.intro_credit_frame.grid(row=6, column=0, padx=5, pady=(0, 5), sticky="w")
+        self.intro_credit_frame.grid(row=7, column=0, padx=5, pady=(0, 5), sticky="w")
 
         self.chk_add_intro_credit = ctk.CTkCheckBox(
             self.intro_credit_frame,
@@ -913,7 +922,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         self.opt_intro_credit_duration.set("8")
 
         self.txt_intro_credit_text = ctk.CTkTextbox(post_parent, height=55)
-        self.txt_intro_credit_text.grid(row=7, column=0, padx=5, pady=(0, 5), sticky="ew")
+        self.txt_intro_credit_text.grid(row=8, column=0, padx=5, pady=(0, 5), sticky="ew")
         setup_enhanced_textbox(self.txt_intro_credit_text)
 
         # Checkbox for Reformat & Renumber
@@ -923,7 +932,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             font=font_bold,
             command=self.on_reformat_renumber_toggle,
         )
-        self.chk_reformat_renumber.grid(row=8, column=0, padx=5, pady=5, sticky="w")
+        self.chk_reformat_renumber.grid(row=9, column=0, padx=5, pady=5, sticky="w")
 
         # Checkbox for Force RTL
         self.chk_force_rtl = ctk.CTkCheckBox(
@@ -932,7 +941,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             font=font_bold,
             command=self.on_preprocess_dependency_toggle,
         )
-        self.chk_force_rtl.grid(row=9, column=0, padx=5, pady=5, sticky="w")
+        self.chk_force_rtl.grid(row=10, column=0, padx=5, pady=5, sticky="w")
 
         # UTF-8 encoding save option
         self.chk_encode_utf8 = ctk.CTkCheckBox(
@@ -941,7 +950,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             font=font_bold,
             command=self.on_utf8_toggle,
         )
-        self.chk_encode_utf8.grid(row=10, column=0, padx=5, pady=5, sticky="w")
+        self.chk_encode_utf8.grid(row=11, column=0, padx=5, pady=5, sticky="w")
 
         # --- Extra Options Tab ---
         self.extra_inner_frame = CTkDualScrollableFrame(self.tab_extra)
@@ -1121,6 +1130,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             or self.chk_remove_empty_subtitles.get() == 1
             or self.chk_fix_misplaced_timecodes.get() == 1
             or self.chk_remove_duplicate_subtitles.get() == 1
+            or self.chk_fix_overlapping_timecodes.get() == 1
         ):
             self.chk_reformat_renumber.select()
         self.toggle_intro_credit_state()
@@ -1134,6 +1144,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             self.chk_remove_empty_subtitles.deselect()
             self.chk_fix_misplaced_timecodes.deselect()
             self.chk_remove_duplicate_subtitles.deselect()
+            self.chk_fix_overlapping_timecodes.deselect()
         self.toggle_intro_credit_state()
         self.save_config()
 
@@ -1415,15 +1426,20 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         else:
             self.chk_fix_misplaced_timecodes.deselect()
 
-        if config.get("remove_empty_subtitles", 1) == 1:
-            self.chk_remove_empty_subtitles.select()
-        else:
-            self.chk_remove_empty_subtitles.deselect()
-
         if config.get("remove_duplicate_subtitles", 1) == 1:
             self.chk_remove_duplicate_subtitles.select()
         else:
             self.chk_remove_duplicate_subtitles.deselect()
+
+        if config.get("fix_overlapping_timecodes", 1) == 1:
+            self.chk_fix_overlapping_timecodes.select()
+        else:
+            self.chk_fix_overlapping_timecodes.deselect()
+
+        if config.get("remove_empty_subtitles", 1) == 1:
+            self.chk_remove_empty_subtitles.select()
+        else:
+            self.chk_remove_empty_subtitles.deselect()
 
         if config.get("reformat_renumber", 1) == 1:
             self.chk_reformat_renumber.select()
@@ -1520,6 +1536,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             "remove_negative_timecodes": self.chk_remove_negative_timecodes.get(),
             "fix_misplaced_timecodes": self.chk_fix_misplaced_timecodes.get(),
             "remove_duplicate_subtitles": self.chk_remove_duplicate_subtitles.get(),
+            "fix_overlapping_timecodes": self.chk_fix_overlapping_timecodes.get(),
             "remove_empty_subtitles": self.chk_remove_empty_subtitles.get(),
             "reformat_renumber": self.chk_reformat_renumber.get(),
             "encode_utf8": self.chk_encode_utf8.get(),
@@ -1610,6 +1627,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         self.chk_remove_negative_timecodes.select()
         self.chk_fix_misplaced_timecodes.select()
         self.chk_remove_duplicate_subtitles.select()
+        self.chk_fix_overlapping_timecodes.select()
         self.chk_remove_empty_subtitles.select()
         self.chk_reformat_renumber.select()
         self.chk_encode_utf8.select()
@@ -1808,6 +1826,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             "remove_negative_timecodes": self.chk_remove_negative_timecodes.get(),
             "fix_misplaced_timecodes": self.chk_fix_misplaced_timecodes.get(),
             "remove_duplicate_subtitles": self.chk_remove_duplicate_subtitles.get(),
+            "fix_overlapping_timecodes": self.chk_fix_overlapping_timecodes.get(),
             "remove_empty_subtitles": self.chk_remove_empty_subtitles.get(),
             "reformat_renumber": self.chk_reformat_renumber.get(),
             "encode_utf8": self.chk_encode_utf8.get(),

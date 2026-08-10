@@ -130,6 +130,31 @@ def remove_duplicate_subtitles(blocks, logs_buffer, detailed_logs_enabled):
     return filtered_blocks
 
 
+def fix_overlapping_timecodes(blocks, logs_buffer, detailed_logs_enabled):
+    """Fixes timecode overlaps by adjusting the end time of the preceding block."""
+    for i in range(len(blocks) - 1):
+        current_block = blocks[i]
+        next_block = blocks[i + 1]
+
+        # Check if the end time of the current block overlaps with the start time of the next block
+        if current_block["end_ms"] >= next_block["start_ms"]:
+            old_end_str = current_block["end_str"]
+
+            # Adjust the end time to be 1 ms before the next block's start time
+            # Ensure we do not create negative durations by bounding it to the block's own start time
+            new_end_ms = max(current_block["start_ms"], next_block["start_ms"] - 1)
+
+            if current_block["end_ms"] != new_end_ms:
+                current_block["end_ms"] = new_end_ms
+                current_block["end_str"] = ms_to_timecode(new_end_ms)
+
+                if detailed_logs_enabled:
+                    logs_buffer.append(
+                        f'Timecode overlap fixed | Option: Fix Overlapping Timecodes | Block {current_block.get("index", "")} | Before: "{current_block["start_str"]} --> {old_end_str}" -> After: "{current_block["start_str"]} --> {current_block["end_str"]}"'
+                    )
+    return blocks
+
+
 def build_flexible_regex(word):
     """
     Creates a regex pattern that ignores spaces, dots, zero-width non-joiners (\u200c),
@@ -419,6 +444,7 @@ class SubtitleProcessor:
         opt_remove_negative_timecodes = self.options.get("remove_negative_timecodes", 1)
         opt_fix_misplaced_timecodes = self.options.get("fix_misplaced_timecodes", 1)
         opt_remove_duplicate_subtitles = self.options.get("remove_duplicate_subtitles", 1)
+        opt_fix_overlapping_timecodes = self.options.get("fix_overlapping_timecodes", 1)
         opt_remove_empty_subtitles = self.options.get("remove_empty_subtitles", 1)
         opt_add_intro_credit = self.options.get("add_intro_credit", 0)
         opt_reformat_renumber = self.options.get("reformat_renumber", 1)
@@ -1186,6 +1212,10 @@ class SubtitleProcessor:
                         blocks = remove_duplicate_subtitles(blocks, file_subtitle_logs, detailed_logs_enabled)
                         if len(blocks) != before_dup:
                             file_has_changes = True
+
+                    # Option: Fix Overlapping Timecodes
+                    if opt_fix_overlapping_timecodes:
+                        blocks = fix_overlapping_timecodes(blocks, file_subtitle_logs, detailed_logs_enabled)
 
                     # Option: Remove Empty Subtitles
                     if opt_remove_empty_subtitles:
