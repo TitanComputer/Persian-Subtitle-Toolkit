@@ -1860,7 +1860,9 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
 
     # The actual method handling single file selection and processing
     def start_single_process(self):
-        selected_files = filedialog.askopenfilenames(title="Select SRT Files", filetypes=[("Subtitle Files", "*.srt")])
+        selected_files = filedialog.askopenfilenames(
+            title="Select Subtitle Files", filetypes=[("Subtitle Files", "*.srt *.txt *.vtt *.ass")]
+        )
 
         if not selected_files:
             return
@@ -1945,18 +1947,21 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         invalid_files = []
 
         for path in paths:
-            if os.path.isfile(path) and path.lower().endswith(".srt"):
+            if os.path.isfile(path) and path.lower().endswith((".srt", ".txt", ".vtt", ".ass")):
                 valid_files.append(path)
             else:
                 invalid_files.append(path)
 
         if not valid_files:
-            messagebox.showerror("Invalid Drop", 'No valid SRT files were dropped.\nPlease drop only ".srt" files.')
+            messagebox.showerror(
+                "Invalid Drop",
+                'No valid subtitle files were dropped.\nPlease drop only ".srt", ".txt", ".vtt", or ".ass" files.',
+            )
             return
 
         if invalid_files:
             messagebox.showwarning(
-                "Warning", "Some dropped items were ignored.\nFolders or non-SRT file extensions are not supported."
+                "Warning", "Some dropped items were ignored.\nFolders or unsupported file extensions are not supported."
             )
 
         confirm = messagebox.askyesno(

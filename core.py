@@ -1,5 +1,4 @@
-from utils import *
-from rules import *
+from converter import *
 
 
 def _extract_required_literal(pattern):
@@ -398,8 +397,10 @@ class SubtitleProcessor:
 
     def run(self):
         # Determine files to process based on execution mode
+        valid_extensions = (".srt", ".txt", ".vtt", ".ass")
+
         if self.target_files:
-            srt_files_paths = self.target_files
+            srt_files_paths = [f for f in self.target_files if f.lower().endswith(valid_extensions)]
             if srt_files_paths:
                 Logger.log_process(
                     f"Single file process started. Found {len(srt_files_paths)} file(s).",
@@ -409,11 +410,14 @@ class SubtitleProcessor:
             if not self.folder_path or not os.path.isdir(self.folder_path):
                 return
             all_files = os.listdir(self.folder_path)
-            srt_files = [f for f in all_files if f.lower().endswith(".srt")]
-            if not srt_files:
-                Logger.log_process("No subtitle files (.srt) found to process.", self.folder_path)
+            srt_files_paths = [
+                os.path.join(self.folder_path, f) for f in all_files if f.lower().endswith(valid_extensions)
+            ]
+            if not srt_files_paths:
+                Logger.log_process(
+                    "No valid subtitle files (.srt, .txt, .vtt, .ass) found to process.", self.folder_path
+                )
                 return
-            srt_files_paths = [os.path.join(self.folder_path, f) for f in srt_files]
             Logger.log_process(f"Process started. Found {len(srt_files_paths)} file(s).", self.folder_path)
 
         # Cache ALL options to avoid thousands of dictionary lookups during line processing
@@ -495,15 +499,25 @@ class SubtitleProcessor:
 
             file_process_logs.append(f"Identified file: {filename}")
 
+            # Check and convert alternative formats before reading
+            actual_file_path, validation_success = process_and_convert_if_needed(
+                file_path, file_process_logs, file_subtitle_logs, detailed_logs_enabled
+            )
+
+            if not validation_success:
+                file_process_logs.append(f"Validation failed for unsupported or corrupted format: {filename}")
+                self.failed_count += 1
+                continue  # Skip processing for this invalid file
+
             try:
-                # Smart encoding reader. Tries multiple encodings to handle UTF-16, UTF-8, ANSI, etc.
+                # Smart encoding reader on actual_file_path instead of original file_path
                 encodings_to_try = ["utf-8", "utf-8-sig", "utf-16", "cp1256", "cp1252"]
                 file_encoding = "utf-8"
                 lines = []
 
                 for enc in encodings_to_try:
                     try:
-                        with open(file_path, "r", encoding=enc) as f:
+                        with open(actual_file_path, "r", encoding=enc) as f:  # Use actual_file_path here
                             lines = f.readlines()
                         file_encoding = enc
                         break
@@ -512,7 +526,9 @@ class SubtitleProcessor:
                 else:
                     # Fallback if all fail
                     file_encoding = "utf-8"
-                    with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                    with open(
+                        actual_file_path, "r", encoding="utf-8", errors="ignore"
+                    ) as f:  # Use actual_file_path here
                         lines = f.readlines()
 
                 file_process_logs.append(f"Identified encoding: {file_encoding}")
