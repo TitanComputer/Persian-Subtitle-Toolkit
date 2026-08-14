@@ -40,6 +40,7 @@ HTML_TAG_RE = re.compile(r"<[^>]+>")
 ZERO_WIDTH_RE = re.compile(r"[\u200b\u200c\u200d\ufeff]")
 NON_ASCII_RE = re.compile(r"[^\x00-\x7F]")
 MUSIC_SYMBOLS_RE = re.compile(r"[♪♬♫]")
+ALIGNMENT_TAG_RE = re.compile(r"\{\\[aA][nN][1-9]\}")
 
 ARABIC_CHAR_TRANS = str.maketrans(arabic_to_persian_chars)
 ARABIC_NUM_TRANS = str.maketrans(arabic_numerals)
@@ -425,6 +426,7 @@ class SubtitleProcessor:
         opt_remove_enabled = self.options.get("remove_enabled", 1)
         opt_replace_enabled = self.options.get("replace_enabled", 1)
 
+        opt_remove_alignment_tags = self.options.get("remove_alignment_tags", 1)
         opt_trim_spaces = self.options.get("trim_spaces", 1)
         opt_fix_misplaced_chars = self.options.get("fix_misplaced_chars", 1)
         opt_fix_abbreviations = self.options.get("fix_abbreviations", 1)
@@ -561,6 +563,23 @@ class SubtitleProcessor:
 
                     # Check if line is standard subtitle timecode or index number
                     is_timecode_or_index = bool(timecode_match(current_line) or index_match(current_line))
+
+                    # Apply Pre-Process Option: Remove Alignment Tags
+                    # Fast path guard: Check for '{' and 'an'/'AN'
+                    if opt_remove_alignment_tags and "{" in current_line and "an" in current_line.lower():
+                        before_align = current_line
+                        current_line = ALIGNMENT_TAG_RE.sub("", current_line)
+
+                        if current_line != before_align:
+                            file_has_changes = True
+                            _log_change(
+                                index,
+                                "Pre-Process Remove Alignment Tags",
+                                before_align,
+                                current_line,
+                                file_subtitle_logs,
+                                detailed_logs_enabled,
+                            )
 
                     # Apply Pre-Process Option: Trim Spaces
                     if opt_trim_spaces:
