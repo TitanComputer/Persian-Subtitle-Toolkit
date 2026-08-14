@@ -1531,8 +1531,10 @@ class SubtitleProcessor:
                     processed_lines = rtl_processed_lines
 
                 # Construct output file path structure
-                name_part, ext_part = os.path.splitext(filename)
-                output_filename = f"{name_part}_Edited{ext_part}"
+                name_part, _ = os.path.splitext(filename)
+
+                # Enforce SRT format for the output file, regardless of the input extension
+                output_filename = f"{name_part}_Edited.srt"
                 output_file_path = os.path.join(output_dir, output_filename)
 
                 # Use explicit UTF-8 if setting is enabled, otherwise use original detected encoding
