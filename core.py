@@ -1,7 +1,5 @@
 from utils import *
 from rules import *
-import os
-import time
 
 
 def _extract_required_literal(pattern):
@@ -1522,7 +1520,7 @@ class SubtitleProcessor:
                 output_file_path = os.path.join(output_dir, output_filename)
 
                 # Use explicit UTF-8 if setting is enabled, otherwise use original detected encoding
-                out_encoding = "utf-8" if opt_encode_utf8 else file_encoding
+                out_encoding = "utf-8-sig" if opt_encode_utf8 else file_encoding
 
                 with open(output_file_path, "w", encoding=out_encoding) as f:
                     f.writelines(processed_lines)
