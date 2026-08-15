@@ -583,7 +583,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
 
         # Main Tabview Structure
         self.tabview = ctk.CTkTabview(self.middle_container)
-        self.tabview.grid(row=0, column=0, padx=5, pady=0, sticky="nsew")
+        self.tabview.grid(row=0, column=0, padx=5, pady=(0, 10), sticky="nsew")
         self.tabview.configure(command=self.on_tab_changed)
 
         # Add designated tabs first
