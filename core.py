@@ -892,19 +892,57 @@ class SubtitleProcessor:
                                 line_ending = "\n"
                                 temp_line = temp_line[:-1]
 
-                            # Detect leading HTML tags and common punctuation marks
-                            html_prefix_match = re.match(r"((?:<[^<>]+>)*[\s\.\-]*)", temp_line)
+                            # Detect leading HTML tags and common punctuation marks including RTL/LTR control marks
+                            html_prefix_match = re.match(
+                                r"^((?:<[^<>]+>|[\u200e\u200f\u202a-\u202e\u2066-\u2069\u061c\ufeff\u200b]|[\s\.\-–—])*)",
+                                temp_line,
+                            )
                             html_prefix = html_prefix_match.group(1) if html_prefix_match else ""
+                            remainder = temp_line[len(html_prefix) :]
 
-                            content_after_html = temp_line[len(html_prefix) :]
+                            # Detect trailing HTML tags, spaces, and RTL/LTR control marks
+                            html_suffix_match = re.search(
+                                r"((?:<[^<>]+>|[\u200e\u200f\u202a-\u202e\u2066-\u2069\u061c\ufeff\u200b]|\s)+)$",
+                                remainder,
+                            )
+                            if html_suffix_match:
+                                html_suffix = html_suffix_match.group(1)
+                                content_after_html = remainder[: -len(html_suffix)]
+                            else:
+                                html_suffix = ""
+                                content_after_html = remainder
 
-                            # Case 1: Normal line starts with quote
-                            if content_after_html.startswith('"') and not content_after_html.endswith('"'):
-                                temp_line = html_prefix + content_after_html[1:] + '"' + line_ending
+                            if content_after_html.count('"') == 2:
+                                q1_idx = content_after_html.find('"')
+                                q2_idx = content_after_html.rfind('"')
 
-                            # Case 2: Opening quote is misplaced at end of text while line starts with HTML tags
-                            elif not content_after_html.startswith('"') and content_after_html.endswith('"'):
-                                temp_line = html_prefix + '"' + content_after_html[:-1] + line_ending
+                                # Case 1: Misplaced closing quote pushed to the beginning of line in RTL text
+                                # When line starts with a quote and the second quote is an opening quote (preceded by space/punctuation)
+                                if q1_idx == 0 and q2_idx < len(content_after_html) - 1:
+                                    prev_char = content_after_html[q2_idx - 1] if q2_idx > 0 else ""
+                                    next_char = (
+                                        content_after_html[q2_idx + 1] if q2_idx + 1 < len(content_after_html) else ""
+                                    )
+                                    if (
+                                        prev_char in " \t\u200c\u200e\u200f([{'«،,;:.!?-–—"
+                                        and next_char not in " \t\r\n"
+                                    ):
+                                        content_after_html = content_after_html[1:] + '"'
+
+                                # Case 2: Opening quote is misplaced at end of text while line starts with HTML tags or text
+                                # When line ends with a quote and the first quote is a closing quote (followed by space/punctuation)
+                                elif q2_idx == len(content_after_html) - 1 and q1_idx > 0:
+                                    prev_char = content_after_html[q1_idx - 1] if q1_idx > 0 else ""
+                                    next_char = (
+                                        content_after_html[q1_idx + 1] if q1_idx + 1 < len(content_after_html) else ""
+                                    )
+                                    if prev_char not in " \t\r\n" and (
+                                        next_char in " \t\u200c\u200e\u200f)]}'»،,;:.!?-–—"
+                                        or q1_idx + 1 == len(content_after_html)
+                                    ):
+                                        content_after_html = '"' + content_after_html[:-1]
+
+                            temp_line = html_prefix + content_after_html + html_suffix + line_ending
 
                         # Handle unbalanced double quotes (odd number of quotes)
                         if temp_line.count('"') % 2 != 0:
