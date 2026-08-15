@@ -480,7 +480,8 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         # Grid Configuration for main window
         self.grid_rowconfigure(0, weight=0)  # Top row (fixed height)
         self.grid_rowconfigure(1, weight=1)  # Middle empty frame (expandable)
-        self.grid_rowconfigure(2, weight=0)  # Bottom row (fixed height)
+        self.grid_rowconfigure(2, weight=0)  # Progress row (fixed height)
+        self.grid_rowconfigure(3, weight=0)  # Bottom row (fixed height)
 
         self.grid_columnconfigure(0, weight=1)
         self.create_widget()
@@ -509,6 +510,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             scale = max(1.0, min(1.3, current_width / base_width))
 
             # Update all custom dynamic CTkFont objects
+            self.btn_font_13.configure(size=int(13 * scale))
             self.btn_font_14.configure(size=int(14 * scale))
             self.btn_font_15.configure(size=int(15 * scale))
             self.btn_font_16.configure(size=int(16 * scale))
@@ -522,6 +524,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         font_bold = ctk.CTkFont(size=14, weight="bold")
 
         # Base fonts for dynamic resizing mechanism for buttons
+        self.btn_font_13 = ctk.CTkFont(size=13, weight="bold")
         self.btn_font_14 = ctk.CTkFont(size=14, weight="bold")
         self.btn_font_15 = ctk.CTkFont(size=15, weight="bold")
         self.btn_font_16 = ctk.CTkFont(size=16, weight="bold")
@@ -987,9 +990,30 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.chk_enable_dnd.grid(row=2, column=0, padx=5, pady=5, sticky="w")
 
-        # --- Bottom Container (Row 2) ---
+        # --- Progress Container (Row 2) ---
+        self.progress_container = ctk.CTkFrame(self, fg_color="transparent")
+        self.progress_container.grid(row=2, column=0, padx=10, pady=0, sticky="nsew")
+
+        self.progress_container.grid_columnconfigure(0, weight=9)
+        self.progress_container.grid_columnconfigure(1, weight=1)
+        self.progress_container.grid_rowconfigure(0, weight=1)
+
+        self.progress_bar = ctk.CTkProgressBar(self.progress_container, height=12)
+        self.progress_bar.grid(row=0, column=0, padx=(5, 10), pady=5, sticky="ew")
+        self.progress_bar.set(0)
+
+        self.progress_status_var = tk.StringVar(value="Ready to Go")
+
+        self.progress_status_label = ctk.CTkLabel(
+            self.progress_container,
+            textvariable=self.progress_status_var,
+            font=self.btn_font_14,
+        )
+        self.progress_status_label.grid(row=0, column=1, padx=0, pady=5, sticky="ew")
+
+        # --- Bottom Container (Row 3) ---
         self.bottom_container = ctk.CTkFrame(self, fg_color="transparent")
-        self.bottom_container.grid(row=2, column=0, padx=10, pady=(0, 10), sticky="nsew")
+        self.bottom_container.grid(row=3, column=0, padx=10, pady=(0, 10), sticky="nsew")
 
         # Adjusted columns to fit the new button properly via Grid
         self.bottom_container.grid_columnconfigure(0, weight=3)
@@ -1082,6 +1106,46 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             command=self._reset_settings,
         )
         self.reset_button.grid(row=0, column=5, padx=(5, 0), pady=5, sticky="ew")
+
+    def reset_progress_ui(self):
+        self.progress_bar.stop()
+        self.progress_bar.configure(mode="determinate")
+        self.progress_bar.set(0)
+        self.progress_status_var.set("Ready to Go")
+
+    def start_convert_progress(self):
+        self.after(0, self._start_convert_progress_ui)
+
+    def _start_convert_progress_ui(self):
+        self.progress_bar.configure(mode="indeterminate")
+        self.progress_status_var.set("Converting Subtitles...")
+        self.progress_bar.start()
+
+    def start_processing_progress(self):
+        self.after(0, self._start_processing_progress_ui)
+
+    def _start_processing_progress_ui(self):
+        self.progress_bar.stop()
+        self.progress_bar.configure(mode="determinate")
+        self.progress_bar.set(0)
+
+    def update_processing_progress(self, percent):
+        self.after(0, lambda p=percent: self._update_processing_progress_ui(p))
+
+    def _update_processing_progress_ui(self, percent):
+        value = max(0.0, min(100.0, percent))
+
+        self.progress_bar.set(value / 100.0)
+        self.progress_status_var.set(f"Processing {value:.1f}%")
+
+    def complete_progress(self):
+        self.after(0, self._complete_progress_ui)
+
+    def _complete_progress_ui(self):
+        self.progress_bar.stop()
+        self.progress_bar.configure(mode="determinate")
+        self.progress_bar.set(1)
+        self.progress_status_var.set("100% Completed")
 
     # --- Feature Dependency Methods ---
     def on_preprocess_dependency_toggle(self):
@@ -1797,7 +1861,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
                     "Process Completed",
                     summary_message,
                 )
-
+            self.after(250, self.reset_progress_ui)
             self.attributes("-disabled", False)
             self.lift()
             self.focus_force()
@@ -1861,13 +1925,21 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             return
 
         self.attributes("-disabled", True)
+        self.reset_progress_ui()
 
         # Save settings on triggering task execution
         self.save_config()
 
         run_options = self._get_run_options()
 
-        processor = SubtitleProcessor(current_path, options=run_options)
+        processor = SubtitleProcessor(
+            current_path,
+            options=run_options,
+            progress_callback=self.update_processing_progress,
+            convert_start_callback=self.start_convert_progress,
+            process_start_callback=self.start_processing_progress,
+            complete_callback=self.complete_progress,
+        )
         self._run_processing_pipeline(processor, is_single_file=False)
 
     # Adding thread logic for processing single files smoothly without freezing the UI
@@ -1892,12 +1964,21 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             return
 
         self.attributes("-disabled", True)
+        self.reset_progress_ui()
         self.save_config()
 
         run_options = self._get_run_options()
 
         # Empty string for folder path, passing target_files explicitly
-        processor = SubtitleProcessor("", options=run_options, target_files=selected_files)
+        processor = SubtitleProcessor(
+            "",
+            options=run_options,
+            target_files=selected_files,
+            progress_callback=self.update_processing_progress,
+            convert_start_callback=self.start_convert_progress,
+            process_start_callback=self.start_processing_progress,
+            complete_callback=self.complete_progress,
+        )
         self._run_processing_pipeline(processor, is_single_file=True)
 
     # Drag and Drop event handler logic for dropped folders
@@ -1944,8 +2025,16 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         self.save_config()
 
         run_options = self._get_run_options()
+        self.reset_progress_ui()
         # Initialize SubtitleProcessor with the dropped folder instead of the UI folder
-        processor = SubtitleProcessor(folder_to_process, options=run_options)
+        processor = SubtitleProcessor(
+            folder_to_process,
+            options=run_options,
+            progress_callback=self.update_processing_progress,
+            convert_start_callback=self.start_convert_progress,
+            process_start_callback=self.start_processing_progress,
+            complete_callback=self.complete_progress,
+        )
 
         # Execute using a background thread so it doesn't freeze the UI
         threading.Thread(target=self._run_processing_pipeline, args=(processor, False), daemon=True).start()
@@ -1992,7 +2081,16 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         self.save_config()
 
         run_options = self._get_run_options()
-        processor = SubtitleProcessor("", options=run_options, target_files=valid_files)
+        self.reset_progress_ui()
+        processor = SubtitleProcessor(
+            "",
+            options=run_options,
+            target_files=valid_files,
+            progress_callback=self.update_processing_progress,
+            convert_start_callback=self.start_convert_progress,
+            process_start_callback=self.start_processing_progress,
+            complete_callback=self.complete_progress,
+        )
 
         # Wrapping in a background thread to prevent UI freezing just like start_single_process_threaded
         threading.Thread(target=self._run_processing_pipeline, args=(processor, True), daemon=True).start()

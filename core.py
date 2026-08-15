@@ -387,14 +387,72 @@ def fix_trailing_dialog_hyphens(blocks):
 
 class SubtitleProcessor:
     # Added target_files to handle single file process mode
-    def __init__(self, folder_path, options=None, target_files=None):
+    def __init__(
+        self,
+        folder_path,
+        options=None,
+        target_files=None,
+        progress_callback=None,
+        convert_start_callback=None,
+        process_start_callback=None,
+        complete_callback=None,
+    ):
         self.folder_path = folder_path
         self.options = options if options else {}
         self.target_files = target_files
+
+        self.progress_callback = progress_callback
+        self.convert_start_callback = convert_start_callback
+        self.process_start_callback = process_start_callback
+        self.complete_callback = complete_callback
+
         self.successful_count = 0
         self.failed_count = 0
         self.total_lines_processed = 0
         self.elapsed_time = 0
+
+        self.total_input_lines = 0
+        self.last_progress_reported = -1
+
+    def _report_convert_start(self):
+        if self.convert_start_callback:
+            try:
+                self.convert_start_callback()
+            except Exception:
+                pass
+
+    def _report_process_start(self):
+        if self.process_start_callback:
+            try:
+                self.process_start_callback()
+            except Exception:
+                pass
+
+    def _report_progress(self):
+        if not self.progress_callback:
+            return
+
+        if self.total_input_lines <= 0:
+            return
+
+        percent = (self.total_lines_processed / self.total_input_lines) * 100
+
+        if percent == self.last_progress_reported:
+            return
+
+        self.last_progress_reported = percent
+
+        try:
+            self.progress_callback(percent)
+        except Exception:
+            pass
+
+    def _report_complete(self):
+        if self.complete_callback:
+            try:
+                self.complete_callback()
+            except Exception:
+                pass
 
     def run(self):
         # Determine files to process based on execution mode
@@ -487,6 +545,31 @@ class SubtitleProcessor:
                 replace_regexes.append((w, regex))
 
         start_time = time.time()
+        self._report_convert_start()
+        converted_files = []
+
+        for file_path in srt_files_paths:
+
+            actual_file_path, validation_success = process_and_convert_if_needed(
+                file_path,
+                TimestampedLogBuffer(),
+                TimestampedLogBuffer(),
+                False,
+            )
+
+            if validation_success:
+                converted_files.append(actual_file_path)
+
+        self.total_input_lines = 0
+
+        for converted_file in converted_files:
+            try:
+                with open(converted_file, "r", encoding="utf-8", errors="ignore") as f:
+                    self.total_input_lines += sum(1 for _ in f)
+            except Exception:
+                pass
+
+        self._report_process_start()
         for file_path in srt_files_paths:
             filename = os.path.basename(file_path)
             current_file_dir = os.path.dirname(file_path)
@@ -508,6 +591,7 @@ class SubtitleProcessor:
 
             if not validation_success:
                 file_process_logs.append(f"Validation failed for unsupported or corrupted format: {filename}")
+                self._report_progress()
                 self.failed_count += 1
                 continue  # Skip processing for this invalid file
 
@@ -551,6 +635,8 @@ class SubtitleProcessor:
 
                 for index, line in enumerate(lines, start=1):
                     self.total_lines_processed += 1
+                    if (self.total_lines_processed % 250) == 0:
+                        self._report_progress()
 
                     # Skip all processing if the line is not a subtitle text (e.g., timecodes, indexes, empty lines)
                     if index not in valid_text_indices:
@@ -1573,9 +1659,11 @@ class SubtitleProcessor:
 
                 # Increment successful tracking counter
                 self.successful_count += 1
+                self._report_progress()
 
             except Exception as e:
                 file_process_logs.append(f"Failed to process file {filename} due to: {str(e)}")
+                self._report_progress()
                 # Increment failed tracking counter
                 self.failed_count += 1
 
@@ -1610,7 +1698,11 @@ class SubtitleProcessor:
                                 f.write(f"[{timestamp}] {message}\n")
                     except Exception as e:
                         print(f"Subtitle detailed logging failed: {e}")
+        if self.total_input_lines > 0:
+            self.total_lines_processed = self.total_input_lines
 
+        self._report_progress()
+        self._report_complete()
         self.elapsed_time = time.time() - start_time
 
         if self.target_files:
