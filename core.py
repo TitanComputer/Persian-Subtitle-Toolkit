@@ -913,34 +913,45 @@ class SubtitleProcessor:
                                 content_after_html = remainder
 
                             if content_after_html.count('"') == 2:
-                                q1_idx = content_after_html.find('"')
-                                q2_idx = content_after_html.rfind('"')
+                                # Case 1: Both quotes are clustered at the start (""Text -> "Text")
+                                if content_after_html.startswith('""'):
+                                    content_after_html = '"' + content_after_html[2:] + '"'
 
-                                # Case 1: Misplaced closing quote pushed to the beginning of line in RTL text
-                                # When line starts with a quote and the second quote is an opening quote (preceded by space/punctuation)
-                                if q1_idx == 0 and q2_idx < len(content_after_html) - 1:
-                                    prev_char = content_after_html[q2_idx - 1] if q2_idx > 0 else ""
-                                    next_char = (
-                                        content_after_html[q2_idx + 1] if q2_idx + 1 < len(content_after_html) else ""
-                                    )
-                                    if (
-                                        prev_char in " \t\u200c\u200e\u200f([{'«،,;:.!?-–—"
-                                        and next_char not in " \t\r\n"
-                                    ):
-                                        content_after_html = content_after_html[1:] + '"'
+                                # Case 2: Both quotes are clustered at the end (Text"" -> "Text")
+                                elif content_after_html.endswith('""'):
+                                    content_after_html = '"' + content_after_html[:-2] + '"'
 
-                                # Case 2: Opening quote is misplaced at end of text while line starts with HTML tags or text
-                                # When line ends with a quote and the first quote is a closing quote (followed by space/punctuation)
-                                elif q2_idx == len(content_after_html) - 1 and q1_idx > 0:
-                                    prev_char = content_after_html[q1_idx - 1] if q1_idx > 0 else ""
-                                    next_char = (
-                                        content_after_html[q1_idx + 1] if q1_idx + 1 < len(content_after_html) else ""
-                                    )
-                                    if prev_char not in " \t\r\n" and (
-                                        next_char in " \t\u200c\u200e\u200f)]}'»،,;:.!?-–—"
-                                        or q1_idx + 1 == len(content_after_html)
-                                    ):
-                                        content_after_html = '"' + content_after_html[:-1]
+                                else:
+                                    q1_idx = content_after_html.find('"')
+                                    q2_idx = content_after_html.rfind('"')
+
+                                    # Case 3: Misplaced closing quote pushed to the beginning of line in RTL text
+                                    if q1_idx == 0 and q2_idx < len(content_after_html) - 1:
+                                        prev_char = content_after_html[q2_idx - 1] if q2_idx > 0 else ""
+                                        next_char = (
+                                            content_after_html[q2_idx + 1]
+                                            if q2_idx + 1 < len(content_after_html)
+                                            else ""
+                                        )
+                                        if (
+                                            prev_char in " \t\u200c\u200e\u200f([{'«،,;:.!?-–—"
+                                            and next_char not in " \t\r\n"
+                                        ):
+                                            content_after_html = content_after_html[1:] + '"'
+
+                                    # Case 4: Opening quote is misplaced at end of text while line starts with HTML tags or text
+                                    elif q2_idx == len(content_after_html) - 1 and q1_idx > 0:
+                                        prev_char = content_after_html[q1_idx - 1] if q1_idx > 0 else ""
+                                        next_char = (
+                                            content_after_html[q1_idx + 1]
+                                            if q1_idx + 1 < len(content_after_html)
+                                            else ""
+                                        )
+                                        if prev_char not in " \t\r\n" and (
+                                            next_char in " \t\u200c\u200e\u200f)]}'»،,;:.!?-–—"
+                                            or q1_idx + 1 == len(content_after_html)
+                                        ):
+                                            content_after_html = '"' + content_after_html[:-1]
 
                             temp_line = html_prefix + content_after_html + html_suffix + line_ending
 
