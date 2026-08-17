@@ -270,6 +270,10 @@ abbreviation_rules = [
 # Structure of rule lists for formatting processing parsed exactly from XML files
 comma_rules_list = [
     (re.compile(r","), "،", True),
+    # Move leading comma(s) (with optional formatting/HTML) to the end of the first line
+    (re.compile(r"^([\u202A-\u202E\u200E\u200F]*(?:\<[^<>]+\>)*)،+\s*([^\r\n]+)"), r"\1\2،", True),
+    # Move leading comma(s) (with optional formatting/HTML) to the end of subsequent lines
+    (re.compile(r"(\n)([\u202A-\u202E\u200E\u200F]*(?:\<[^<>]+\>)*)،+\s*([^\r\n]+)"), r"\1\2\3،", True),
     (" ، ", "، ", False),
     (" ،", "،", False),
     (re.compile(r"^،(?=[\u200E\u200F]*[\u0600-\u06FF])"), "", True),
