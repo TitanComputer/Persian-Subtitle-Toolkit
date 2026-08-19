@@ -1097,7 +1097,7 @@ class SubtitleProcessor:
                             )
 
                     # 1. Convert Arabic Characters to Persian
-                    if opt_arabic_char_to_persian:
+                    if opt_arabic_char_to_persian and any(c in current_line for c in "يكةؤإأ"):
                         before_char = current_line
                         current_line = current_line.translate(ARABIC_CHAR_TRANS)
                         if current_line != before_char:
@@ -1112,7 +1112,7 @@ class SubtitleProcessor:
                             )
 
                     # 2. Convert Arabic Numerals to Persian Numerals
-                    if opt_arabic_num_to_persian:
+                    if opt_arabic_num_to_persian and any(c in current_line for c in "٠١٢٣٤٥٦٧٨٩"):
                         before_anum = current_line
                         current_line = current_line.translate(ARABIC_NUM_TRANS)
                         if current_line != before_anum:
@@ -1127,7 +1127,7 @@ class SubtitleProcessor:
                             )
 
                     # 3. Convert English Numerals to Persian Numerals conditionally
-                    if opt_english_num_to_persian:
+                    if opt_english_num_to_persian and any(c in current_line for c in "1234567890"):
                         # Skip lines that are just whitespace or empty
                         if not current_line.strip():
                             continue
@@ -1144,19 +1144,19 @@ class SubtitleProcessor:
                             end = match.end()
                             text = match.string
 
-                            # Expand left boundary
+                            # Expand left boundary across alphanumeric and common identifier/date delimiters
                             left = start
-                            while left > 0 and re.match(r"[A-Za-z0-9@._\-+]", text[left - 1]):
+                            while left > 0 and re.match(r"[A-Za-z0-9@._\-+/\\:]", text[left - 1]):
                                 left -= 1
 
-                            # Expand right boundary
+                            # Expand right boundary across alphanumeric and common identifier/date delimiters
                             right = end
-                            while right < len(text) and re.match(r"[A-Za-z0-9@._\-+]", text[right]):
+                            while right < len(text) and re.match(r"[A-Za-z0-9@._\-+/\\:]", text[right]):
                                 right += 1
 
                             token = text[left:right]
 
-                            # Skip emails, usernames, identifiers, filenames and mixed English tokens
+                            # Skip emails, usernames, identifiers, filenames, dates with English month names, and mixed English tokens
                             if re.search(r"[A-Za-z]", token):
                                 return match.group(0)
 
@@ -1213,7 +1213,7 @@ class SubtitleProcessor:
                             )
 
                     # 5. Fix Common Hexre Typo Errors conditionally
-                    if opt_hexre_fixes:
+                    if opt_hexre_fixes and any(c in current_line for c in "ههٔهٕ"):
                         before_hexre = current_line
                         temp_line = current_line
 
