@@ -990,6 +990,20 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.chk_enable_dnd.grid(row=2, column=0, padx=5, pady=5, sticky="w")
 
+        self.chk_convert_ass_comments = ctk.CTkCheckBox(
+            extra_parent,
+            text="Convert Comment lines in ASS subtitles (Disabled: only Dialogue lines are converted)",
+            font=font_bold,
+        )
+        self.chk_convert_ass_comments.grid(row=3, column=0, padx=5, pady=5, sticky="w")
+
+        self.chk_delete_converted_temp_files = ctk.CTkCheckBox(
+            extra_parent,
+            text="Delete temporary SRT files created from non-SRT subtitles after processing",
+            font=font_bold,
+        )
+        self.chk_delete_converted_temp_files.grid(row=4, column=0, padx=5, pady=5, sticky="w")
+
         # --- Progress Container (Row 2) ---
         self.progress_container = ctk.CTkFrame(self, fg_color="transparent")
         self.progress_container.grid(row=2, column=0, padx=10, pady=0, sticky="nsew")
@@ -1544,6 +1558,16 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         else:
             self.chk_enable_dnd.deselect()
 
+        if config.get("convert_ass_comments", 0) == 1:
+            self.chk_convert_ass_comments.select()
+        else:
+            self.chk_convert_ass_comments.deselect()
+
+        if config.get("delete_converted_temp_files", 0) == 1:
+            self.chk_delete_converted_temp_files.select()
+        else:
+            self.chk_delete_converted_temp_files.deselect()
+
         self.toggle_intro_credit_state()
 
         # 5. Final Logs
@@ -1621,6 +1645,8 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             "delete_original": self.chk_delete_original.get(),
             "detailed_subtitle_logs": self.chk_detailed_logs.get(),
             "enable_dnd": self.chk_enable_dnd.get(),
+            "convert_ass_comments": self.chk_convert_ass_comments.get(),
+            "delete_converted_temp_files": self.chk_delete_converted_temp_files.get(),
         }
         self.config_manager.save(config_data)
         self.write_log("Config saved.")
@@ -1714,6 +1740,8 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         self.chk_detailed_logs.select()
 
         self.chk_enable_dnd.select()
+        self.chk_convert_ass_comments.deselect()
+        self.chk_delete_converted_temp_files.deselect()
 
         self.toggle_intro_credit_state()
 
@@ -1913,6 +1941,8 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             "delete_original": self.chk_delete_original.get(),
             "detailed_subtitle_logs": self.chk_detailed_logs.get(),
             "enable_dnd": self.chk_enable_dnd.get(),
+            "convert_ass_comments": self.chk_convert_ass_comments.get(),
+            "delete_converted_temp_files": self.chk_delete_converted_temp_files.get(),
         }
 
     def start_process_threaded(self):

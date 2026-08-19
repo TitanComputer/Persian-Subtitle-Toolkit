@@ -518,6 +518,8 @@ class SubtitleProcessor:
         opt_encode_utf8 = self.options.get("encode_utf8", 1)
         opt_delete_original = self.options.get("delete_original", 0)
         detailed_logs_enabled = self.options.get("detailed_subtitle_logs", 1)
+        opt_convert_ass_comments = self.options.get("convert_ass_comments", 0)
+        opt_delete_converted_temp_files = self.options.get("delete_converted_temp_files", 0)
 
         # Extract Process configuration variables
         bypass_list = [w.strip() for w in self.options.get("bypass_list", "").split("\n") if w.strip()]
@@ -555,6 +557,7 @@ class SubtitleProcessor:
                 TimestampedLogBuffer(),
                 TimestampedLogBuffer(),
                 False,
+                opt_convert_ass_comments,
             )
 
             if validation_success:
@@ -581,13 +584,21 @@ class SubtitleProcessor:
             file_process_logs = TimestampedLogBuffer()
             file_subtitle_logs = TimestampedLogBuffer()
             file_has_changes = False
+            actual_file_path = file_path
+            converted_temp_file = False
 
             file_process_logs.append(f"Identified file: {filename}")
 
             # Check and convert alternative formats before reading
             actual_file_path, validation_success = process_and_convert_if_needed(
-                file_path, file_process_logs, file_subtitle_logs, detailed_logs_enabled
+                file_path,
+                file_process_logs,
+                file_subtitle_logs,
+                detailed_logs_enabled,
+                opt_convert_ass_comments,
             )
+
+            converted_temp_file = validation_success and actual_file_path != file_path
 
             if not validation_success:
                 file_process_logs.append(f"Validation failed for unsupported or corrupted format: {filename}")
@@ -1717,6 +1728,17 @@ class SubtitleProcessor:
                 self.failed_count += 1
 
             finally:
+                if opt_delete_converted_temp_files and converted_temp_file and os.path.isfile(actual_file_path):
+                    try:
+                        os.remove(actual_file_path)
+                        file_process_logs.append(
+                            f"Temporary converted SRT file deleted by request: {os.path.basename(actual_file_path)}"
+                        )
+                    except Exception as e:
+                        file_process_logs.append(
+                            f"Failed to delete temporary converted SRT file {os.path.basename(actual_file_path)}: {str(e)}"
+                        )
+
                 # Flush timestamped process logs while preserving the timestamp captured at append time
                 if file_process_logs and current_file_dir and os.path.isdir(current_file_dir):
                     process_log_dir = os.path.join(current_file_dir, "Logs")

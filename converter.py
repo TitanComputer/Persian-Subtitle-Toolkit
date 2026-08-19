@@ -107,7 +107,9 @@ def convert_vtt_to_srt(file_path, output_path, process_logs, subtitle_logs, deta
     return True
 
 
-def convert_ass_to_srt(file_path, output_path, process_logs, subtitle_logs, detailed_logs_enabled):
+def convert_ass_to_srt(
+    file_path, output_path, process_logs, subtitle_logs, detailed_logs_enabled, include_comments=False
+):
     """
     Validates and converts an ASS subtitle file to SRT format.
     Extracts Dialogue and Comment lines, reformats timecodes, removes style brackets {}, and handles duplicate skip.
@@ -130,7 +132,7 @@ def convert_ass_to_srt(file_path, output_path, process_logs, subtitle_logs, deta
             events_started = True
             continue
 
-        if events_started and (line.startswith("Dialogue:") or line.startswith("Comment:")):
+        if events_started and (line.startswith("Dialogue:") or (include_comments and line.startswith("Comment:"))):
             parts = line.split(":", 1)
             if len(parts) < 2:
                 continue
@@ -186,7 +188,9 @@ def convert_ass_to_srt(file_path, output_path, process_logs, subtitle_logs, deta
     return True
 
 
-def process_and_convert_if_needed(file_path, process_logs, subtitle_logs, detailed_logs_enabled):
+def process_and_convert_if_needed(
+    file_path, process_logs, subtitle_logs, detailed_logs_enabled, include_ass_comments=False
+):
     """
     Checks the file extension. If it is an alternative supported format (TXT, VTT, ASS),
     validates and converts it to SRT before standard processing begins.
@@ -207,7 +211,9 @@ def process_and_convert_if_needed(file_path, process_logs, subtitle_logs, detail
     elif ext == ".vtt":
         success = convert_vtt_to_srt(file_path, output_path, process_logs, subtitle_logs, detailed_logs_enabled)
     elif ext == ".ass":
-        success = convert_ass_to_srt(file_path, output_path, process_logs, subtitle_logs, detailed_logs_enabled)
+        success = convert_ass_to_srt(
+            file_path, output_path, process_logs, subtitle_logs, detailed_logs_enabled, include_ass_comments
+        )
 
     if success:
         return output_path, True

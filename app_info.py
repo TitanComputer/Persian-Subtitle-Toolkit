@@ -1,7 +1,7 @@
 import os
 import sys
 
-APP_VERSION = "0.24.7"
+APP_VERSION = "0.25.0"
 APP_NAME = "Persian Subtitle Toolkit"
 CONFIG_FILENAME = "config.json"
 
@@ -57,6 +57,8 @@ DEFAULT_CONFIG = {
     "delete_original": 0,
     "detailed_subtitle_logs": 1,
     "enable_dnd": 1,
+    "convert_ass_comments": 0,
+    "delete_converted_temp_files": 0,
 }
 
 # Determine configuration directory based on OS
