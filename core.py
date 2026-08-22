@@ -1171,6 +1171,16 @@ class SubtitleProcessor:
                             if re.search(r"[A-Za-z]", token):
                                 return match.group(0)
 
+                            # Check preceding context across whitespace/delimiters for English terms (e.g., "Init 5", "Windows 11", "Part 2")
+                            preceding_text = text[:start].rstrip(" \t._-/:")
+                            if re.search(r"[A-Za-z]+$", preceding_text):
+                                return match.group(0)
+
+                            # Check following context across whitespace/delimiters for English terms (e.g., "5 GHz", "5 MB", "5 Star")
+                            following_text = text[end:].lstrip(" \t._-/:")
+                            if re.search(r"^[A-Za-z]+", following_text):
+                                return match.group(0)
+
                             return "".join(english_numerals.get(char, char) for char in match.group(0))
 
                         # Split text by HTML tags to preserve numbers inside tags
