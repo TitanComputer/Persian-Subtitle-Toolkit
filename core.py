@@ -1553,6 +1553,8 @@ class SubtitleProcessor:
                         "[",
                         "{",
                         "<",
+                        "✦",
+                        "✨",
                     )
                     end_symbols = (
                         ".",
@@ -1577,6 +1579,8 @@ class SubtitleProcessor:
                         "]",
                         "}",
                         ">",
+                        "✦",
+                        "✨",
                     )
 
                     for index, line in enumerate(processed_lines, start=1):
@@ -1639,18 +1643,44 @@ class SubtitleProcessor:
 
                                         has_symbol_start = text_no_tags.startswith(start_symbols)
                                         has_symbol_end = text_no_tags.endswith(end_symbols)
-                                        # Detect English letters, ASCII digits, Persian digits and Arabic digits
-                                        has_english_or_digits = bool(
-                                            re.search(r"[a-zA-Z0-9\u06F0-\u06F9\u0660-\u0669]", text_no_tags)
+
+                                        # Detect if line starts with English letters or digits (to prevent forcing RTL on visually-encoded LTR lines)
+                                        starts_with_english_or_digits = bool(
+                                            re.match(r"^[a-zA-Z0-9\u06F0-\u06F9\u0660-\u0669]", text_no_tags)
                                         )
                                         rtl_line = line_stripped
+
+                                        # Protect English phrases with LRM (\u200e) markers to strictly lock their internal LTR order
+                                        if re.search(r"[a-zA-Z]", rtl_line):
+                                            parts = re.split(r"(<[^>]+>)", rtl_line)
+
+                                            # Regex with conditional matching to include paired punctuation (e.g. (), [], "")
+                                            # If the English text is enclosed in brackets, they will be wrapped inside the LRM lock together
+                                            eng_pattern = re.compile(
+                                                r"(?<![a-zA-Z\d])"
+                                                r"(?:(\()|(\[)|(\{)|(<)|(\")|(')|(«))?"
+                                                r"([a-zA-Z\d@._\-+\'#]*[a-zA-Z][a-zA-Z\d@._\-+\'#]*(?:\s+[a-zA-Z\d@._\-+\'#]+)*)"
+                                                r"(?(1)\))(?(2)\])(?(3)\})(?(4)>)(?(5)\")(?(6)')(?(7)»)"
+                                                r"(?![a-zA-Z\d])"
+                                            )
+
+                                            def apply_lrm(match):
+                                                # match.group(0) captures the entire valid block, including matching parentheses if present
+                                                text = match.group(0)
+                                                text = text.replace(" ", "\u200e \u200e")
+                                                return "\u200e" + text + "\u200e"
+
+                                            for i in range(len(parts)):
+                                                if not parts[i].startswith("<"):
+                                                    parts[i] = eng_pattern.sub(apply_lrm, parts[i])
+                                            rtl_line = "".join(parts)
 
                                         # Use RLE (\u202b) and PDF (\u202c) to strictly enforce RTL direction
                                         # This forces the internal bidi algorithm to treat English words and digits as embedded inside an RTL context
                                         if (
                                             has_symbol_start
                                             or has_symbol_end
-                                            or has_english_or_digits
+                                            or starts_with_english_or_digits
                                             or has_music_symbol
                                         ):
                                             # Place Bidi markers inside HTML tags to prevent rendering issues in players
