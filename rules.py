@@ -870,6 +870,30 @@ misplaced_chars_comment_pattern = re.compile(
 
 # Structure of rule lists for formatting processing parsed exactly from XML files
 misplaced_chars_rules = [
+    # Fix misplaced English phrase with punctuation at the end of a Persian sentence
+    # Correctly handles leading/trailing dialogue hyphens:
+    # "برگشت به حالت عادی ،Init 5" -> "Init 5، برگشت به حالت عادی"
+    # "آتلانتا ،WCGG -" -> "- WCGG، آتلانتا"
+    # "- آتلانتا ،WCGG" -> "- WCGG، آتلانتا"
+    (
+        re.compile(
+            r"^((?:<[^>]+>\s*)*)"  # Group 1: Leading HTML tags
+            r"((?:-\s*|–\s*|—\s*)?)"  # Group 2: Optional leading dialog dash
+            r"([\u0600-\u06FF\uFB50-\uFDFF\uFE70-\uFEFF\s\d\(\)«»\"\']+?)"  # Group 3: Persian sentence
+            r"\s*([،,؛;:!\?؟])\s*"  # Group 4: Misplaced punctuation
+            r"([A-Za-z][A-Za-z0-9\s.]*?[A-Za-z0-9]|[A-Za-z])"  # Group 5: Pure English phrase (no dashes)
+            r"((?:\s*[-\u2013\u2014]\s*)?)"  # Group 6: Optional trailing dialog dash
+            r"((?:\s*<[^>]+>)*)$"  # Group 7: Trailing HTML tags
+        ),
+        lambda m: (
+            f"{m.group(1) or ''}"
+            f"{'- ' if (m.group(2) or m.group(6)) else ''}"
+            f"{m.group(5)}{m.group(4)} "
+            f"{m.group(3).strip()}"
+            f"{m.group(7) or ''}"
+        ),
+        True,
+    ),
     # Fix misplaced asterisks enclosing the text
     (
         re.compile(r"^([\u202a-\u202e\u200e\u200f]*)\*+([^\*]*?)([\u202a-\u202e\u200e\u200f]*)\*+(.+)$"),
