@@ -327,24 +327,24 @@ exclamation_rules_list = [
     (re.compile(r"^(.*)( *)(\-*)(\!)( *)(\-*)\n"), r"\1\2\3\4\5\6\n", True),
     (re.compile(r"\n(.*)( *)(\-*)(\!)( *)(\-*)$"), r"\n\1\2\3\4\5\6", True),
     (re.compile(r"(\b[^\u0000-\u007F]+\b)( *)(\!)( *)([^\-\<\>\"\! ])"), r"\1\3 \5", True),
-    # Move leading exclamation mark to the end of the line
+    # Move leading exclamation mark to the end of the line (handles dialog hyphens, inner ellipsis, and HTML tags)
     (
         re.compile(
-            r"^([\u202a-\u202e\u200e\u200f]*)(?:<[^>]+>)*\s*!\s*([^\?\.\n]+?)\s*([\u202a-\u202e\u200e\u200f]*)$"
+            r"^([\u202a-\u202e\u200e\u200f]*)"  # Group 1: Directional markers
+            r"((?:<[^>]+>\s*)*)"  # Group 2: Leading HTML tags
+            r"((?:-\s*|–\s*|—\s*)?)"  # Group 3: Optional dialogue hyphen
+            r"!\s*"  # Leading exclamation mark
+            r"(.+?)"  # Group 4: Sentence body (supports ellipsis, letters, numbers, etc.)
+            r"((?:\s*<[^>]+>)*)$"  # Group 5: Trailing HTML tags
         ),
-        r"\1\2!\3",
-        True,
-    ),
-    # Move exclamation mark from the beginning (after hyphen) to the end
-    (
-        re.compile(r"^([\u202a-\u202e\u200e\u200f]*)-\s*!\s*([^\?\.\n]+?)\s*([\u202a-\u202e\u200e\u200f]*)$"),
-        r"\1- \2!\3",
-        True,
-    ),
-    # Move leading exclamation mark to the end when trailing hyphen exists
-    (
-        re.compile(r"^([\u202a-\u202e\u200e\u200f]*)\!\s*([^\?\.\n]+?)\s*-\s*([\u202a-\u202e\u200e\u200f]*)$"),
-        r"\1\2! -\3",
+        lambda m: (
+            f"{m.group(1) or ''}"
+            f"{m.group(2) or ''}"
+            f"{'- ' if m.group(3) else ''}"
+            f"{m.group(4).rstrip(' !')}"
+            f"!"
+            f"{m.group(5) or ''}"
+        ),
         True,
     ),
 ]
