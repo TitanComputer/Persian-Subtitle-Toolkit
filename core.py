@@ -331,8 +331,19 @@ def fix_inconsistent_dialog_hyphens(blocks):
                         first_part = first_part[:-1].rstrip()
 
                     second_part = inline_match.group(2).lstrip()
+
+                    # Move misplaced leading ellipsis from second dialogue part to the end
+                    has_leading_ellipsis = False
+                    if second_part.startswith("...") or second_part.startswith("…"):
+                        has_leading_ellipsis = True
+                        second_part = re.sub(r"^(\.{3,}|…)\s*", "", second_part)
+
                     first_line = f"{prefix}- {first_part}"
-                    second_line = f"- {second_part}"
+                    if has_leading_ellipsis:
+                        second_line = f"- {second_part.rstrip()}..."
+                    else:
+                        second_line = f"- {second_part}"
+
                     block["text_lines"] = [first_line, second_line]
                 else:
                     text_lines[0] = f"{prefix}{remainder}"
