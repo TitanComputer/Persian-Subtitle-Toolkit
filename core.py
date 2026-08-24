@@ -903,7 +903,7 @@ class SubtitleProcessor:
                                 line_ending = "\n"
                                 temp_line = temp_line[:-1]
 
-                            # Detect leading HTML tags and common punctuation marks including RTL/LTR control marks
+                            # Detect leading HTML tags, dashes, spaces, and RTL/LTR control marks
                             html_prefix_match = re.match(
                                 r"^((?:<[^<>]+>|[\u200e\u200f\u202a-\u202e\u2066-\u2069\u061c\ufeff\u200b]|[\s\.\-–—])*)",
                                 temp_line,
@@ -936,6 +936,10 @@ class SubtitleProcessor:
                                     q1_idx = content_after_html.find('"')
                                     q2_idx = content_after_html.rfind('"')
 
+                                    # Special Guard: Skip if q1 is an opening quote preceded by punctuation or space (e.g. '- حالا،"برت"', 'گفت: "سلام"')
+                                    prev_char_q1 = content_after_html[q1_idx - 1] if q1_idx > 0 else ""
+                                    is_q1_opening_quote = prev_char_q1 in " \t\u200c\u200e\u200f([{'«،,;:.!?-–—"
+
                                     # Case 3: Misplaced closing quote pushed to the beginning of line in RTL text
                                     if q1_idx == 0 and q2_idx < len(content_after_html) - 1:
                                         prev_char = content_after_html[q2_idx - 1] if q2_idx > 0 else ""
@@ -950,19 +954,28 @@ class SubtitleProcessor:
                                         ):
                                             content_after_html = content_after_html[1:] + '"'
 
-                                    # Case 4: Opening quote is misplaced at end of text while line starts with HTML tags or text
-                                    elif q2_idx == len(content_after_html) - 1 and q1_idx > 0:
-                                        prev_char = content_after_html[q1_idx - 1] if q1_idx > 0 else ""
-                                        next_char = (
+                                    # Case 4: Misplaced opening quote pushed to the end of the line
+                                    # Active only when q1 closes a word early in the sentence and is NOT an opening quote
+                                    elif q1_idx > 0 and q2_idx > q1_idx and not is_q1_opening_quote:
+                                        next_char_q1 = (
                                             content_after_html[q1_idx + 1]
                                             if q1_idx + 1 < len(content_after_html)
                                             else ""
                                         )
-                                        if prev_char not in " \t\r\n" and (
-                                            next_char in " \t\u200c\u200e\u200f)]}'»،,;:.!?-–—"
-                                            or q1_idx + 1 == len(content_after_html)
-                                        ):
-                                            content_after_html = '"' + content_after_html[:-1]
+                                        after_q2 = content_after_html[q2_idx + 1 :]
+
+                                        # q1 must strictly be attached to a word and followed by a space
+                                        is_q1_attached_word = (
+                                            prev_char_q1.isalnum() or "\u0600" <= prev_char_q1 <= "\u06ff"
+                                        ) and next_char_q1 in " \t"
+
+                                        # q2 must be at the end of the line (optionally followed by terminal punctuation)
+                                        is_q2_trailing = after_q2.strip("!؟?.،,;: \t") == ""
+
+                                        if is_q1_attached_word and is_q2_trailing:
+                                            content_after_html = (
+                                                '"' + content_after_html[:q2_idx] + content_after_html[q2_idx + 1 :]
+                                            )
 
                             temp_line = html_prefix + content_after_html + html_suffix + line_ending
 
