@@ -320,20 +320,22 @@ def fix_inconsistent_dialog_hyphens(blocks):
             dialog_match = dialog_prefix_pattern.match(text_lines[0])
 
             if dialog_match:
+                prefix = dialog_match.group("prefix")
                 remainder = text_lines[0][dialog_match.end() :]
                 # Split single-line inline dialogues into two lines if a second dialogue hyphen exists
-                inline_match = re.search(r"^(.*?[\.،!؟\s])\s*(-\s*.*)$", remainder)
+                inline_match = re.search(r"^(.*?[\.،!؟\s])\s*-\s*(.*)$", remainder)
                 if inline_match:
                     first_part = inline_match.group(1).rstrip()
                     # Remove single trailing dot while preserving ellipsis (...)
                     if first_part.endswith(".") and not first_part.endswith(".."):
                         first_part = first_part[:-1].rstrip()
 
-                    first_line = text_lines[0][: dialog_match.end()] + first_part
-                    second_line = inline_match.group(2)
+                    second_part = inline_match.group(2).lstrip()
+                    first_line = f"{prefix}- {first_part}"
+                    second_line = f"- {second_part}"
                     block["text_lines"] = [first_line, second_line]
                 else:
-                    text_lines[0] = dialog_match.group("prefix") + remainder
+                    text_lines[0] = f"{prefix}{remainder}"
 
             continue
 

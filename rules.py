@@ -757,6 +757,23 @@ double_quotes_rules_list = [
 ]
 
 dash_rules_list = [
+    # Ensure exactly one space after a leading dialogue dash on any line
+    # Handles both standard dashes and cases where misplaced dots precede the dash (e.g. "-نمیدونم.", ".-نمیدونم")
+    (
+        re.compile(
+            r"(?m)^([\u202a-\u202e\u200e\u200f\ufeff\u2066-\u2069\u061c]*((?:<[^>]+>\s*)*))([\.…\s]*)([-\u2013\u2014])[ \t]*([^\s\r\n\-\u2013\u2014])"
+        ),
+        r"\g<1>\g<3>\g<4> \g<5>",
+        True,
+    ),
+    # Ensure only a single space exists after the dialogue dash if multiple spaces were present
+    (
+        re.compile(
+            r"(?m)^([\u202a-\u202e\u200e\u200f\ufeff\u2066-\u2069\u061c]*((?:<[^>]+>\s*)*))([\.…\s]*)([-\u2013\u2014])[ \t]{2,}([^\s\r\n])"
+        ),
+        r"\g<1>\g<3>\g<4> \g<5>",
+        True,
+    ),
     (re.compile(r"""(\d+)( *)(\-)( *)(\d+)"""), r"""\g<1>\g<3>\g<5>""", True),
     (re.compile(r"""([^\u0000-\u007F])(\-)( )([^\u0000-\u007F])"""), r"""\g<1> \g<2>\g<3>\g<4>""", True),
     (re.compile(r"""([^\u0000-\u007F])( )(\-)([^\u0000-\u007F])"""), r"""\g<1>\g<2>\g<3> \g<4>""", True),
@@ -860,6 +877,23 @@ dialog_hyphen_fix_list = [
     (re.compile(r"""(\-)( *)(["؟]+)( *)(\-)\z"""), r"""\g<3> \g<5>""", True),
     (re.compile(r"""(\-)( *)(\))( *)(\-)"""), r"""\g<3>\g<4>\g<5>""", True),
     (re.compile(r"""(\-)( *)(\])( *)(\-)"""), r"""\g<3>\g<4>\g<5>""", True),
+    # Ensure exactly one space after a leading dialogue dash on any line
+    # Handles both standard dashes and cases where misplaced dots precede the dash (e.g. "-نمیدونم.", ".-نمیدونم")
+    (
+        re.compile(
+            r"(?m)^([\u202a-\u202e\u200e\u200f\ufeff\u2066-\u2069\u061c]*((?:<[^>]+>\s*)*))([\.…\s]*)([-\u2013\u2014])[ \t]*([^\s\r\n\-\u2013\u2014])"
+        ),
+        r"\g<1>\g<3>\g<4> \g<5>",
+        True,
+    ),
+    # Ensure only a single space exists after the dialogue dash if multiple spaces were present
+    (
+        re.compile(
+            r"(?m)^([\u202a-\u202e\u200e\u200f\ufeff\u2066-\u2069\u061c]*((?:<[^>]+>\s*)*))([\.…\s]*)([-\u2013\u2014])[ \t]{2,}([^\s\r\n])"
+        ),
+        r"\g<1>\g<3>\g<4> \g<5>",
+        True,
+    ),
 ]
 
 # Detect HTML-wrapped or plain credit/comment lines that should not be processed by Fix Misplaced Chars
