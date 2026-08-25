@@ -940,9 +940,9 @@ misplaced_chars_rules = [
         r"",
         True,
     ),
-    # Normalize spaced ellipsis sequences to 3 standard dots
+    # Normalize sequences of 3 or more dots (with or without spaces) to 3 standard dots
     (
-        re.compile(r"\.\s*\.\s*\."),
+        re.compile(r"\.(?:[\s\u200b-\u200f\u202a-\u202e\ufeff]*\.){2,}"),
         r"...",
         True,
     ),
