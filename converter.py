@@ -112,7 +112,8 @@ def convert_ass_to_srt(
 ):
     """
     Validates and converts an ASS subtitle file to SRT format.
-    Extracts Dialogue and Comment lines, reformats timecodes, removes style brackets {}, and handles duplicate skip.
+    Extracts Dialogue and Comment lines, reformats timecodes, removes style brackets {}, handles duplicate skip,
+    and merges Note-style lines that share the exact same timestamp with their preceding dialogue line.
     """
     try:
         # Use utf-8-sig to automatically handle BOM
@@ -122,9 +123,17 @@ def convert_ass_to_srt(
         return False
 
     events_started = False
-    srt_lines = []
-    index = 1
+    srt_entries = []
     prev_timecode = None
+
+    def format_ass_time(ass_time):
+        try:
+            h, m, s_cs = ass_time.split(":")
+            s, cs = s_cs.split(".")
+            # ASS centiseconds (cs) need to be multiplied by 10 to get milliseconds
+            return f"{int(h):02d}:{int(m):02d}:{int(s):02d},{int(cs)*10:03d}"
+        except ValueError:
+            return "00:00:00,000"
 
     for line in lines:
         line = line.strip()
@@ -143,40 +152,41 @@ def convert_ass_to_srt(
 
             start_ass = event_data[1].strip()
             end_ass = event_data[2].strip()
+            style_ass = event_data[3].strip()
             text_ass = event_data[9].strip()
-
-            def format_ass_time(ass_time):
-                try:
-                    h, m, s_cs = ass_time.split(":")
-                    s, cs = s_cs.split(".")
-                    # ASS centiseconds (cs) need to be multiplied by 10 to get milliseconds
-                    return f"{int(h):02d}:{int(m):02d}:{int(s):02d},{int(cs)*10:03d}"
-                except ValueError:
-                    return "00:00:00,000"
 
             start_srt = format_ass_time(start_ass)
             end_srt = format_ass_time(end_ass)
             timecode = f"{start_srt} --> {end_srt}"
 
-            # Skip duplicate timecodes based on the previous line
-            if timecode == prev_timecode:
-                continue
-            prev_timecode = timecode
-
             # Remove ASS style override tags enclosed in {}
             text_clean = re.sub(r"\{.*?\}", "", text_ass)
 
             # Replace literal \N or \n with actual newlines
-            text_clean = text_clean.replace(r"\N", "\n").replace(r"\n", "\n")
+            text_clean = text_clean.replace(r"\N", "\n").replace(r"\n", "\n").strip()
 
-            if not text_clean.strip():
+            if not text_clean:
                 continue
 
-            srt_lines.append(f"{index}\n{timecode}\n{text_clean}\n\n")
-            index += 1
+            # Merge Note lines sharing the exact same timecode with the preceding line
+            is_note = "note" in style_ass.lower()
+            if timecode == prev_timecode and srt_entries:
+                prev_entry = srt_entries[-1]
+                if is_note or "note" in prev_entry.get("style", "").lower():
+                    prev_entry["text"] += f"\n{text_clean}"
+                    continue
+                # Skip normal duplicate timecodes based on the previous line
+                continue
 
-    if not srt_lines:
+            prev_timecode = timecode
+            srt_entries.append({"timecode": timecode, "text": text_clean, "style": style_ass})
+
+    if not srt_entries:
         return False
+
+    srt_lines = []
+    for index, entry in enumerate(srt_entries, start=1):
+        srt_lines.append(f"{index}\n{entry['timecode']}\n{entry['text']}\n\n")
 
     with open(output_path, "w", encoding="utf-8") as f:
         f.writelines(srt_lines)
