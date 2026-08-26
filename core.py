@@ -129,32 +129,71 @@ def remove_duplicate_subtitles(blocks, logs_buffer, detailed_logs_enabled):
 
 
 def fix_overlapping_timecodes(blocks, logs_buffer, detailed_logs_enabled):
-    """Fixes timecode overlaps by adjusting the end time of the preceding block."""
+    """
+    Fixes timecode overlaps.
+    1. If two adjacent blocks start at the exact same time, merges them into a single block
+       spanning the maximum end time to prevent 0ms zero-duration subtitles.
+    2. For standard sequential overlaps, adjusts the end time of the preceding block to 1ms before the next block's start.
+    """
+    if not blocks:
+        return blocks, False
+
     has_changes = False
+    merged_blocks = []
+    i = 0
 
-    for i in range(len(blocks) - 1):
+    while i < len(blocks):
         current_block = blocks[i]
-        next_block = blocks[i + 1]
 
-        # Check if the end time of the current block overlaps with the start time of the next block
-        if current_block["end_ms"] >= next_block["start_ms"]:
+        # Handle blocks starting at the exact same timestamp
+        while i + 1 < len(blocks) and blocks[i + 1]["start_ms"] == current_block["start_ms"]:
+            next_block = blocks[i + 1]
+            old_end_ms = current_block["end_ms"]
             old_end_str = current_block["end_str"]
 
-            # Adjust the end time to be 1 ms before the next block's start time
-            # Ensure we do not create negative durations by bounding it to the block's own start time
-            new_end_ms = max(current_block["start_ms"], next_block["start_ms"] - 1)
+            # Merge text lines
+            current_block["text_lines"].extend(next_block["text_lines"])
 
-            if current_block["end_ms"] != new_end_ms:
-                current_block["end_ms"] = new_end_ms
-                current_block["end_str"] = ms_to_timecode(new_end_ms)
+            # Expand duration to cover the maximum end time of both blocks
+            if next_block["end_ms"] > current_block["end_ms"]:
+                current_block["end_ms"] = next_block["end_ms"]
+                current_block["end_str"] = next_block["end_str"]
+
+            has_changes = True
+            if detailed_logs_enabled:
+                logs_buffer.append(
+                    f'Coincident blocks merged | Option: Fix Overlapping Timecodes | Merged Block {next_block.get("index", "")} into Block {current_block.get("index", "")} | Timecode: "{current_block["start_str"]} --> {current_block["end_str"]}"'
+                )
+
+            i += 1
+
+        merged_blocks.append(current_block)
+        i += 1
+
+    # Fix standard sequential overlaps on the merged blocks list
+    for j in range(len(merged_blocks) - 1):
+        curr_b = merged_blocks[j]
+        next_b = merged_blocks[j + 1]
+
+        if curr_b["end_ms"] >= next_b["start_ms"]:
+            old_end_str = curr_b["end_str"]
+            new_end_ms = max(curr_b["start_ms"], next_b["start_ms"] - 1)
+
+            if curr_b["end_ms"] != new_end_ms:
+                curr_b["end_ms"] = new_end_ms
+                curr_b["end_str"] = ms_to_timecode(new_end_ms)
                 has_changes = True
 
                 if detailed_logs_enabled:
                     logs_buffer.append(
-                        f'Timecode overlap fixed | Option: Fix Overlapping Timecodes | Block {current_block.get("index", "")} | Before: "{current_block["start_str"]} --> {old_end_str}" -> After: "{current_block["start_str"]} --> {current_block["end_str"]}"'
+                        f'Timecode overlap fixed | Option: Fix Overlapping Timecodes | Block {curr_b.get("index", "")} | Before: "{curr_b["start_str"]} --> {old_end_str}" -> After: "{curr_b["start_str"]} --> {curr_b["end_str"]}"'
                     )
 
-    return blocks, has_changes
+    # Re-index blocks sequentially
+    for new_index, b in enumerate(merged_blocks, start=1):
+        b["index"] = str(new_index)
+
+    return merged_blocks, has_changes
 
 
 def build_flexible_regex(word):
