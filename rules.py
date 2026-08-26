@@ -2976,3 +2976,36 @@ end_dot_pattern = re.compile(
 html_tag_split_pattern = re.compile(r"(<[^>]+>)")
 
 isolated_eng_num_pattern = re.compile(r"(?<![a-zA-Z])(\d+)(?![a-zA-Z])")
+
+# Rules for adding missing spaces after punctuation and around parentheses.
+add_missing_spaces_rules_list = [
+    (re.compile(r"(^[^\u202B])(.*)( )([\u060C])( )([a-zA-Z]+)"), r"\1\2 \3", True),
+    (re.compile(r"([\u0600-\u06FF]+)(\.)([\b\w\d])"), r"\1\2 \3", True),
+    (re.compile(r"([^\x00-\x7F])(\.)( +)([^\x00-\x7F]{3,20})"), r"\1\2 \4", True),
+    (re.compile(r"([^\x00-\x7F])(\.)([^\x00-\x7F]{3,20})"), r"\1\2 \3", True),
+    (re.compile(r'([^\x00-\x7F])(\.)( +)([^-<>"\. ]{3,20})'), r"\1\2 \4", True),
+    (re.compile(r'([^\x00-\x7F])(\.)([^-<>"\. ]{3,20})'), r"\1\2 \3", True),
+    (re.compile(r"\b\.\.\.\b"), r"... ", True),
+    (re.compile(r"([\b\w\d])(!)([\b\w\d])"), r"\1\2 \3", True),
+    (re.compile(r"(\b[\b\w\d\p{C}\p{Cf} ]+\b)(!)( +)(\b[\b\w\d\p{C}\p{Cf} ]+\b)"), r"\1\2 \4", True),
+    (re.compile(r"(\b[\b\w\d\p{C}\p{Cf} ]+\b)(!)(\b[\b\w\d\p{C}\p{Cf} ]+\b)"), r"\1\2 \3", True),
+    (re.compile(r"(\b[^\x00-\x7F]+\b)(!)( +)(\b[^\x00-\x7F]+\b)"), r"\1\2 \4", True),
+    (re.compile(r"(\b[^\x00-\x7F]+\b)(!)(\b[^\x00-\x7F]+\b)"), r"\1\2 \3", True),
+    (re.compile(r"([\b\w\d])(!)([\b\w\d])"), r"\1\2 \3", True),
+    (re.compile(r"([^\x00-\x7F])(؟)( +)([^\x00-\x7F])"), r"\1\2 \4", True),
+    (re.compile(r"([^\x00-\x7F])(؟)([^\x00-\x7F])"), r"\1\2 \3", True),
+    (re.compile(r"([^\x00-\x7F])(؟)( +)([\b\w\d])"), r"\1\2 \4", True),
+    (re.compile(r"([^\x00-\x7F])(؟)([\b\w\d])"), r"\1\2 \3", True),
+    (re.compile(r"([\b\w\d\u200C]+)( +)(-)([\b\w\d\u200C]+)"), r"\1 \3 \4", True),
+    (re.compile(r"([\b\w\d\u200C]+)(-)( +)([\b\w\d\u200C]+)"), r"\1 \2 \4", True),
+    (
+        re.compile(r"([\u0600-\u06FF]+)([\:\.!\?\u060C\u061F]+)([\u0600-\u06FF]+)([\:\.!\?\u060C\u061F]+)([\b\w]+)"),
+        r"\1\2 \3\4 \5",
+        True,
+    ),
+    (re.compile(r"([\u0600-\u06FF]+)([\:\.!\?\u060C\u061F]+)([\b\w]+)"), r"\1\2 \3", True),
+    (re.compile(r"([\)\]]+)(\b)"), r"\1 \2", True),
+    (re.compile(r"(\b)([\(\[]+)"), r"\1 \2", True),
+    (re.compile(r"(\b)([\:\.!\?\u060C\u061F]+)([\(\[]+)"), r"\1\2 \3", True),
+    (re.compile(r"(^[^\u202B])(.*)([\u0600-\u06FF]+)([\:\.!\?\u060C\u061F]+)( )([a-zA-Z]+)"), r"\1\2\3\5\4\6", True),
+]

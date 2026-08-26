@@ -791,6 +791,15 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.chk_hexre_fixes.grid(row=19, column=0, padx=5, pady=5, sticky="w")
 
+        # Option: Add Missing Spaces
+        self.chk_add_missing_spaces = ctk.CTkCheckBox(
+            preprocess_parent,
+            text="Add Missing Spaces (e.g., word.word ➔ word. word)",
+            font=font_bold,
+            command=self.on_preprocess_dependency_toggle,
+        )
+        self.chk_add_missing_spaces.grid(row=20, column=0, padx=5, pady=5, sticky="w")
+
         # --- Process Tab ---
         self.process_inner_frame = CTkDualScrollableFrame(self.tab_process)
         self.process_inner_frame.grid(row=0, column=0, padx=0, pady=0, sticky="nsew")
@@ -1427,6 +1436,11 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         else:
             self.chk_hexre_fixes.deselect()
 
+        if config.get("add_missing_spaces", 1) == 1:
+            self.chk_add_missing_spaces.select()
+        else:
+            self.chk_add_missing_spaces.deselect()
+
         # Process Tab Loading
         if config.get("bypass_enabled", 1) == 1:
             self.chk_bypass.select()
@@ -1623,6 +1637,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             "english_num_to_persian": self.chk_english_num.get(),
             "space_to_invisible_space": self.chk_space_to_invisible_space.get(),
             "hexre_fixes": self.chk_hexre_fixes.get(),
+            "add_missing_spaces": self.chk_add_missing_spaces.get(),
             "bypass_enabled": self.chk_bypass.get(),
             "bypass_list": getattr(self.txt_bypass, "_original_text", ""),
             "remove_enabled": self.chk_remove.get(),
@@ -1699,6 +1714,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         self.chk_english_num.select()
         self.chk_space_to_invisible_space.select()
         self.chk_hexre_fixes.select()
+        self.chk_add_missing_spaces.select()
         self.chk_fix_misplaced_chars.select()
 
         self.chk_bypass.select()
@@ -1919,6 +1935,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             "english_num_to_persian": self.chk_english_num.get(),
             "space_to_invisible_space": self.chk_space_to_invisible_space.get(),
             "hexre_fixes": self.chk_hexre_fixes.get(),
+            "add_missing_spaces": self.chk_add_missing_spaces.get(),
             "bypass_enabled": self.chk_bypass.get(),
             "bypass_list": getattr(self.txt_bypass, "_original_text", ""),
             "remove_enabled": self.chk_remove.get(),

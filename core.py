@@ -517,6 +517,7 @@ class SubtitleProcessor:
         opt_english_num_to_persian = self.options.get("english_num_to_persian", 1)
         opt_space_to_invisible_space = self.options.get("space_to_invisible_space", 1)
         opt_hexre_fixes = self.options.get("hexre_fixes", 1)
+        opt_add_missing_spaces = self.options.get("add_missing_spaces", 1)
 
         opt_post_trim_spaces = self.options.get("post_trim_spaces", 1)
         opt_remove_empty_tags = self.options.get("remove_empty_tags", 1)
@@ -1376,6 +1377,23 @@ class SubtitleProcessor:
                                 index,
                                 "Pre-Process Hexre Typo Fixes",
                                 before_hexre,
+                                current_line,
+                                file_subtitle_logs,
+                                detailed_logs_enabled,
+                            )
+
+                    # Apply Pre-Process Option: Add Missing Spaces
+                    if opt_add_missing_spaces:
+                        before_add_missing_spaces = current_line
+                        temp_line = apply_rule_set(current_line, add_missing_spaces_rules_list)
+                        current_line = temp_line
+
+                        if current_line != before_add_missing_spaces:
+                            file_has_changes = True
+                            _log_change(
+                                index,
+                                "Pre-Process Add Missing Spaces",
+                                before_add_missing_spaces,
                                 current_line,
                                 file_subtitle_logs,
                                 detailed_logs_enabled,
