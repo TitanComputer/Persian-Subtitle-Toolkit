@@ -650,6 +650,7 @@ class SubtitleProcessor:
                     valid_text_indices.update(b.get("text_indices", []))
 
                 processed_lines = []
+                parentheses_fixed_lines = {}
 
                 if detailed_logs_enabled:
                     file_subtitle_logs.append(f"Started tracking changes for: {filename}")
@@ -668,7 +669,7 @@ class SubtitleProcessor:
                         continue
 
                     original_line = line
-                    current_line = original_line
+                    current_line = parentheses_fixed_lines.pop(index, original_line)
                     line_is_pure_english = is_pure_english(current_line)
 
                     # Check if line is standard subtitle timecode or index number
@@ -815,7 +816,11 @@ class SubtitleProcessor:
 
                     # Apply Pre-Process Option: Parentheses Fixes
                     # Fast path guard: Check for standard bracket types.
-                    if opt_parentheses_fixes and any(c in current_line for c in "()[]{}"):
+                    if (
+                        opt_parentheses_fixes
+                        and any(c in current_line for c in "()[]{}")
+                        and index not in parentheses_fixed_lines
+                    ):
                         before_paren = current_line
                         temp_line = current_line
 
@@ -829,13 +834,105 @@ class SubtitleProcessor:
                         leading_prefix = leading_prefix_match.group(0) if leading_prefix_match else ""
                         body = temp_line[len(leading_prefix) :]
 
-                        if body:
-                            bracket_pairs = {
-                                "(": ")",
-                                "[": "]",
-                                "{": "}",
-                            }
+                        handled_cross_line = False
+                        bracket_pairs = {
+                            "(": ")",
+                            "[": "]",
+                            "{": "}",
+                        }
+                        reverse_bracket_pairs = {value: key for key, value in bracket_pairs.items()}
 
+                        # Handle misplaced brackets that span two subtitle lines.
+                        # This must be checked before the single-line fallback because each subtitle line is processed separately.
+                        next_index = index + 1
+                        if (
+                            next_index in valid_text_indices
+                            and next_index < len(lines) + 1
+                            and next_index not in parentheses_fixed_lines
+                        ):
+                            next_line = lines[next_index - 1]
+                            next_body_match = re.match(
+                                r"^(?:[ \t\u200b-\u200f\u202a-\u202e\u2066-\u2069\ufeff]+|<[^>]+>)*",
+                                next_line,
+                            )
+                            next_prefix = next_body_match.group(0) if next_body_match else ""
+                            next_line_ending = (
+                                "\r\n" if next_line.endswith("\r\n") else "\n" if next_line.endswith("\n") else ""
+                            )
+                            next_body = next_line[len(next_prefix) :].rstrip("\r\n")
+                            current_line_ending = (
+                                "\r\n" if temp_line.endswith("\r\n") else "\n" if temp_line.endswith("\n") else ""
+                            )
+                            current_body = body.rstrip("\r\n")
+
+                            if current_body and next_body:
+                                current_last_bracket = next(
+                                    (char for char in reversed(current_body) if char in reverse_bracket_pairs),
+                                    None,
+                                )
+                                next_first_bracket = next_body[0]
+
+                                if (
+                                    current_last_bracket in reverse_bracket_pairs
+                                    and current_body.endswith(current_last_bracket)
+                                    and next_first_bracket == reverse_bracket_pairs[current_last_bracket]
+                                ):
+                                    opening_char = reverse_bracket_pairs[current_last_bracket]
+                                    closing_char = current_last_bracket
+                                    current_body = current_body[:-1]
+                                    next_body = next_body[1:]
+
+                                    # Move the misplaced brackets to the outside of the two-line subtitle.
+                                    current_line_fixed = (
+                                        leading_prefix + opening_char + current_body + current_line_ending
+                                    )
+
+                                    # Keep the closing bracket inside trailing HTML tags so the bracket remains part of the styled text.
+                                    trailing_html_match = re.search(
+                                        r"((?:<[^<>]+>|[\u200e\u200f\u202a-\u202e\u2066-\u2069\u061c\ufeff\u200b]|[ \t])+)$",
+                                        next_body,
+                                    )
+                                    if trailing_html_match:
+                                        trailing_html = trailing_html_match.group(1)
+                                        next_content = next_body[: -len(trailing_html)]
+                                        next_line_fixed = (
+                                            next_prefix + next_content + closing_char + trailing_html + next_line_ending
+                                        )
+                                    else:
+                                        next_line_fixed = next_prefix + next_body + closing_char + next_line_ending
+
+                                    current_line_fixed = apply_rule_set(current_line_fixed, parentheses_rules_list)
+                                    next_line_fixed = apply_rule_set(next_line_fixed, parentheses_rules_list)
+
+                                    current_line = current_line_fixed
+                                    parentheses_fixed_lines[next_index] = next_line_fixed
+                                    handled_cross_line = True
+
+                                    if current_line != before_paren:
+                                        file_has_changes = True
+                                        _log_change(
+                                            index,
+                                            "Pre-Process Parentheses Fixes",
+                                            before_paren,
+                                            current_line,
+                                            file_subtitle_logs,
+                                            detailed_logs_enabled,
+                                        )
+
+                                    if next_line_fixed != next_line:
+                                        file_has_changes = True
+                                        _log_change(
+                                            next_index,
+                                            "Pre-Process Parentheses Fixes",
+                                            next_line,
+                                            next_line_fixed,
+                                            file_subtitle_logs,
+                                            detailed_logs_enabled,
+                                        )
+
+                                    temp_line = current_line
+
+                        if body and not handled_cross_line:
                             first_char = body[0]
                             if first_char in bracket_pairs:
                                 closing_char = bracket_pairs[first_char]
@@ -860,13 +957,13 @@ class SubtitleProcessor:
 
                                     body = body + closing_char + line_ending
 
-                        temp_line = leading_prefix + body
+                            temp_line = leading_prefix + body
 
-                        temp_line = apply_rule_set(temp_line, parentheses_rules_list)
+                            temp_line = apply_rule_set(temp_line, parentheses_rules_list)
 
-                        current_line = temp_line
+                            current_line = temp_line
 
-                        if current_line != before_paren:
+                        if current_line != before_paren and not handled_cross_line:
                             file_has_changes = True
                             _log_change(
                                 index,
