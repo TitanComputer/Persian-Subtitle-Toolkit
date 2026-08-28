@@ -135,6 +135,9 @@ def convert_ass_to_srt(
         except ValueError:
             return "00:00:00,000"
 
+    def is_ass_drawing(text):
+        return bool(re.search(r"\\p[1-9]\d*", text))
+
     for line in lines:
         line = line.strip()
         if line == "[Events]":
@@ -154,6 +157,10 @@ def convert_ass_to_srt(
             end_ass = event_data[2].strip()
             style_ass = event_data[3].strip()
             text_ass = event_data[9].strip()
+
+            # Skip ASS vector drawings
+            if is_ass_drawing(text_ass):
+                continue
 
             start_srt = format_ass_time(start_ass)
             end_srt = format_ass_time(end_ass)
