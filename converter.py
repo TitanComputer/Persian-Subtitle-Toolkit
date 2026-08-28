@@ -113,7 +113,7 @@ def convert_ass_to_srt(
     """
     Validates and converts an ASS subtitle file to SRT format.
     Extracts Dialogue and Comment lines, reformats timecodes, removes style brackets {}, handles duplicate skip,
-    and merges Note-style lines that share the exact same timestamp with their preceding dialogue line.
+    and merges lines that share the exact same timestamp with different text.
     """
     try:
         # Use utf-8-sig to automatically handle BOM
@@ -175,14 +175,16 @@ def convert_ass_to_srt(
             if not text_clean:
                 continue
 
-            # Merge Note lines sharing the exact same timecode with the preceding line
-            is_note = "note" in style_ass.lower()
+            # Handle entries with the exact same timecode
             if timecode == prev_timecode and srt_entries:
                 prev_entry = srt_entries[-1]
-                if is_note or "note" in prev_entry.get("style", "").lower():
-                    prev_entry["text"] += f"\n{text_clean}"
+
+                # Skip exact duplicate text
+                if text_clean == prev_entry["text"]:
                     continue
-                # Skip normal duplicate timecodes based on the previous line
+
+                # Merge different text lines with the same timecode
+                prev_entry["text"] += f"\n{text_clean}"
                 continue
 
             prev_timecode = timecode
