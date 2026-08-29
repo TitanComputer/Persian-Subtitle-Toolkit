@@ -866,7 +866,7 @@ class SubtitleProcessor:
 
                         # Normalize repeated opening brackets at the start of the visible text.
                         # This keeps leading HTML/bidi markers intact while fixing cases like:
-                        # "(‏(text" -> "(text)"
+                        # "((text" -> "(text)"
                         leading_prefix_match = re.match(
                             r"^(?:[ \t\u200b-\u200f\u202a-\u202e\u2066-\u2069\ufeff]+|<[^>]+>)*",
                             temp_line,
@@ -885,12 +885,14 @@ class SubtitleProcessor:
                         # Handle misplaced brackets that span two subtitle lines.
                         # This must be checked before the single-line fallback because each subtitle line is processed separately.
                         next_index = index + 1
-                        if (
+                        has_valid_next = (
                             next_index in valid_text_indices
                             and next_index < len(lines) + 1
                             and next_index not in parentheses_fixed_lines
-                        ):
-                            next_line = lines[next_index - 1]
+                        )
+                        next_line = lines[next_index - 1] if has_valid_next else ""
+
+                        if has_valid_next and next_line:
                             next_body_match = re.match(
                                 r"^(?:[ \t\u200b-\u200f\u202a-\u202e\u2066-\u2069\ufeff]+|<[^>]+>)*",
                                 next_line,
@@ -984,8 +986,14 @@ class SubtitleProcessor:
                                     body,
                                 )
 
-                                # If the line has no matching closing bracket, append one at the end.
-                                if closing_char not in body:
+                                # Check if the closing bracket is present in the subsequent subtitle line before appending one
+                                has_matching_bracket_in_next = False
+                                if has_valid_next and next_line:
+                                    if closing_char in next_line:
+                                        has_matching_bracket_in_next = True
+
+                                # If the line has no matching closing bracket and is not completed on the next line, append one at the end.
+                                if closing_char not in body and not has_matching_bracket_in_next:
                                     line_ending = ""
 
                                     if body.endswith("\r\n"):
