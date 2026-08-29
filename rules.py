@@ -2965,12 +2965,16 @@ zw_space = r"[\s\u200b-\u200f\u202a-\u202e\u2066-\u2069\ufeff]"
 
 music_symbols = r"[♪♬♫♭♯]"
 
+# Allowed punctuation and quote prefixes/suffixes that can wrap the sentence
+quote_and_punct_prefix = r"[-–—\s«\"\'\(\[\{]"
+quote_and_punct_suffix = r"[»\"\'\)\]\}]"
+
 start_dot_pattern = re.compile(
-    rf"^((?:{zw_space}|<[^>]+>|{music_symbols})*(?:-\s*)?)\.\s*(-\s*)?(?!{zw_space}*[.:;!?؟،,*~_|]){zw_space}*"
+    rf"^((?:{zw_space}|<[^>]+>|{music_symbols}|{quote_and_punct_prefix})*)\.\s*(-\s*)?(?!{zw_space}*[.:;!?؟،,*~_|]){zw_space}*"
 )
 
 end_dot_pattern = re.compile(
-    rf"(?<![.\-:;!?؟،,*~_|\s\u200b-\u200f\u202a-\u202e\u2066-\u2069\ufeff]){zw_space}*\.(?=(?:{zw_space}|<[^>]+>|{music_symbols})*(?:\r\n|\n)?$)"
+    rf"(?<![.\-:;!?؟،,*~_|\s\u200b-\u200f\u202a-\u202e\u2066-\u2069\ufeff]){zw_space}*\.(?=(?:{zw_space}|<[^>]+>|{music_symbols}|{quote_and_punct_suffix})*(?:\r\n|\n)?$)"
 )
 
 html_tag_split_pattern = re.compile(r"(<[^>]+>)")
