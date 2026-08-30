@@ -2981,12 +2981,15 @@ html_tag_split_pattern = re.compile(r"(<[^>]+>)")
 
 isolated_eng_num_pattern = re.compile(r"(?<![a-zA-Z])(\d+)(?![a-zA-Z])")
 
-
 # Rules for adding missing spaces after punctuation and around parentheses.
+
+
 def add_missing_spaces(text):
     """Add only clearly missing spaces without changing existing spacing."""
     html_tag_pattern = re.compile(r"<[^>]*>")
-    abbreviation_pattern = re.compile(r"(?<![\p{L}\p{N}])(?:[\p{L}\p{N}]{1,3}\.){2,}[\p{L}\p{N}]{1,3}(?![\p{L}\p{N}])")
+    abbreviation_pattern = re.compile(
+        r"(?<![\p{L}\p{N}])(?:[\p{L}\p{N}]+[\u200b-\u200f\ufeff]*\.){2}[\p{L}\p{N}]+(?:[\p{L}\p{N}])*"
+    )
     protected_spans = [match.span() for match in abbreviation_pattern.finditer(text)]
     tag_spans = [match.span() for match in html_tag_pattern.finditer(text)]
 
@@ -3047,6 +3050,11 @@ def add_missing_spaces(text):
         prev_char = text[prev_index] if prev_index is not None else ""
         if punctuation == ":" and prev_char.isdigit() and next_char.isdigit():
             return False
+        if punctuation == ":":
+            if prev_char == ">":
+                return False
+            if re.match(r"[a-zA-Z]", prev_char):
+                return False
         if punctuation == ".":
             prev_index = previous_visible(index - 1)
             if prev_index is not None and is_word_char(text[prev_index]) and is_word_char(next_char):
