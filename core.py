@@ -1432,7 +1432,7 @@ class SubtitleProcessor:
                     # Apply Pre-Process Option: Add Missing Spaces
                     if opt_add_missing_spaces:
                         before_add_missing_spaces = current_line
-                        temp_line = apply_rule_set(current_line, add_missing_spaces_rules_list)
+                        temp_line = add_missing_spaces(current_line)
                         current_line = temp_line
 
                         if current_line != before_add_missing_spaces:

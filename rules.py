@@ -2981,35 +2981,139 @@ html_tag_split_pattern = re.compile(r"(<[^>]+>)")
 
 isolated_eng_num_pattern = re.compile(r"(?<![a-zA-Z])(\d+)(?![a-zA-Z])")
 
+
 # Rules for adding missing spaces after punctuation and around parentheses.
-add_missing_spaces_rules_list = [
-    (re.compile(r"(^[^\u202B])(.*)( )([\u060C])( )([a-zA-Z]+)"), r"\1\2 \3", True),
-    (re.compile(r"([\u0600-\u06FF]+)(\.)([\b\w\d])"), r"\1\2 \3", True),
-    (re.compile(r"([^\x00-\x7F])(\.)( +)([^\x00-\x7F]{3,20})"), r"\1\2 \4", True),
-    (re.compile(r"([^\x00-\x7F])(\.)([^\x00-\x7F]{3,20})"), r"\1\2 \3", True),
-    (re.compile(r'([^\x00-\x7F])(\.)( +)([^-<>"\. ]{3,20})'), r"\1\2 \4", True),
-    (re.compile(r'([^\x00-\x7F])(\.)([^-<>"\. ]{3,20})'), r"\1\2 \3", True),
-    (re.compile(r"\b\.\.\.\b"), r"... ", True),
-    (re.compile(r"([\b\w\d])(!)([\b\w\d])"), r"\1\2 \3", True),
-    (re.compile(r"(\b[\b\w\d\p{C}\p{Cf} ]+\b)(!)( +)(\b[\b\w\d\p{C}\p{Cf} ]+\b)"), r"\1\2 \4", True),
-    (re.compile(r"(\b[\b\w\d\p{C}\p{Cf} ]+\b)(!)(\b[\b\w\d\p{C}\p{Cf} ]+\b)"), r"\1\2 \3", True),
-    (re.compile(r"(\b[^\x00-\x7F]+\b)(!)( +)(\b[^\x00-\x7F]+\b)"), r"\1\2 \4", True),
-    (re.compile(r"(\b[^\x00-\x7F]+\b)(!)(\b[^\x00-\x7F]+\b)"), r"\1\2 \3", True),
-    (re.compile(r"([\b\w\d])(!)([\b\w\d])"), r"\1\2 \3", True),
-    (re.compile(r"([^\x00-\x7F])(؟)( +)([^\x00-\x7F])"), r"\1\2 \4", True),
-    (re.compile(r"([^\x00-\x7F])(؟)([^\x00-\x7F])"), r"\1\2 \3", True),
-    (re.compile(r"([^\x00-\x7F])(؟)( +)([\b\w\d])"), r"\1\2 \4", True),
-    (re.compile(r"([^\x00-\x7F])(؟)([\b\w\d])"), r"\1\2 \3", True),
-    (re.compile(r"([\b\w\d\u200C]+)( +)(-)([\b\w\d\u200C]+)"), r"\1 \3 \4", True),
-    (re.compile(r"([\b\w\d\u200C]+)(-)( +)([\b\w\d\u200C]+)"), r"\1 \2 \4", True),
-    (
-        re.compile(r"([\u0600-\u06FF]+)([\:\.!\?\u060C\u061F]+)([\u0600-\u06FF]+)([\:\.!\?\u060C\u061F]+)([\b\w]+)"),
-        r"\1\2 \3\4 \5",
-        True,
-    ),
-    (re.compile(r"([\u0600-\u06FF]+)([\:\.!\?\u060C\u061F]+)([\b\w]+)"), r"\1\2 \3", True),
-    (re.compile(r"([\)\]]+)(\b)"), r"\1 \2", True),
-    (re.compile(r"(\b)([\(\[]+)"), r"\1 \2", True),
-    (re.compile(r"(\b)([\:\.!\?\u060C\u061F]+)([\(\[]+)"), r"\1\2 \3", True),
-    (re.compile(r"(^[^\u202B])(.*)([\u0600-\u06FF]+)([\:\.!\?\u060C\u061F]+)( )([a-zA-Z]+)"), r"\1\2\3\5\4\6", True),
-]
+def add_missing_spaces(text):
+    """Add only clearly missing spaces without changing existing spacing."""
+    html_tag_pattern = re.compile(r"<[^>]*>")
+    abbreviation_pattern = re.compile(r"(?<![\p{L}\p{N}])(?:[\p{L}\p{N}]{1,3}\.){2,}[\p{L}\p{N}]{1,3}(?![\p{L}\p{N}])")
+    protected_spans = [match.span() for match in abbreviation_pattern.finditer(text)]
+    tag_spans = [match.span() for match in html_tag_pattern.finditer(text)]
+
+    def is_inside_spans(index, spans):
+        return any(start <= index < end for start, end in spans)
+
+    def next_visible(index):
+        while index < len(text):
+            tag_match = html_tag_pattern.match(text, index)
+            if tag_match:
+                index = tag_match.end()
+                continue
+            if (
+                text[index]
+                in " \t\u200b\u200c\u200d\u200e\u200f\u202a\u202b\u202c\u202d\u202e\u2066\u2067\u2068\u2069\ufeff"
+            ):
+                index += 1
+                continue
+            if text[index] in "\r\n":
+                return None
+            return index
+        return None
+
+    def previous_visible(index):
+        while index >= 0:
+            if (
+                text[index]
+                in " \t\r\n\u200b\u200c\u200d\u200e\u200f\u202a\u202b\u202c\u202d\u202e\u2066\u2067\u2068\u2069\ufeff"
+            ):
+                index -= 1
+                continue
+            if text[index] == ">":
+                tag_start = text.rfind("<", 0, index + 1)
+                if tag_start >= 0 and ">" not in text[tag_start:index]:
+                    index = tag_start - 1
+                    continue
+            return index
+        return None
+
+    def is_word_char(char):
+        return bool(re.match(r"[\p{L}\p{N}_]", char))
+
+    def has_space_after(index):
+        return index + 1 < len(text) and text[index + 1] in " \t"
+
+    def should_add_after(index, punctuation):
+        next_index = next_visible(index + 1)
+        if next_index is None:
+            return False
+        if next_index <= index:
+            return False
+        next_char = text[next_index]
+        if text[index + 1 : next_index].find("<") >= 0 or next_char == "<":
+            return False
+        if next_char in "\r\n,،.:;!?؟!…)]}" or next_char in "\"'»":
+            return False
+        prev_index = previous_visible(index - 1)
+        prev_char = text[prev_index] if prev_index is not None else ""
+        if punctuation == ":" and prev_char.isdigit() and next_char.isdigit():
+            return False
+        if punctuation == ".":
+            prev_index = previous_visible(index - 1)
+            if prev_index is not None and is_word_char(text[prev_index]) and is_word_char(next_char):
+                if text[prev_index].isdigit() and next_char.isdigit():
+                    return False
+                if is_inside_spans(index, protected_spans):
+                    return False
+                if re.match(r"[a-zA-Z]", text[prev_index]) and re.match(r"[a-zA-Z0-9]", next_char):
+                    return False
+                if re.match(r"[0-9]", text[prev_index]) and re.match(r"[a-zA-Z]", next_char):
+                    return False
+        return is_word_char(next_char)
+
+    chars = list(text)
+    result = []
+    i = 0
+    while i < len(chars):
+        char = chars[i]
+
+        if char == "<":
+            tag_match = html_tag_pattern.match(text, i)
+            if tag_match:
+                result.append(tag_match.group(0))
+                i = tag_match.end()
+                continue
+
+        if char == "." and not is_inside_spans(i, protected_spans):
+            if i + 2 < len(chars) and chars[i : i + 3] == [".", ".", "."]:
+                result.extend([".", ".", "."])
+                end = i + 3
+                next_index = next_visible(end)
+                if next_index is not None:
+                    next_char = text[next_index]
+                    if is_word_char(next_char) and next_char not in "\r\n":
+                        if end < len(text) and text[end] not in " \t":
+                            result.append(" ")
+                i = end
+                continue
+            if should_add_after(i, ".") and not has_space_after(i):
+                result.append(".")
+                result.append(" ")
+                i += 1
+                continue
+
+        if char in "!?؟،;:":
+            if should_add_after(i, char) and not has_space_after(i):
+                result.append(char)
+                result.append(" ")
+                i += 1
+                continue
+
+        if char in "([":
+            prev_index = previous_visible(i - 1)
+            if prev_index is not None and is_word_char(text[prev_index]):
+                if i > 0 and text[i - 1] not in " \t":
+                    result.append(" ")
+
+        if char in ")]":
+            next_index = next_visible(i + 1)
+            if next_index is not None and is_word_char(text[next_index]):
+                if i + 1 < len(text) and text[i + 1] not in " \t":
+                    result.append(char)
+                    result.append(" ")
+                    i += 1
+                    continue
+
+        result.append(char)
+        i += 1
+
+    return "".join(result)
