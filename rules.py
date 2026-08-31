@@ -269,6 +269,8 @@ abbreviation_rules = [
 
 # Structure of rule lists for formatting processing parsed exactly from XML files
 comma_rules_list = [
+    # Remove a comma before a period (e.g. "...، ." -> "...")
+    (re.compile(r"[ \t]*[،,][ \t]*\."), ".", True),
     # Remove trailing commas while preserving closing formatting, direction marks, and quotes
     (re.compile(r"[،,]\s*(?=(?:[\u202A-\u202E\u200E\u200F]|[\"'»”’\)\]\}]|<[^<>]+>)*\s*$)"), "", True),
     (re.compile(r","), "،", True),

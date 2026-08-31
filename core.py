@@ -871,6 +871,14 @@ class SubtitleProcessor:
                         before_paren = current_line
                         temp_line = current_line
 
+                        # Normalize repeated brackets before any other parentheses processing.
+                        # This prevents repeated brackets from interfering with cross-line handling.
+                        temp_line = re.sub(
+                            r"(\(|\[|\{)(?:[ \t\u200b-\u200f\u202a-\u202e\u2066-\u2069\ufeff]*(?:\1))+",
+                            r"\1",
+                            temp_line,
+                        )
+
                         # Normalize repeated opening brackets at the start of the visible text.
                         # This keeps leading HTML/bidi markers intact while fixing cases like:
                         # "((text" -> "(text)"
