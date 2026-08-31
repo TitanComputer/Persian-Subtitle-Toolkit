@@ -428,7 +428,7 @@ question_mark_rules_list = [
     (re.compile(r"؟(\!)+"), "؟!", True),
     (re.compile(r"^(؟)( )*([a-zA-Z0-9]+)(.*)$"), r"\1\3\4", True),
     (re.compile(r"(\b)(\.)(؟)"), r"\1\3", True),
-    (re.compile(r"([^\u0000-\u007F])( *)(؟)( *)([^\u0000-\u007F])"), r"\1\3 \5", True),
+    (re.compile(r"([^\u0000-\u007F\"\'»”’\)\]\}])( *)(؟)( *)([^\u0000-\u007F\"\'»”’\)\]\}])"), r"\1\3 \5", True),
     (re.compile(r"([^\u0000-\u007F])( *)(؟)( *)([\w\d])"), r"\1\3 \5", True),
     (re.compile(r'\b"؟"\b'), '"؟ "', True),
 ]
