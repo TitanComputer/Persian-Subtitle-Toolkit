@@ -819,6 +819,13 @@ class SubtitleProcessor:
                         # Apply comma rules only if the line is not purely English
                         if not line_is_pure_english:
                             temp_line = apply_rule_set(temp_line, comma_rules_list)
+                        else:
+                            # Remove only a trailing comma from pure English lines without changing internal commas
+                            temp_line = re.sub(
+                                r"[،,]\s*(?=(?:[\u202A-\u202E\u200E\u200F]|[\"'»”’\)\]\}]|<[^<>]+>)*\s*$)",
+                                "",
+                                temp_line,
+                            )
 
                         current_line = temp_line
 
