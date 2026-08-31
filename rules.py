@@ -904,6 +904,33 @@ misplaced_chars_comment_pattern = re.compile(
 
 # Structure of rule lists for formatting processing parsed exactly from XML files
 misplaced_chars_rules = [
+    # Remove an extra comma placed after a period (e.g. "... . ،..." -> "... . ...")
+    (
+        re.compile(r"(\.)([ \t]*)[,،]"),
+        r"\1\2",
+        True,
+    ),
+    # Move misplaced leading punctuation to the end of the sentence while preserving
+    # HTML tags, directional marks, opening quotes/brackets, and dialogue dashes.
+    (
+        re.compile(
+            r"^(?P<prefix>(?:(?:<[^<>]+>)|[\u200b-\u200f\u202a-\u202e]|[\(\[\{«“\"'])*)"
+            r"(?P<dash>-\s*)?"
+            r"(?P<punct>\.\.\.|…|!|！|\?|؟|،|,|؛|;)\s*"
+            r"(?P<body>.+?)"
+            r"(?P<trailing_dash>\s*-\s*)?"
+            r"(?P<suffix>(?:(?:</?[^<>]+>)|[\u200b-\u200f\u202a-\u202e]|[\)\]\}»”\"'])*)$"
+        ),
+        lambda m: (
+            f"{m.group('prefix')}"
+            f"{m.group('dash') or ''}"
+            f"{re.sub(r'[\s\.…]+$', '', m.group('body'))}"
+            f"{m.group('punct') if m.group('punct') != '…' else '...'}"
+            f"{m.group('trailing_dash') or ''}"
+            f"{m.group('suffix')}"
+        ),
+        True,
+    ),
     # Fix misplaced English phrase with punctuation at the end of a Persian sentence
     # Correctly handles leading/trailing dialogue hyphens:
     # "برگشت به حالت عادی ،Init 5" -> "Init 5، برگشت به حالت عادی"
