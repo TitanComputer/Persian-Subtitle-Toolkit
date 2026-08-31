@@ -1001,11 +1001,29 @@ class SubtitleProcessor:
                                     body,
                                 )
 
-                                # Check if the closing bracket is present in the subsequent subtitle line before appending one
-                                has_matching_bracket_in_next = False
-                                if has_valid_next and next_line:
-                                    if closing_char in next_line:
-                                        has_matching_bracket_in_next = True
+                                # Detect a misplaced opening bracket at the start when another opening bracket appears later.
+                                # In this structure, the leading bracket belongs to the sentence ending and the later bracket
+                                # starts the actual parenthesized phrase. Move the leading bracket to the end of the line.
+                                has_matching_bracket_in_next = bool(
+                                    has_valid_next and next_line and closing_char in next_line
+                                )
+
+                                if (
+                                    closing_char not in body
+                                    and first_char in body[1:]
+                                    and not has_matching_bracket_in_next
+                                ):
+                                    body = body[1:]
+
+                                    line_ending = ""
+                                    if body.endswith("\r\n"):
+                                        line_ending = "\r\n"
+                                        body = body[:-2]
+                                    elif body.endswith("\n"):
+                                        line_ending = "\n"
+                                        body = body[:-1]
+
+                                    body = body + closing_char + line_ending
 
                                 # If the line has no matching closing bracket and is not completed on the next line, append one at the end.
                                 if closing_char not in body and not has_matching_bracket_in_next:
