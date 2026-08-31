@@ -292,7 +292,7 @@ comma_rules_list = [
     (re.compile(r"\n'، "), "\n'،", True),
     (re.compile(r"، \n"), "\n", True),
     (re.compile(r"،\n"), "\n", True),
-    (re.compile(r"، $"), "", True),
+    (re.compile(r"،\s*(?=(?:[\"'»”’\)\]\}]|<[^<>]+>)*\s*$)"), "", True),
     (re.compile(r"،$"), "", True),
     (re.compile(r">، \b"), ">،", True),
     (re.compile(r"(،+)"), "،", True),
@@ -326,7 +326,7 @@ exclamation_rules_list = [
     (re.compile(r"\n(\!)(.*)(\-*)(\!)( *)(\-*)$"), r"\n\2\3\4\5\6", True),
     (re.compile(r"^(.*)( *)(\-*)(\!)( *)(\-*)\n"), r"\1\2\3\4\5\6\n", True),
     (re.compile(r"\n(.*)( *)(\-*)(\!)( *)(\-*)$"), r"\n\1\2\3\4\5\6", True),
-    (re.compile(r"(\b[^\u0000-\u007F]+\b)( *)(\!)( *)([^\-\<\>\"\! ])"), r"\1\3 \5", True),
+    (re.compile(r"(\b[^\u0000-\u007F]+\b)( *)(\!)( *)([^\-\<\>\"\!\p{P}\p{S} ])"), r"\1\3 \5", True),
     # Move leading exclamation mark to the end of the line (handles dialog hyphens, inner ellipsis, and HTML tags)
     (
         re.compile(
