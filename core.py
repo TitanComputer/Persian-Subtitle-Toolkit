@@ -698,7 +698,10 @@ class SubtitleProcessor:
 
         # Parallel workers report progress by completed files, so the parent does not need
         # to pre-convert and pre-scan every file before starting the CPU-bound work.
-        if not self._worker_mode and not use_parallel:
+        if not self._worker_mode:
+            # Preserve the original input-line counting behavior for the final summary.
+            # This intentionally mirrors the original serial pipeline and is kept separate
+            # from the parallel processing progress path.
             converted_files = []
 
             for file_path in srt_files_paths:
@@ -740,6 +743,7 @@ class SubtitleProcessor:
             actual_file_path = file_path
             converted_temp_file = False
             local_lines_processed = 0
+            input_line_count = 0
 
             file_process_logs.append(f"Identified file: {filename}")
 
@@ -784,6 +788,7 @@ class SubtitleProcessor:
                         lines = f.readlines()
 
                 file_process_logs.append(f"Identified encoding: {file_encoding}")
+                input_line_count = len(lines)
 
                 if self._parallel_progress_queue is not None:
                     self._parallel_progress_total = len(lines)
@@ -2164,9 +2169,11 @@ class SubtitleProcessor:
                     except Exception as e:
                         print(f"Subtitle detailed logging failed: {e}")
 
+            return input_line_count
+
         if self._worker_mode:
             for worker_file_path in srt_files_paths:
-                _process_file(worker_file_path)
+                input_line_count = _process_file(worker_file_path) or 0
 
         elif use_parallel:
             total_weight = sum(max(1, os.path.getsize(path)) if os.path.isfile(path) else 1 for path in srt_files_paths)
@@ -2228,7 +2235,7 @@ class SubtitleProcessor:
                                 else:
                                     self.failed_count += 1
 
-                                self.total_lines_processed += result.get("total_lines_processed", 0)
+                                self.total_lines_processed += result.get("input_line_count", 0)
 
                                 for process_log_file, entries in result.get("process_logs", []):
                                     if not entries:
@@ -2270,6 +2277,9 @@ class SubtitleProcessor:
 
             self._report_progress()
 
+        if not self._worker_mode and self.total_input_lines > 0:
+            self.total_lines_processed = self.total_input_lines
+
         self._report_complete()
         self.elapsed_time = time.time() - start_time
 
@@ -2287,5 +2297,6 @@ class SubtitleProcessor:
                 "successful_count": self.successful_count,
                 "failed_count": self.failed_count,
                 "total_lines_processed": self.total_lines_processed,
+                "input_line_count": input_line_count,
                 "process_logs": self._deferred_process_logs,
             }
