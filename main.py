@@ -1131,7 +1131,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         self.reset_button.grid(row=0, column=5, padx=(5, 0), pady=5, sticky="ew")
 
     def reset_progress_ui(self):
-        self._progress_displayed = 0.0
         self.progress_bar.stop()
         self.progress_bar.configure(mode="determinate")
         self.progress_bar.set(0)
@@ -1154,17 +1153,13 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         self.progress_bar.set(0)
 
     def update_processing_progress(self, percent):
+        self.after(0, lambda p=percent: self._update_processing_progress_ui(p))
+
+    def _update_processing_progress_ui(self, percent):
         value = max(0.0, min(100.0, percent))
-        self.after(0, lambda p=value: self._set_processing_progress(p))
 
-    def _set_processing_progress(self, percent):
-        if not hasattr(self, "_progress_displayed"):
-            self._progress_displayed = 0.0
-
-        percent = max(self._progress_displayed, min(100.0, percent))
-        self._progress_displayed = percent
-        self.progress_bar.set(percent / 100.0)
-        self.progress_status_var.set(f"Processing {percent:.1f}%")
+        self.progress_bar.set(value / 100.0)
+        self.progress_status_var.set(f"Processing {value:.1f}%")
 
     def complete_progress(self):
         self.after(0, self._complete_progress_ui)
@@ -1172,8 +1167,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
     def _complete_progress_ui(self):
         self.progress_bar.stop()
         self.progress_bar.configure(mode="determinate")
-        self.progress_bar.set(1.0)
-        self._progress_displayed = 100.0
+        self.progress_bar.set(1)
         self.progress_status_var.set("100% Completed")
 
     # --- Feature Dependency Methods ---
