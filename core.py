@@ -1,16 +1,16 @@
 import multiprocessing
-from concurrent.futures import ProcessPoolExecutor, as_completed, wait, FIRST_COMPLETED
-
+import queue
+from concurrent.futures import ProcessPoolExecutor, wait, FIRST_COMPLETED
 from converter import *
 
 _PROCESS_WORKER_OPTIONS = None
-_PROCESS_WORKER_PROGRESS_STATE = None
+_PROCESS_WORKER_PROGRESS_QUEUE = None
 
 
-def _init_process_worker(options, progress_state):
-    global _PROCESS_WORKER_OPTIONS, _PROCESS_WORKER_PROGRESS_STATE
+def _init_process_worker(options, progress_queue):
+    global _PROCESS_WORKER_OPTIONS, _PROCESS_WORKER_PROGRESS_QUEUE
     _PROCESS_WORKER_OPTIONS = options
-    _PROCESS_WORKER_PROGRESS_STATE = progress_state
+    _PROCESS_WORKER_PROGRESS_QUEUE = progress_queue
 
 
 def _process_file_in_worker(file_path):
@@ -20,7 +20,7 @@ def _process_file_in_worker(file_path):
         target_files=[file_path],
         _worker_mode=True,
     )
-    processor._parallel_progress_state = _PROCESS_WORKER_PROGRESS_STATE
+    processor._parallel_progress_queue = _PROCESS_WORKER_PROGRESS_QUEUE
     processor._parallel_progress_key = file_path
     return processor.run()
 
@@ -495,7 +495,7 @@ class SubtitleProcessor:
         self._progress_lock = threading.Lock()
         self._counter_lock = threading.Lock()
         self._log_lock = threading.Lock()
-        self._parallel_progress_state = None
+        self._parallel_progress_queue = None
         self._parallel_progress_key = None
         self._parallel_progress_total = 0
         self._parallel_progress_lines = 0
@@ -537,7 +537,7 @@ class SubtitleProcessor:
             pass
 
     def _update_parallel_progress(self, force=False):
-        if self._parallel_progress_state is None or not self._parallel_progress_key:
+        if self._parallel_progress_queue is None or not self._parallel_progress_key:
             return
 
         total_lines = self._parallel_progress_total
@@ -550,7 +550,7 @@ class SubtitleProcessor:
 
         progress = min(1.0, lines_processed / total_lines)
         try:
-            self._parallel_progress_state[self._parallel_progress_key] = progress
+            self._parallel_progress_queue.put_nowait((self._parallel_progress_key, progress))
         except Exception:
             pass
 
@@ -621,6 +621,8 @@ class SubtitleProcessor:
                 )
                 return
             Logger.log_process(f"Process started. Found {len(srt_files_paths)} file(s).", self.folder_path)
+
+        self.total_files_discovered = len(srt_files_paths)
 
         # Cache ALL options to avoid thousands of dictionary lookups during line processing
         opt_bypass_enabled = self.options.get("bypass_enabled", 1)
@@ -783,7 +785,7 @@ class SubtitleProcessor:
 
                 file_process_logs.append(f"Identified encoding: {file_encoding}")
 
-                if self._parallel_progress_state is not None:
+                if self._parallel_progress_queue is not None:
                     self._parallel_progress_total = len(lines)
                     self._parallel_progress_lines = 0
                     self._parallel_progress_step = max(1, self._parallel_progress_total // 100)
@@ -807,7 +809,7 @@ class SubtitleProcessor:
 
                 for index, line in enumerate(lines, start=1):
                     local_lines_processed += 1
-                    if self._parallel_progress_state is not None:
+                    if self._parallel_progress_queue is not None:
                         self._parallel_progress_lines += 1
                         self._update_parallel_progress()
                     if local_lines_processed >= 250:
@@ -2104,7 +2106,7 @@ class SubtitleProcessor:
                     self.failed_count += 1
 
             finally:
-                if self._parallel_progress_state is not None:
+                if self._parallel_progress_queue is not None:
                     self._parallel_progress_lines = self._parallel_progress_total
                     self._update_parallel_progress(force=True)
 
@@ -2168,14 +2170,16 @@ class SubtitleProcessor:
 
         elif use_parallel:
             total_weight = sum(max(1, os.path.getsize(path)) if os.path.isfile(path) else 1 for path in srt_files_paths)
-            manager = multiprocessing.Manager()
-            progress_state = manager.dict({file_path: 0.0 for file_path in srt_files_paths})
+            mp_context = multiprocessing.get_context("spawn")
+            progress_queue = mp_context.Queue()
+            progress_state = {file_path: 0.0 for file_path in srt_files_paths}
 
             try:
                 with ProcessPoolExecutor(
                     max_workers=max_workers,
+                    mp_context=mp_context,
                     initializer=_init_process_worker,
-                    initargs=(self.options, progress_state),
+                    initargs=(self.options, progress_queue),
                 ) as executor:
                     future_to_path = {
                         executor.submit(_process_file_in_worker, file_path): file_path for file_path in srt_files_paths
@@ -2190,10 +2194,17 @@ class SubtitleProcessor:
                             return_when=FIRST_COMPLETED,
                         )
 
+                        while True:
+                            try:
+                                progress_file_path, progress = progress_queue.get_nowait()
+                            except queue.Empty:
+                                break
+                            progress_state[progress_file_path] = max(0.0, min(1.0, progress))
+
                         current_progress_weight = 0.0
                         for path, progress in progress_state.items():
                             weight = max(1, os.path.getsize(path)) if os.path.isfile(path) else 1
-                            current_progress_weight += weight * max(0.0, min(1.0, progress))
+                            current_progress_weight += weight * progress
 
                         self._report_progress_by_completed_weight(current_progress_weight, total_weight)
 
@@ -2206,8 +2217,17 @@ class SubtitleProcessor:
 
                             try:
                                 result = future.result() or {}
-                                self.successful_count += result.get("successful_count", 0)
-                                self.failed_count += result.get("failed_count", 0)
+                                worker_successful = result.get("successful_count", 0)
+                                worker_failed = result.get("failed_count", 0)
+
+                                # Each submitted future represents exactly one input file.
+                                if worker_successful > 0:
+                                    self.successful_count += 1
+                                elif worker_failed > 0:
+                                    self.failed_count += 1
+                                else:
+                                    self.failed_count += 1
+
                                 self.total_lines_processed += result.get("total_lines_processed", 0)
 
                                 for process_log_file, entries in result.get("process_logs", []):
@@ -2229,12 +2249,16 @@ class SubtitleProcessor:
                             current_progress_weight = 0.0
                             for path, progress in progress_state.items():
                                 weight = max(1, os.path.getsize(path)) if os.path.isfile(path) else 1
-                                current_progress_weight += weight * max(0.0, min(1.0, progress))
+                                current_progress_weight += weight * progress
                             self._report_progress_by_completed_weight(current_progress_weight, total_weight)
 
                 self._report_progress_by_completed_weight(total_weight, total_weight)
             finally:
-                manager.shutdown()
+                try:
+                    progress_queue.close()
+                    progress_queue.join_thread()
+                except Exception:
+                    pass
 
         else:
             _process_file_serial = _process_file

@@ -1870,7 +1870,8 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         processor.run()
         successful = getattr(processor, "successful_count", 0)
         failed = getattr(processor, "failed_count", 0)
-        total = successful + failed
+        discovered = getattr(processor, "total_files_discovered", successful + failed)
+        total = min(discovered, successful + failed)
         elapsed = getattr(processor, "elapsed_time", 0)
         lines_proc = getattr(processor, "total_lines_processed", 0)
         lines_per_sec = lines_proc / elapsed if elapsed > 0 else 0
@@ -1879,7 +1880,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             summary_message = (
                 f"Subtitle processing has completed.\n\n"
                 f"Processed {lines_proc} lines in {elapsed:.2f} seconds ({lines_per_sec:.2f} lines/sec).\n\n"
-                f"Total files discovered: {total}\n"
+                f"Total files discovered: {discovered}\n"
                 f"Successfully processed: {successful}\n"
                 f"Failed / Skipped: {failed}\n\n"
                 f'Output files are located in the "Outputs" folder within the selected directory.'
@@ -1888,7 +1889,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             summary_message = (
                 f"Single file processing has completed.\n\n"
                 f"Processed {lines_proc} lines in {elapsed:.2f} seconds ({lines_per_sec:.2f} lines/sec).\n\n"
-                f"Total files selected: {total}\n"
+                f"Total files selected: {discovered}\n"
                 f"Successfully processed: {successful}\n"
                 f"Failed / Skipped: {failed}\n\n"
                 f"Output files and logs are located in the respective file directories."
