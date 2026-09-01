@@ -1,4 +1,28 @@
+from concurrent.futures import ProcessPoolExecutor, as_completed, wait, FIRST_COMPLETED
+import multiprocessing
+
 from converter import *
+
+_PROCESS_WORKER_OPTIONS = None
+_PROCESS_PROGRESS_QUEUE = None
+
+
+def _init_process_worker(options, progress_queue=None):
+    global _PROCESS_WORKER_OPTIONS, _PROCESS_PROGRESS_QUEUE
+    _PROCESS_WORKER_OPTIONS = options
+    _PROCESS_PROGRESS_QUEUE = progress_queue
+
+
+def _process_file_in_worker(file_path):
+    processor = SubtitleProcessor(
+        "",
+        options=_PROCESS_WORKER_OPTIONS or {},
+        target_files=[file_path],
+        _worker_mode=True,
+        progress_queue=_PROCESS_PROGRESS_QUEUE,
+        progress_file_path=file_path,
+    )
+    return processor.run()
 
 
 def _extract_required_literal(pattern):
@@ -448,6 +472,9 @@ class SubtitleProcessor:
         convert_start_callback=None,
         process_start_callback=None,
         complete_callback=None,
+        _worker_mode=False,
+        progress_queue=None,
+        progress_file_path=None,
     ):
         self.folder_path = folder_path
         self.options = options if options else {}
@@ -457,6 +484,12 @@ class SubtitleProcessor:
         self.convert_start_callback = convert_start_callback
         self.process_start_callback = process_start_callback
         self.complete_callback = complete_callback
+        self._worker_mode = _worker_mode
+        self._deferred_process_logs = []
+        self._progress_queue = progress_queue
+        self._progress_file_path = progress_file_path
+        self._progress_queue = progress_queue
+        self._progress_file_path = progress_file_path
 
         self.successful_count = 0
         self.failed_count = 0
@@ -465,6 +498,9 @@ class SubtitleProcessor:
 
         self.total_input_lines = 0
         self.last_progress_reported = -1
+        self._progress_lock = threading.Lock()
+        self._counter_lock = threading.Lock()
+        self._log_lock = threading.Lock()
 
     def _report_convert_start(self):
         if self.convert_start_callback:
@@ -484,20 +520,86 @@ class SubtitleProcessor:
         if not self.progress_callback:
             return
 
-        if self.total_input_lines <= 0:
-            return
+        with self._progress_lock:
+            if self.total_input_lines <= 0:
+                return
 
-        percent = (self.total_lines_processed / self.total_input_lines) * 100
+            percent = min(100.0, (self.total_lines_processed / self.total_input_lines) * 100)
 
-        if percent == self.last_progress_reported:
-            return
+            if percent == self.last_progress_reported:
+                return
 
-        self.last_progress_reported = percent
+            self.last_progress_reported = percent
 
         try:
             self.progress_callback(percent)
         except Exception:
             pass
+
+    @staticmethod
+    def _count_file_lines(file_path):
+        try:
+            with open(file_path, "rb") as f:
+                return sum(1 for _ in f)
+        except Exception:
+            return 0
+
+    def _report_worker_line_progress(self, processed_lines):
+        if not self._worker_mode or self._progress_queue is None or not self._progress_file_path:
+            return
+        try:
+            self._progress_queue.put((self._progress_file_path, processed_lines))
+        except Exception:
+            pass
+
+    @staticmethod
+    def _count_file_lines(file_path):
+        try:
+            with open(file_path, "rb") as f:
+                return sum(1 for _ in f)
+        except Exception:
+            return 0
+
+    def _report_worker_line_progress(self, processed_lines):
+        if not self._worker_mode or self._progress_queue is None or not self._progress_file_path:
+            return
+        try:
+            self._progress_queue.put((self._progress_file_path, processed_lines))
+        except Exception:
+            pass
+
+    @staticmethod
+    def _get_worker_count(file_count):
+        if file_count <= 0:
+            return 1
+
+        cpu_count = os.cpu_count() or 1
+        max_workers = min(8, max(1, cpu_count))
+        return min(file_count, max_workers)
+
+    @staticmethod
+    def _should_parallelize(file_paths):
+        file_count = len(file_paths)
+        if file_count < 3:
+            return False
+
+        total_size = 0
+        for path in file_paths:
+            try:
+                total_size += os.path.getsize(path)
+            except OSError:
+                total_size += 1
+
+        # Avoid process startup overhead for a few very small files while still
+        # parallelizing large batches and CPU-heavy workloads.
+        return file_count >= 8 or total_size >= 512 * 1024
+
+    def _report_progress_by_completed_weight(self, completed_weight, total_weight):
+        if not self.progress_callback or total_weight <= 0:
+            return
+
+        percent = min(100.0, (completed_weight / total_weight) * 100.0)
+        self.progress_callback(percent)
 
     def _report_complete(self):
         if self.complete_callback:
@@ -512,7 +614,7 @@ class SubtitleProcessor:
 
         if self.target_files:
             srt_files_paths = [f for f in self.target_files if f.lower().endswith(valid_extensions)]
-            if srt_files_paths:
+            if srt_files_paths and not self._worker_mode:
                 Logger.log_process(
                     f"Single file process started. Found {len(srt_files_paths)} file(s).",
                     os.path.dirname(srt_files_paths[0]),
@@ -600,33 +702,40 @@ class SubtitleProcessor:
                 replace_regexes.append((w, regex))
 
         start_time = time.time()
+        use_parallel = self._should_parallelize(srt_files_paths)
         self._report_convert_start()
-        converted_files = []
 
-        for file_path in srt_files_paths:
+        # Parallel workers report progress by completed files, so the parent does not need
+        # to pre-convert and pre-scan every file before starting the CPU-bound work.
+        if not self._worker_mode and not use_parallel:
+            converted_files = []
 
-            actual_file_path, validation_success = process_and_convert_if_needed(
-                file_path,
-                TimestampedLogBuffer(),
-                TimestampedLogBuffer(),
-                False,
-                opt_convert_ass_comments,
-            )
+            for file_path in srt_files_paths:
 
-            if validation_success:
-                converted_files.append(actual_file_path)
+                actual_file_path, validation_success = process_and_convert_if_needed(
+                    file_path,
+                    TimestampedLogBuffer(),
+                    TimestampedLogBuffer(),
+                    False,
+                    opt_convert_ass_comments,
+                )
 
-        self.total_input_lines = 0
+                if validation_success:
+                    converted_files.append(actual_file_path)
 
-        for converted_file in converted_files:
-            try:
-                with open(converted_file, "r", encoding="utf-8", errors="ignore") as f:
-                    self.total_input_lines += sum(1 for _ in f)
-            except Exception:
-                pass
+            self.total_input_lines = 0
+
+            for converted_file in converted_files:
+                try:
+                    with open(converted_file, "r", encoding="utf-8", errors="ignore") as f:
+                        self.total_input_lines += sum(1 for _ in f)
+                except Exception:
+                    pass
 
         self._report_process_start()
-        for file_path in srt_files_paths:
+        max_workers = self._get_worker_count(len(srt_files_paths))
+
+        def _process_file(file_path):
             filename = os.path.basename(file_path)
             current_file_dir = os.path.dirname(file_path)
 
@@ -639,6 +748,8 @@ class SubtitleProcessor:
             file_has_changes = False
             actual_file_path = file_path
             converted_temp_file = False
+            local_lines_processed = 0
+            worker_progress_interval = 0
 
             file_process_logs.append(f"Identified file: {filename}")
 
@@ -656,8 +767,9 @@ class SubtitleProcessor:
             if not validation_success:
                 file_process_logs.append(f"Validation failed for unsupported or corrupted format: {filename}")
                 self._report_progress()
-                self.failed_count += 1
-                continue  # Skip processing for this invalid file
+                with self._counter_lock:
+                    self.failed_count += 1
+                return  # Skip processing for this invalid file
 
             try:
                 # Smart encoding reader on actual_file_path instead of original file_path
@@ -692,6 +804,9 @@ class SubtitleProcessor:
                 processed_lines = []
                 parentheses_fixed_lines = {}
 
+                if self._worker_mode:
+                    worker_progress_interval = max(1, (len(lines) + 999) // 1000)
+
                 if detailed_logs_enabled:
                     file_subtitle_logs.append(f"Started tracking changes for: {filename}")
 
@@ -699,9 +814,14 @@ class SubtitleProcessor:
                 index_match = index_pattern.match
 
                 for index, line in enumerate(lines, start=1):
-                    self.total_lines_processed += 1
-                    if (self.total_lines_processed % 250) == 0:
+                    local_lines_processed += 1
+                    if local_lines_processed >= 50:
+                        with self._counter_lock:
+                            self.total_lines_processed += local_lines_processed
+                            reported_lines = self.total_lines_processed
+                        local_lines_processed = 0
                         self._report_progress()
+                        self._report_worker_line_progress(reported_lines)
 
                     # Skip all processing if the line is not a subtitle text (e.g., timecodes, indexes, empty lines)
                     if index not in valid_text_indices:
@@ -1979,16 +2099,28 @@ class SubtitleProcessor:
                     file_process_logs.append(f"Original file deleted by request: {filename}")
 
                 # Increment successful tracking counter
-                self.successful_count += 1
+                with self._counter_lock:
+                    self.successful_count += 1
                 self._report_progress()
 
             except Exception as e:
                 file_process_logs.append(f"Failed to process file {filename} due to: {str(e)}")
                 self._report_progress()
                 # Increment failed tracking counter
-                self.failed_count += 1
+                with self._counter_lock:
+                    self.failed_count += 1
 
             finally:
+                if local_lines_processed:
+                    with self._counter_lock:
+                        self.total_lines_processed += local_lines_processed
+                        reported_lines = self.total_lines_processed
+                    local_lines_processed = 0
+                    self._report_progress()
+                    self._report_worker_line_progress(reported_lines)
+                elif self._worker_mode:
+                    self._report_worker_line_progress(self.total_lines_processed)
+
                 if opt_delete_converted_temp_files and converted_temp_file and os.path.isfile(actual_file_path):
                     try:
                         os.remove(actual_file_path)
@@ -2006,12 +2138,17 @@ class SubtitleProcessor:
                     os.makedirs(process_log_dir, exist_ok=True)
                     process_log_file = os.path.join(process_log_dir, "process-logs.txt")
 
-                    try:
-                        with open(process_log_file, "a", encoding="utf-8") as f:
-                            for timestamp, message in file_process_logs:
-                                f.write(f"[{timestamp}] {message}\n")
-                    except Exception as e:
-                        print(f"Process logging failed: {e}")
+                    if self._worker_mode:
+                        self._deferred_process_logs.append((process_log_file, list(file_process_logs)))
+                    else:
+                        try:
+                            with self._log_lock:
+                                with open(process_log_file, "a", encoding="utf-8") as f:
+                                    f.writelines(
+                                        f"[{timestamp}] {message}\n" for timestamp, message in file_process_logs
+                                    )
+                        except Exception as e:
+                            print(f"Process logging failed: {e}")
 
                 # Flush timestamped subtitle logs while preserving the timestamp captured at append time
                 if (
@@ -2025,22 +2162,130 @@ class SubtitleProcessor:
                     subtitle_log_file = os.path.join(subtitle_log_dir, f"{filename}_changelogs.txt")
 
                     try:
-                        with open(subtitle_log_file, "a", encoding="utf-8") as f:
-                            for timestamp, message in file_subtitle_logs:
-                                f.write(f"[{timestamp}] {message}\n")
+                        with self._log_lock:
+                            with open(subtitle_log_file, "a", encoding="utf-8") as f:
+                                for timestamp, message in file_subtitle_logs:
+                                    f.write(f"[{timestamp}] {message}\n")
                     except Exception as e:
                         print(f"Subtitle detailed logging failed: {e}")
-        if self.total_input_lines > 0:
-            self.total_lines_processed = self.total_input_lines
 
-        self._report_progress()
+        if self._worker_mode:
+            for worker_file_path in srt_files_paths:
+                _process_file(worker_file_path)
+
+        elif use_parallel:
+            total_input_lines = 0
+            for file_path in srt_files_paths:
+                total_input_lines += self._count_file_lines(file_path)
+            self.total_input_lines = total_input_lines
+
+            manager = multiprocessing.Manager()
+            progress_queue = manager.Queue()
+            file_progress = {file_path: 0 for file_path in srt_files_paths}
+
+            try:
+                with ProcessPoolExecutor(
+                    max_workers=max_workers,
+                    initializer=_init_process_worker,
+                    initargs=(self.options, progress_queue),
+                ) as executor:
+                    future_to_path = {
+                        executor.submit(_process_file_in_worker, file_path): file_path for file_path in srt_files_paths
+                    }
+
+                    pending = set(future_to_path)
+                    while pending:
+                        while True:
+                            try:
+                                progress_file, processed_lines = progress_queue.get_nowait()
+                            except Exception:
+                                break
+
+                            if progress_file in file_progress:
+                                file_progress[progress_file] = max(file_progress[progress_file], processed_lines)
+
+                            if self.total_input_lines > 0:
+                                actual_processed = sum(file_progress.values())
+                                self.total_lines_processed = max(self.total_lines_processed, actual_processed)
+                                self._report_progress()
+
+                        done, pending = wait(pending, timeout=0.05, return_when=FIRST_COMPLETED)
+
+                        for future in done:
+                            file_path = future_to_path[future]
+
+                            try:
+                                result = future.result() or {}
+                                self.successful_count += result.get("successful_count", 0)
+                                self.failed_count += result.get("failed_count", 0)
+                                file_progress[file_path] = max(
+                                    file_progress.get(file_path, 0),
+                                    result.get("total_lines_processed", 0),
+                                )
+                                self.total_lines_processed = sum(file_progress.values())
+                                self._report_progress()
+
+                                for process_log_file, entries in result.get("process_logs", []):
+                                    if not entries:
+                                        continue
+                                    try:
+                                        os.makedirs(os.path.dirname(process_log_file), exist_ok=True)
+                                        with open(process_log_file, "a", encoding="utf-8") as f:
+                                            f.writelines(f"[{timestamp}] {message}\n" for timestamp, message in entries)
+                                    except Exception as e:
+                                        print(f"Process logging failed: {e}")
+                            except Exception as e:
+                                self.failed_count += 1
+                                print(f"Parallel worker failed for {os.path.basename(file_path)}: {e}")
+
+                    while True:
+                        try:
+                            progress_file, processed_lines = progress_queue.get_nowait()
+                        except Exception:
+                            break
+
+                        if progress_file in file_progress:
+                            file_progress[progress_file] = max(file_progress[progress_file], processed_lines)
+
+                if self.total_input_lines > 0:
+                    self.total_lines_processed = self.total_input_lines
+                    self._report_progress()
+            finally:
+                try:
+                    progress_queue.close()
+                except Exception:
+                    pass
+                try:
+                    manager.shutdown()
+                except Exception:
+                    pass
+
+        else:
+            _process_file_serial = _process_file
+            for file_path in srt_files_paths:
+                _process_file_serial(file_path)
+
+            if self.total_input_lines > 0:
+                self.total_lines_processed = self.total_input_lines
+
+            self._report_progress()
+
         self._report_complete()
         self.elapsed_time = time.time() - start_time
 
-        if self.target_files:
-            Logger.log_process(
-                "All single file tasks completed inside process pipeline.",
-                os.path.dirname(self.target_files[0]) if self.target_files else "",
-            )
-        else:
-            Logger.log_process("All tasks completed inside process pipeline.", self.folder_path)
+        if not self._worker_mode:
+            if self.target_files:
+                Logger.log_process(
+                    "All single file tasks completed inside process pipeline.",
+                    os.path.dirname(self.target_files[0]) if self.target_files else "",
+                )
+            else:
+                Logger.log_process("All tasks completed inside process pipeline.", self.folder_path)
+
+        if self._worker_mode:
+            return {
+                "successful_count": self.successful_count,
+                "failed_count": self.failed_count,
+                "total_lines_processed": self.total_lines_processed,
+                "process_logs": self._deferred_process_logs,
+            }
