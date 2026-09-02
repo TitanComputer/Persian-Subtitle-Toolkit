@@ -930,7 +930,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             text="Duration (sec):",
             font=font_bold,
         )
-        self.lbl_intro_credit_duration.grid(row=0, column=1, padx=(0, 5), pady=2, sticky="w")
+        self.lbl_intro_credit_duration.grid(row=0, column=1, padx=(70, 5), pady=2, sticky="w")
 
         self.opt_intro_credit_duration = ctk.CTkOptionMenu(
             self.intro_credit_frame,
