@@ -129,10 +129,7 @@ class ItemEditorModal(ctk.CTkToplevel):
             pass
 
         if iconpath:
-            try:
-                self.iconphoto(False, iconpath)
-            except Exception:
-                pass
+            self.after(250, lambda: self.iconphoto(False, iconpath))
 
         width = 460
         height = 145
@@ -218,21 +215,35 @@ class ItemEditorModal(ctk.CTkToplevel):
 class CTkListboxManager(ctk.CTkFrame):
     """Reusable Listbox container with Add, Edit, Remove, Clear All action buttons and alternating row colors."""
 
-    def __init__(self, master, line_count=6, max_items=None, get_icon_callback=None, on_change_callback=None, **kwargs):
+    def __init__(
+        self,
+        master,
+        line_count=4,
+        width=None,
+        max_items=None,
+        enable_scrollbar=True,
+        get_icon_callback=None,
+        on_change_callback=None,
+        **kwargs,
+    ):
         super().__init__(master, fg_color="transparent", **kwargs)
         self.max_items = max_items
         self.line_count = line_count
+        self.custom_width = width
+        self.enable_scrollbar = enable_scrollbar
         self.get_icon_callback = get_icon_callback
         self.on_change_callback = on_change_callback
         self._is_enabled = True
         self._font_size = 12
 
         self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=0)
+        self.grid_rowconfigure(0, weight=0)
         self.grid_rowconfigure(1, weight=0)
 
-        # Button toolbar at the top-left of the Listbox with refined spacing
+        # Button toolbar at the top-left of the Listbox
         self.btn_frame = ctk.CTkFrame(self, fg_color="transparent")
-        self.btn_frame.grid(row=0, column=0, padx=5, pady=(8, 6), sticky="w")
+        self.btn_frame.grid(row=0, column=0, columnspan=2, padx=5, pady=(6, 4), sticky="w")
 
         btn_font = ctk.CTkFont(size=12, weight="bold")
         self.btn_add = ctk.CTkButton(
@@ -269,33 +280,44 @@ class CTkListboxManager(ctk.CTkFrame):
         )
         self.btn_clear.grid(row=0, column=3, padx=4, pady=0)
 
-        # Listbox and Scrollbar frame
-        self.list_container = ctk.CTkFrame(self, fg_color="transparent")
-        self.list_container.grid(row=1, column=0, padx=5, pady=0, sticky="ew")
-        self.list_container.grid_columnconfigure(0, weight=1)
+        # Direct Listbox mapping to prevent outer frame sizing issues
+        listbox_kwargs = {
+            "height": self.line_count,
+            "font": ("Segoe UI", self._font_size),
+            "justify": "right",
+            "activestyle": "none",
+            "highlightthickness": 1,
+            "relief": "flat",
+            "bd": 0,
+        }
+        if self.custom_width:
+            listbox_kwargs["width"] = self.custom_width
 
-        self.listbox = tk.Listbox(
-            self.list_container,
-            height=self.line_count,
-            font=("Segoe UI", self._font_size),
-            justify="right",
-            activestyle="none",
-            highlightthickness=1,
-            relief="flat",
-            bd=0,
-        )
-        self.listbox.grid(row=0, column=0, sticky="ew")
+        self.listbox = tk.Listbox(self, **listbox_kwargs)
+        self.listbox.grid(row=1, column=0, padx=(5, 0), pady=0, sticky="nsew" if not self.custom_width else "w")
 
-        self.scrollbar = ctk.CTkScrollbar(
-            self.list_container, orientation="vertical", command=self.listbox.yview, width=12
-        )
-        self.scrollbar.grid(row=0, column=1, sticky="ns", padx=(2, 0))
-        self.listbox.configure(yscrollcommand=self.scrollbar.set)
+        if self.enable_scrollbar:
+            self.scrollbar = ctk.CTkScrollbar(self, orientation="vertical", command=self.listbox.yview, width=12)
+            self.listbox.configure(yscrollcommand=self._on_scroll)
+        else:
+            self.scrollbar = None
 
         self.listbox.bind("<Double-Button-1>", lambda event: self.edit_item())
 
         self.apply_theme()
         ctk.AppearanceModeTracker.add(self.apply_theme)
+
+    def _on_scroll(self, first, last):
+        if not self.enable_scrollbar or not self.scrollbar:
+            return
+        # Dynamically manage scrollbar visibility: show only when content exceeds visible line count
+        first_val = float(first)
+        last_val = float(last)
+        if first_val <= 0.0 and last_val >= 1.0:
+            self.scrollbar.grid_forget()
+        else:
+            self.scrollbar.grid(row=1, column=1, padx=(2, 5), pady=0, sticky="ns")
+            self.scrollbar.set(first, last)
 
     def apply_theme(self, new_mode=None):
         mode = ctk.get_appearance_mode()
@@ -336,6 +358,9 @@ class CTkListboxManager(ctk.CTkFrame):
         for i in range(self.listbox.size()):
             row_bg = self.bg_even if i % 2 == 0 else self.bg_odd
             self.listbox.itemconfigure(i, background=row_bg, foreground=self.fg)
+
+        if self.enable_scrollbar and self.scrollbar:
+            self.after_idle(lambda: self.listbox.yview_scroll(0, "units"))
 
     def set_font_size(self, size):
         self._font_size = size
@@ -944,7 +969,8 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
 
         self.lst_bypass = CTkListboxManager(
             process_parent,
-            line_count=6,
+            line_count=4,
+            enable_scrollbar=True,
             get_icon_callback=lambda: self.iconpath,
             on_change_callback=self.save_config,
         )
@@ -961,7 +987,8 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
 
         self.lst_remove = CTkListboxManager(
             process_parent,
-            line_count=6,
+            line_count=4,
+            enable_scrollbar=True,
             get_icon_callback=lambda: self.iconpath,
             on_change_callback=self.save_config,
         )
@@ -978,7 +1005,8 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
 
         self.lst_replace = CTkListboxManager(
             process_parent,
-            line_count=6,
+            line_count=4,
+            enable_scrollbar=True,
             get_icon_callback=lambda: self.iconpath,
             on_change_callback=self.save_config,
         )
@@ -1062,7 +1090,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             text="Duration (sec):",
             font=font_bold,
         )
-        self.lbl_intro_credit_duration.grid(row=0, column=1, padx=(70, 5), pady=2, sticky="w")
+        self.lbl_intro_credit_duration.grid(row=0, column=1, padx=(60, 5), pady=2, sticky="w")
 
         self.opt_intro_credit_duration = ctk.CTkOptionMenu(
             self.intro_credit_frame,
@@ -1076,11 +1104,13 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         self.lst_intro_credit = CTkListboxManager(
             post_parent,
             line_count=2,
+            width=80,
             max_items=2,
+            enable_scrollbar=False,
             get_icon_callback=lambda: self.iconpath,
             on_change_callback=self.save_config,
         )
-        self.lst_intro_credit.grid(row=8, column=0, padx=5, pady=(0, 10), sticky="ew")
+        self.lst_intro_credit.grid(row=8, column=0, padx=5, pady=(0, 10), sticky="w")
 
         self.chk_reformat_renumber = ctk.CTkCheckBox(
             post_parent,
