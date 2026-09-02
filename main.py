@@ -6,285 +6,461 @@ from tkinter import messagebox
 from PIL import ImageTk, Image
 from idlelib.tooltip import Hovertip
 import webbrowser
-import arabic_reshaper
-from bidi.algorithm import get_display
 from tkinterdnd2 import TkinterDnD, DND_FILES
 
 
-def check_and_apply_rtl(widget):
-    """Configure RTL/LTR text alignment and fix word inversion based on Persian character detection."""
-    # Using specific tags with formatting to force correct word ordering (Bidi layout)
-    widget.tag_configure("rtl", justify="right")
-    widget.tag_configure("ltr", justify="left")
-
-    # Clear existing orientation tags before reapplying to prevent conflicts
-    widget.tag_remove("rtl", "1.0", "end")
-    widget.tag_remove("ltr", "1.0", "end")
-
-    text = widget.get("1.0", "end-1c")
-    if any("\u0600" <= c <= "\u06ff" for c in text):
-        widget.tag_add("rtl", "1.0", "end")
-    else:
-        widget.tag_add("ltr", "1.0", "end")
-
-
-def textbox_undo(textbox):
-    """Perform undo action on the textbox."""
+def entry_undo(entry):
+    """Perform undo action on the entry widget."""
     try:
-        textbox._textbox.edit_undo()
-        check_and_apply_rtl(textbox._textbox)
+        entry.event_generate("<<Undo>>")
     except tk.TclError:
         pass
 
 
-def textbox_redo(textbox):
-    """Perform redo action on the textbox."""
+def entry_redo(entry):
+    """Perform redo action on the entry widget."""
     try:
-        textbox._textbox.edit_redo()
-        check_and_apply_rtl(textbox._textbox)
+        entry.event_generate("<<Redo>>")
     except tk.TclError:
         pass
 
 
-def textbox_cut(textbox):
-    """Perform cut action on the textbox."""
+def entry_cut(entry):
+    """Perform cut action on the entry widget."""
     try:
-        if textbox._textbox.tag_ranges("sel"):
-            textbox_copy(textbox)
-            textbox._textbox.delete("sel.first", "sel.last")
-            check_and_apply_rtl(textbox._textbox)
+        entry.event_generate("<<Cut>>")
     except tk.TclError:
         pass
 
 
-def textbox_copy(textbox):
-    """Perform copy action on the textbox."""
+def entry_copy(entry):
+    """Perform copy action on the entry widget."""
     try:
-        if textbox._textbox.tag_ranges("sel"):
-            text = textbox._textbox.get("sel.first", "sel.last")
-            textbox.clipboard_clear()
-            textbox.clipboard_append(text)
+        entry.event_generate("<<Copy>>")
     except tk.TclError:
         pass
 
 
-def textbox_paste(textbox):
-    """Perform paste action on the textbox."""
+def entry_paste(entry):
+    """Perform paste action on the entry widget."""
     try:
-        text = textbox.clipboard_get()
-        if textbox._textbox.tag_ranges("sel"):
-            textbox._textbox.delete("sel.first", "sel.last")
-        textbox._textbox.insert("insert", text)
-        check_and_apply_rtl(textbox._textbox)
+        entry.event_generate("<<Paste>>")
     except tk.TclError:
         pass
 
 
-def textbox_delete_selection(textbox):
-    """Perform delete action on the selection."""
+def entry_delete_selection(entry):
+    """Perform delete action on the entry selection."""
     try:
-        if textbox._textbox.tag_ranges("sel"):
-            textbox._textbox.delete("sel.first", "sel.last")
-        check_and_apply_rtl(textbox._textbox)
+        entry.event_generate("<Delete>")
     except tk.TclError:
         pass
 
 
-def textbox_select_all(textbox):
-    """Select all text in the textbox."""
-    widget = textbox._textbox
-    widget.tag_add("sel", "1.0", "end-1c")
-    widget.mark_set("insert", "1.0")
-    widget.see("insert")
-    widget.focus_set()
+def entry_select_all(entry):
+    """Select all text in the entry widget."""
+    try:
+        entry.select_range(0, "end")
+        entry.icursor("end")
+    except tk.TclError:
+        pass
     return "break"
 
 
-def reshape_persian_text(text):
-    lines = text.split("\n")
-    result = []
+def setup_enhanced_entry(entry_widget):
+    """Binds right-click context menu and keyboard shortcuts to standard entry widgets."""
+    menu = tk.Menu(entry_widget, tearoff=0)
 
-    for line in lines:
-        if any("\u0600" <= c <= "\u06ff" for c in line):
-            result.append(get_display(arabic_reshaper.reshape(line)))
-        else:
-            result.append(line)
-
-    return "\n".join(result)
-
-
-def textbox_focus_in(textbox):
-    if hasattr(textbox, "_original_text"):
-        textbox.delete("1.0", "end")
-        textbox.insert("1.0", textbox._original_text)
-
-        widget = textbox._textbox
-
-        widget.tag_remove("rtl", "1.0", "end")
-        widget.tag_remove("ltr", "1.0", "end")
-
-        check_and_apply_rtl(widget)
-
-
-def textbox_focus_out(textbox):
-    original_text = textbox.get("1.0", "end-1c")
-
-    textbox._original_text = original_text
-
-    # Remove Tatweel (Kashida) characters only from the displayed text
-    display_source = original_text.replace("\u0640", "")
-
-    display_text = reshape_persian_text(display_source)
-
-    textbox.delete("1.0", "end")
-    textbox.insert("1.0", display_text)
-
-    widget = textbox._textbox
-
-    widget.tag_remove("rtl", "1.0", "end")
-    widget.tag_remove("ltr", "1.0", "end")
-
-    if any("\u0600" <= c <= "\u06ff" for c in original_text):
-        widget.tag_configure("rtl", justify="right")
-        widget.tag_add("rtl", "1.0", "end")
-    else:
-        widget.tag_configure("ltr", justify="left")
-        widget.tag_add("ltr", "1.0", "end")
-
-
-def setup_enhanced_textbox(textbox):
-    textbox._textbox.configure(undo=True)
-
-    menu = tk.Menu(textbox, tearoff=0)
-
-    menu.add_command(label="Undo\t\t", accelerator="Ctrl+Z", command=lambda: textbox_undo(textbox))
-    menu.add_command(label="Redo\t\t", accelerator="Ctrl+Y", command=lambda: textbox_redo(textbox))
+    menu.add_command(label="Undo\t\t", accelerator="Ctrl+Z", command=lambda: entry_undo(entry_widget))
+    menu.add_command(label="Redo\t\t", accelerator="Ctrl+Y", command=lambda: entry_redo(entry_widget))
     menu.add_separator()
-    menu.add_command(label="Cut\t\t", accelerator="Ctrl+X", command=lambda: textbox_cut(textbox))
-    menu.add_command(label="Copy\t\t", accelerator="Ctrl+C", command=lambda: textbox_copy(textbox))
-    menu.add_command(label="Paste\t\t", accelerator="Ctrl+V", command=lambda: textbox_paste(textbox))
-    menu.add_command(label="Delete\t\t", accelerator="Delete", command=lambda: textbox_delete_selection(textbox))
+    menu.add_command(label="Cut\t\t", accelerator="Ctrl+X", command=lambda: entry_cut(entry_widget))
+    menu.add_command(label="Copy\t\t", accelerator="Ctrl+C", command=lambda: entry_copy(entry_widget))
+    menu.add_command(label="Paste\t\t", accelerator="Ctrl+V", command=lambda: entry_paste(entry_widget))
+    menu.add_command(label="Delete\t\t", accelerator="Delete", command=lambda: entry_delete_selection(entry_widget))
     menu.add_separator()
-    menu.add_command(label="Select All\t\t", accelerator="Ctrl+A", command=lambda: textbox_select_all(textbox))
+    menu.add_command(label="Select All\t\t", accelerator="Ctrl+A", command=lambda: entry_select_all(entry_widget))
 
     def show_menu(event):
         menu.tk_popup(event.x_root, event.y_root)
 
-    widget = textbox._textbox
-    textbox._original_text = ""
-
-    def textbox_mouse_leave(textbox):
-        current_focus = textbox.focus_get()
-
-        if current_focus == textbox or current_focus == textbox._textbox:
-            return
-
-        try:
-            if textbox._textbox.tag_ranges("sel"):
-                return
-        except Exception:
-            pass
-
-        textbox.master.focus_set()
-
-    widget.bind(
-        "<FocusIn>",
-        lambda event, tb=textbox: textbox_focus_in(tb),
-        add="+",
-    )
-
-    widget.bind(
-        "<FocusOut>",
-        lambda event, tb=textbox: textbox_focus_out(tb),
-        add="+",
-    )
-
-    widget.bind(
-        "<Leave>",
-        lambda event, tb=textbox: textbox_mouse_leave(tb),
-        add="+",
-    )
-    # Force right-to-left typing behavior for Persian text
-    widget.configure(wrap="word")
-
-    def on_key_release(event):
-        check_and_apply_rtl(widget)
-
-        text = widget.get("1.0", "end-1c")
-        if any("\u0600" <= c <= "\u06ff" for c in text):
-            widget.mark_set("insert", "end-1c")
-
-    widget.bind("<KeyRelease>", on_key_release, add="+")
-    widget.bind("<Button-3>", show_menu, add="+")
+    entry_widget.bind("<Button-3>", show_menu, add="+")
 
     def handle_ctrl_key(event):
-        # event.state & 0x0004 checks if Ctrl is pressed
         if event.state & 0x0004:
             code = event.keycode
             if code == 65:  # A
-                textbox_select_all(textbox)
+                entry_select_all(entry_widget)
                 return "break"
             elif code == 90:  # Z
-                textbox_undo(textbox)
+                entry_undo(entry_widget)
                 return "break"
             elif code == 89:  # Y
-                textbox_redo(textbox)
+                entry_redo(entry_widget)
                 return "break"
             elif code == 67:  # C
-                textbox_copy(textbox)
+                entry_copy(entry_widget)
                 return "break"
             elif code == 88:  # X
-                textbox_cut(textbox)
+                entry_cut(entry_widget)
                 return "break"
             elif code == 86:  # V
-                textbox_paste(textbox)
+                entry_paste(entry_widget)
                 return "break"
         return None
 
-    # Bind to KeyPress to catch events regardless of keyboard layout
-    widget.bind("<KeyPress>", handle_ctrl_key, add="+")
+    entry_widget.bind("<KeyPress>", handle_ctrl_key, add="+")
+
+
+class ItemEditorModal(ctk.CTkToplevel):
+    """Modal dialog for adding and editing listbox items with RTL support and shortcuts."""
+
+    def __init__(self, parent, title_text, initial_text="", iconpath=None):
+        super().__init__(parent)
+        self.parent = parent
+        self.result = None
+        self.title(title_text)
+        self.resizable(False, False)
+        self.transient(parent)
+
+        try:
+            self.parent.attributes("-disabled", True)
+        except Exception:
+            pass
+
+        if iconpath:
+            try:
+                self.iconphoto(False, iconpath)
+            except Exception:
+                pass
+
+        width = 460
+        height = 145
+        x = (self.winfo_screenwidth() // 2) - (width // 2)
+        y = (self.winfo_screenheight() // 2) - (height // 2)
+        self.geometry(f"{width}x{height}+{x}+{y}")
+
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=0)
+        self.grid_columnconfigure(0, weight=1)
+
+        self.entry_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.entry_frame.grid(row=0, column=0, padx=15, pady=(15, 5), sticky="nsew")
+        self.entry_frame.grid_columnconfigure(0, weight=1)
+
+        self.entry = ctk.CTkEntry(
+            self.entry_frame,
+            height=36,
+            font=("Segoe UI", 13),
+            justify="right",
+        )
+        self.entry.grid(row=0, column=0, sticky="ew", padx=5, pady=5)
+        self.entry.insert(0, initial_text)
+        setup_enhanced_entry(self.entry._entry)
+
+        self.button_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.button_frame.grid(row=1, column=0, padx=15, pady=(0, 15), sticky="e")
+
+        self.btn_cancel = ctk.CTkButton(
+            self.button_frame,
+            text="Cancel",
+            width=75,
+            height=30,
+            font=ctk.CTkFont(size=13, weight="bold"),
+            fg_color="#A9A9A9",
+            hover_color="#808080",
+            text_color="#000000",
+            command=self._on_cancel,
+        )
+        self.btn_cancel.grid(row=0, column=0, padx=(0, 10))
+
+        self.btn_ok = ctk.CTkButton(
+            self.button_frame,
+            text="OK",
+            width=75,
+            height=30,
+            font=ctk.CTkFont(size=13, weight="bold"),
+            command=self._on_ok,
+        )
+        self.btn_ok.grid(row=0, column=1)
+
+        self.entry.bind("<Return>", lambda event: self._on_ok())
+        self.entry.bind("<Escape>", lambda event: self._on_cancel())
+
+        self.protocol("WM_DELETE_WINDOW", self._on_cancel)
+        self.grab_set()
+        self.after(50, lambda: self.entry.focus_set())
+        self.wait_window(self)
+
+    def _on_ok(self):
+        text = self.entry.get().strip()
+        if not text:
+            messagebox.showwarning("Invalid Input", "Input text cannot be empty or only spaces.", parent=self)
+            self.entry.focus_set()
+            return
+        self.result = text
+        self._close_modal()
+
+    def _on_cancel(self):
+        self.result = None
+        self._close_modal()
+
+    def _close_modal(self):
+        try:
+            self.parent.attributes("-disabled", False)
+            self.parent.lift()
+            self.parent.focus_force()
+        except Exception:
+            pass
+        self.destroy()
+
+
+class CTkListboxManager(ctk.CTkFrame):
+    """Reusable Listbox container with Add, Edit, Remove, Clear All action buttons and alternating row colors."""
+
+    def __init__(self, master, line_count=6, max_items=None, get_icon_callback=None, on_change_callback=None, **kwargs):
+        super().__init__(master, fg_color="transparent", **kwargs)
+        self.max_items = max_items
+        self.line_count = line_count
+        self.get_icon_callback = get_icon_callback
+        self.on_change_callback = on_change_callback
+        self._is_enabled = True
+        self._font_size = 12
+
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=0)
+
+        # Button toolbar at the top-left of the Listbox with refined spacing
+        self.btn_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.btn_frame.grid(row=0, column=0, padx=5, pady=(8, 6), sticky="w")
+
+        btn_font = ctk.CTkFont(size=12, weight="bold")
+        self.btn_add = ctk.CTkButton(
+            self.btn_frame, text="Add", width=55, height=24, font=btn_font, command=self.add_item
+        )
+        self.btn_add.grid(row=0, column=0, padx=(0, 4), pady=0)
+
+        self.btn_edit = ctk.CTkButton(
+            self.btn_frame, text="Edit", width=55, height=24, font=btn_font, command=self.edit_item
+        )
+        self.btn_edit.grid(row=0, column=1, padx=4, pady=0)
+
+        self.btn_remove = ctk.CTkButton(
+            self.btn_frame,
+            text="Remove",
+            width=62,
+            height=24,
+            font=btn_font,
+            fg_color="#C0392B",
+            hover_color="#962D22",
+            command=self.remove_item,
+        )
+        self.btn_remove.grid(row=0, column=2, padx=4, pady=0)
+
+        self.btn_clear = ctk.CTkButton(
+            self.btn_frame,
+            text="Clear All",
+            width=68,
+            height=24,
+            font=btn_font,
+            fg_color="#7F8C8D",
+            hover_color="#626567",
+            command=self.clear_all,
+        )
+        self.btn_clear.grid(row=0, column=3, padx=4, pady=0)
+
+        # Listbox and Scrollbar frame
+        self.list_container = ctk.CTkFrame(self, fg_color="transparent")
+        self.list_container.grid(row=1, column=0, padx=5, pady=0, sticky="ew")
+        self.list_container.grid_columnconfigure(0, weight=1)
+
+        self.listbox = tk.Listbox(
+            self.list_container,
+            height=self.line_count,
+            font=("Segoe UI", self._font_size),
+            justify="right",
+            activestyle="none",
+            highlightthickness=1,
+            relief="flat",
+            bd=0,
+        )
+        self.listbox.grid(row=0, column=0, sticky="ew")
+
+        self.scrollbar = ctk.CTkScrollbar(
+            self.list_container, orientation="vertical", command=self.listbox.yview, width=12
+        )
+        self.scrollbar.grid(row=0, column=1, sticky="ns", padx=(2, 0))
+        self.listbox.configure(yscrollcommand=self.scrollbar.set)
+
+        self.listbox.bind("<Double-Button-1>", lambda event: self.edit_item())
+
+        self.apply_theme()
+        ctk.AppearanceModeTracker.add(self.apply_theme)
+
+    def apply_theme(self, new_mode=None):
+        mode = ctk.get_appearance_mode()
+        if mode == "Dark":
+            self.bg_even = "#242424"
+            self.bg_odd = "#2D2D2D"
+            self.fg = "#FFFFFF"
+            self.sel_bg = "#1F6AA5"
+            self.sel_fg = "#FFFFFF"
+            self.disabled_bg = "#1A1A1A"
+            self.disabled_fg = "#666666"
+            self.highlight_color = "#3A3A3A"
+        else:
+            self.bg_even = "#FFFFFF"
+            self.bg_odd = "#F2F2F2"
+            self.fg = "#222222"
+            self.sel_bg = "#1F6AA5"
+            self.sel_fg = "#FFFFFF"
+            self.disabled_bg = "#E6E6E6"
+            self.disabled_fg = "#999999"
+            self.highlight_color = "#C0C0C0"
+
+        self.listbox.configure(
+            bg=self.bg_even if self._is_enabled else self.disabled_bg,
+            fg=self.fg if self._is_enabled else self.disabled_fg,
+            highlightbackground=self.highlight_color,
+            highlightcolor=self.sel_bg,
+            selectbackground=self.sel_bg,
+            selectforeground=self.sel_fg,
+        )
+        self._refresh_colors()
+
+    def _refresh_colors(self):
+        if not self._is_enabled:
+            self.listbox.configure(bg=self.disabled_bg, fg=self.disabled_fg)
+            return
+
+        for i in range(self.listbox.size()):
+            row_bg = self.bg_even if i % 2 == 0 else self.bg_odd
+            self.listbox.itemconfigure(i, background=row_bg, foreground=self.fg)
+
+    def set_font_size(self, size):
+        self._font_size = size
+        self.listbox.configure(font=("Segoe UI", self._font_size))
+
+    def set_state(self, is_enabled):
+        self._is_enabled = is_enabled
+        btn_state = "normal" if is_enabled else "disabled"
+        self.btn_add.configure(state=btn_state)
+        self.btn_edit.configure(state=btn_state)
+        self.btn_remove.configure(state=btn_state)
+        self.btn_clear.configure(state=btn_state)
+        self.listbox.configure(state="normal" if is_enabled else "disabled")
+        self._refresh_colors()
+
+    def get_items(self):
+        return list(self.listbox.get(0, "end"))
+
+    def get_items_text(self):
+        return "\n".join(self.get_items())
+
+    def set_items(self, items):
+        self.listbox.configure(state="normal")
+        self.listbox.delete(0, "end")
+        for item in items:
+            if item.strip():
+                if self.max_items and self.listbox.size() >= self.max_items:
+                    break
+                self.listbox.insert("end", item.strip())
+        self._refresh_colors()
+        if not self._is_enabled:
+            self.listbox.configure(state="disabled")
+
+    def set_items_from_text(self, text):
+        items = [line.strip() for line in text.split("\n") if line.strip()]
+        self.set_items(items)
+
+    def add_item(self):
+        if not self._is_enabled:
+            return
+        if self.max_items and self.listbox.size() >= self.max_items:
+            messagebox.showwarning("Limit Reached", f"Maximum {self.max_items} item(s) allowed.")
+            return
+
+        icon = self.get_icon_callback() if self.get_icon_callback else None
+        dialog = ItemEditorModal(self.winfo_toplevel(), "Add Item", "", iconpath=icon)
+        if dialog.result:
+            self.listbox.insert("end", dialog.result)
+            self._refresh_colors()
+            if self.on_change_callback:
+                self.on_change_callback()
+
+    def edit_item(self):
+        if not self._is_enabled:
+            return
+        selected_idx = self.listbox.curselection()
+        if not selected_idx:
+            messagebox.showinfo("Select Item", "Please select an item from the list to edit.")
+            return
+
+        idx = selected_idx[0]
+        current_val = self.listbox.get(idx)
+        icon = self.get_icon_callback() if self.get_icon_callback else None
+        dialog = ItemEditorModal(self.winfo_toplevel(), "Edit Item", current_val, iconpath=icon)
+        if dialog.result:
+            self.listbox.delete(idx)
+            self.listbox.insert(idx, dialog.result)
+            self._refresh_colors()
+            if self.on_change_callback:
+                self.on_change_callback()
+
+    def remove_item(self):
+        if not self._is_enabled:
+            return
+        selected_idx = self.listbox.curselection()
+        if not selected_idx:
+            messagebox.showinfo("Select Item", "Please select an item from the list to remove.")
+            return
+
+        idx = selected_idx[0]
+        val = self.listbox.get(idx)
+        confirm = messagebox.askyesno("Confirm Removal", f'Are you sure you want to remove:\n\n"{val}"?')
+        if confirm:
+            self.listbox.delete(idx)
+            self._refresh_colors()
+            if self.on_change_callback:
+                self.on_change_callback()
+
+    def clear_all(self):
+        if not self._is_enabled:
+            return
+        if self.listbox.size() == 0:
+            return
+
+        confirm = messagebox.askyesno("Confirm Clear All", "Are you sure you want to remove all items from this list?")
+        if confirm:
+            self.listbox.delete(0, "end")
+            self._refresh_colors()
+            if self.on_change_callback:
+                self.on_change_callback()
 
 
 class CTkDualScrollableFrame(ctk.CTkFrame):
     def __init__(self, master, **kwargs):
-        # Set default corner radius to zero to avoid corner artifacts
         kwargs.setdefault("corner_radius", 0)
-
         super().__init__(master, **kwargs)
 
-        # Retrieve the current theme background color
         self._theme_bg = self._get_theme_bg()
-
-        # Configure main frame appearance and background
         self.configure(fg_color=self._theme_bg, bg_color=self._theme_bg, corner_radius=0)
 
-        # Initialize the canvas for scrollable content management
         self.canvas = tk.Canvas(self, bg=self._theme_bg, highlightthickness=0, bd=0, relief="flat", insertwidth=0)
-
-        # Initialize vertical and horizontal scrollbars
         self.vsb = ctk.CTkScrollbar(self, orientation="vertical", command=self.canvas.yview)
         self.hsb = ctk.CTkScrollbar(self, orientation="horizontal", command=self.canvas.xview)
 
-        # Link scrollbars to the canvas view commands
         self.canvas.configure(yscrollcommand=self.vsb.set, xscrollcommand=self.hsb.set)
 
-        # Create the inner content container frame
         self.inner_frame = ctk.CTkFrame(self.canvas, fg_color=self._theme_bg, bg_color=self._theme_bg, corner_radius=0)
-
-        # Embed the inner frame inside the canvas window
         self.inner_window = self.canvas.create_window((0, 0), window=self.inner_frame, anchor="nw")
 
-        # Create a filler frame for the bottom-right corner when both scrollbars are visible
         self.corner_fill = tk.Frame(self, bg=self._theme_bg, bd=0, highlightthickness=0)
 
-        # Place the canvas inside the main layout grid
         self.canvas.grid(row=0, column=0, sticky="nsew", padx=0, pady=0)
-
-        # Configure main grid weights for proper scaling
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
-        # Bind configuration and mouse interaction events
         self.inner_frame.bind("<Configure>", self._on_frame_configure)
         self.canvas.bind("<Configure>", self._on_canvas_configure)
         self.canvas.bind("<Enter>", self._bind_mouse_scroll)
@@ -292,29 +468,22 @@ class CTkDualScrollableFrame(ctk.CTkFrame):
         self.inner_frame.bind("<Enter>", self._bind_mouse_scroll)
         self.inner_frame.bind("<Leave>", self._unbind_mouse_scroll)
 
-        # Register appearance mode tracker callback for theme switching
         ctk.AppearanceModeTracker.add(self._update_canvas_bg)
-
-        # Defer initial theme background update to idle loop
         self.after_idle(self._update_canvas_bg)
 
     def _get_theme_bg(self):
-        """Extract the background color matching the active theme mode."""
         color = ctk.ThemeManager.theme["CTkFrame"]["fg_color"]
         if isinstance(color, (list, tuple)):
             color = color[1 if ctk.get_appearance_mode() == "Dark" else 0]
         return color
 
     def _update_canvas_bg(self, new_appearance_mode=None):
-        """Update widget background colors when the application theme changes."""
         self._theme_bg = self._get_theme_bg()
-
         self.configure(fg_color=self._theme_bg, bg_color=self._theme_bg)
         self.canvas.configure(bg=self._theme_bg)
         self.corner_fill.configure(bg=self._theme_bg)
 
         if self.inner_frame.winfo_exists():
-            # Use try-except block to safely configure the inner frame and avoid CustomTkinter internal textbox attribute errors
             try:
                 self.inner_frame.configure(fg_color=self._theme_bg, bg_color=self._theme_bg)
             except Exception:
@@ -324,7 +493,6 @@ class CTkDualScrollableFrame(ctk.CTkFrame):
         self.after_idle(self._check_scrollbars)
 
     def _propagate_appearance(self, widget, mode):
-        """Recursively apply appearance mode updates to child widgets safely."""
         try:
             if hasattr(widget, "_set_appearance_mode"):
                 widget._set_appearance_mode(mode)
@@ -332,13 +500,11 @@ class CTkDualScrollableFrame(ctk.CTkFrame):
             pass
 
         for child in widget.winfo_children():
-            # Skip propagating down into nested CustomTkinter textboxes to prevent configuration AttributeError exceptions
-            if isinstance(child, ctk.CTkTextbox):
+            if isinstance(child, (ctk.CTkTextbox, tk.Listbox)):
                 continue
             self._propagate_appearance(child, mode)
 
     def _update_inner_width(self, canvas_width):
-        """Adjust inner window width to match or exceed the viewport width."""
         content_width = self.inner_frame.winfo_reqwidth()
         if content_width <= canvas_width:
             self.canvas.itemconfigure(self.inner_window, width=canvas_width)
@@ -346,19 +512,16 @@ class CTkDualScrollableFrame(ctk.CTkFrame):
             self.canvas.itemconfigure(self.inner_window, width=content_width)
 
     def _on_frame_configure(self, event=None):
-        """Handle inner frame geometry changes to update scroll regions."""
         self._update_inner_width(self.canvas.winfo_width())
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
         self._check_scrollbars()
 
     def _on_canvas_configure(self, event):
-        """Handle canvas viewport resize events."""
         self._update_inner_width(event.width)
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
         self._check_scrollbars()
 
     def _check_scrollbars(self):
-        """Manage visibility rules for vertical and horizontal scrollbars."""
         self.update_idletasks()
 
         canvas_w = self.canvas.winfo_width()
@@ -391,19 +554,16 @@ class CTkDualScrollableFrame(ctk.CTkFrame):
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
 
     def _bind_mouse_scroll(self, event):
-        """Bind global mouse wheel events when cursor hovers over the frame."""
         self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
         self.canvas.bind_all("<Button-4>", self._on_mousewheel)
         self.canvas.bind_all("<Button-5>", self._on_mousewheel)
 
     def _unbind_mouse_scroll(self, event):
-        """Unbind global mouse wheel events when cursor leaves the frame."""
         self.canvas.unbind_all("<MouseWheel>")
         self.canvas.unbind_all("<Button-4>")
         self.canvas.unbind_all("<Button-5>")
 
     def _on_mousewheel(self, event):
-        """Process vertical mouse wheel scrolling actions."""
         if not self.vsb.winfo_ismapped():
             return
 
@@ -417,7 +577,6 @@ class CTkDualScrollableFrame(ctk.CTkFrame):
             self.canvas.yview_scroll(1, "units")
 
 
-# Created wrapper class to inject TkinterDnD capabilities into CustomTkinter window
 class CustomTkinterDnD(ctk.CTk, TkinterDnD.DnDWrapper):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -428,7 +587,9 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
     def __init__(self):
         super().__init__()
 
-        # Hide window rendering visually using alpha transparency to prevent flickering
+        self._last_width = 0
+        self._last_height = 0
+
         self.attributes("-alpha", 0.0)
 
         self.lock = AppLock(APP_NAME)
@@ -446,75 +607,70 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
 
         self.title(f"{APP_NAME} v{APP_VERSION}")
 
-        # Load assets safely (assuming 'assets' folder is alongside the script)
-        # Using a resource path helper if needed, but for simplicity we rely on relative path here.
         temp_dir = os.path.dirname(__file__)
         try:
             self.iconpath = ImageTk.PhotoImage(file=self.resource_path(os.path.join(temp_dir, "assets", "icon.png")))
             heart_path = self.resource_path(os.path.join(temp_dir, "assets", "heart.png"))
             img = Image.open(heart_path)
             width_img, height_img = img.size
-            # For CTk widgets (scaled, recommended)
             self.heart_image = ctk.CTkImage(
                 light_image=Image.open(heart_path), dark_image=Image.open(heart_path), size=(width_img, height_img)
             )
 
-            # For window icon (must be PhotoImage)
             self.heart_icon = ImageTk.PhotoImage(file=heart_path)
             self.wm_iconbitmap()
             self.iconphoto(False, self.iconpath)
         except Exception:
-            # Fallback if assets are missing
             self.iconpath = None
             self.heart_image = None
             print("Warning: Could not load application icons.")
 
-        # Window Configuration
         self.protocol("WM_DELETE_WINDOW", self.on_close)
         self.update_idletasks()
 
-        # Make the window resizable and set minimum size for stability
         self.resizable(True, True)
         self.minsize(800, 600)
 
-        # Grid Configuration for main window
-        self.grid_rowconfigure(0, weight=0)  # Top row (fixed height)
-        self.grid_rowconfigure(1, weight=1)  # Middle empty frame (expandable)
-        self.grid_rowconfigure(2, weight=0)  # Progress row (fixed height)
-        self.grid_rowconfigure(3, weight=0)  # Bottom row (fixed height)
+        self.grid_rowconfigure(0, weight=0)
+        self.grid_rowconfigure(1, weight=1)
+        self.grid_rowconfigure(2, weight=0)
+        self.grid_rowconfigure(3, weight=0)
 
         self.grid_columnconfigure(0, weight=1)
         self.create_widget()
 
-        # Load config to overwrite default variable values
         self.config_manager = ConfigManager(CONFIG_FILE, DEFAULT_CONFIG)
-        # Load configuration, adjust dimensions, and state logic
         self.load_config()
 
         self.after(100, lambda: self.start_btn.focus_set())
-
-        # Safely reveal the window after states are established
         self.after(200, lambda: self.attributes("-alpha", 1.0))
 
-        # Bind the configure event to the main window to detect size changes for fonts
         self.bind("<Configure>", self.adjust_button_fonts, add="+")
 
     def adjust_button_fonts(self, event):
-        """Dynamically scale button fonts based on window width."""
-        # Only process if the event is from the main window itself to avoid lag
+        """Dynamically scale button and listbox fonts only when width actually changes (prevents flicker)."""
         if event.widget == self:
+            if event.width == self._last_width and event.height == self._last_height:
+                return
+
+            self._last_width = event.width
+            self._last_height = event.height
+
             base_width = 800
             current_width = event.width
-
-            # Calculate scale factor (min: 1.0 to keep base size, max: 1.3 to prevent overflow)
             scale = max(1.0, min(1.3, current_width / base_width))
 
-            # Update all custom dynamic CTkFont objects
             self.btn_font_13.configure(size=int(13 * scale))
             self.btn_font_14.configure(size=int(14 * scale))
             self.btn_font_15.configure(size=int(15 * scale))
             self.btn_font_16.configure(size=int(16 * scale))
             self.btn_font_18.configure(size=int(18 * scale))
+
+            listbox_font_size = int(12 * scale)
+            self.lst_bypass.set_font_size(listbox_font_size)
+            self.lst_remove.set_font_size(listbox_font_size)
+            self.lst_replace.set_font_size(listbox_font_size)
+            self.lst_intro_credit.set_font_size(listbox_font_size)
 
     def on_tab_changed(self):
         if self.tabview.get() == "Process":
@@ -523,7 +679,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
     def create_widget(self):
         font_bold = ctk.CTkFont(size=14, weight="bold")
 
-        # Base fonts for dynamic resizing mechanism for buttons
         self.btn_font_13 = ctk.CTkFont(size=13, weight="bold")
         self.btn_font_14 = ctk.CTkFont(size=14, weight="bold")
         self.btn_font_15 = ctk.CTkFont(size=15, weight="bold")
@@ -538,7 +693,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         self.top_container.grid_columnconfigure(1, weight=1)
         self.top_container.grid_columnconfigure(2, weight=1)
 
-        # Path Entry (Inside Top Container)
         self.path_entry = ctk.CTkEntry(
             self.top_container,
             height=35,
@@ -548,12 +702,10 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         self.path_entry.grid(row=0, column=0, padx=(0, 5), pady=5, sticky="ew")
         self.path_entry.configure(state="readonly")
 
-        # Browse Button (Inside Top Container)
         self.browse_btn = ctk.CTkButton(self.top_container, text="Browse", height=35, font=self.btn_font_14)
         self.browse_btn.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
         self.browse_btn.configure(command=self.browse_folder)
 
-        # Theme & Log Switch Frame (Inside Top Container)
         self.theme_frame = ctk.CTkFrame(self.top_container, fg_color="transparent")
         self.theme_frame.grid(row=0, column=2, padx=(5, 0), pady=0, sticky="nsew")
         self.theme_frame.grid_columnconfigure(0, weight=1)
@@ -577,32 +729,27 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         self.middle_container = ctk.CTkFrame(self)
         self.middle_container.grid(row=1, column=0, padx=10, pady=5, sticky="nsew")
 
-        # Configure middle container grid layout to expand tabview fully
         self.middle_container.grid_rowconfigure(0, weight=1)
         self.middle_container.grid_columnconfigure(0, weight=1)
 
-        # Main Tabview Structure
         self.tabview = ctk.CTkTabview(self.middle_container)
         self.tabview.grid(row=0, column=0, padx=5, pady=(0, 10), sticky="nsew")
         self.tabview.configure(command=self.on_tab_changed)
 
-        # Add designated tabs first
         self.tab_preprocess = self.tabview.add("Pre-Process")
         self.tab_process = self.tabview.add("Process")
         self.tab_postprocess = self.tabview.add("Post-Process")
         self.tab_extra = self.tabview.add("Extra Options")
 
-        # Safely configure font and internal text padding on the inner segmented button
         self.tabview._segmented_button.configure(font=ctk.CTkFont(size=15, weight="bold"))
         self.tabview._segmented_button.grid(
             padx=0,
             pady=0,
             ipadx=5,
             ipady=5,
-            sticky="nsew",  # Sticks to all 4 sides
+            sticky="nsew",
         )
 
-        # Configure tab inner layout managers for future tool additions
         for tab in [self.tab_preprocess, self.tab_process, self.tab_postprocess, self.tab_extra]:
             tab.grid_columnconfigure(0, weight=1)
             tab.grid_rowconfigure(0, weight=1)
@@ -612,10 +759,8 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         self.preprocess_inner_frame.grid(row=0, column=0, padx=0, pady=0, sticky="nsew")
         self.preprocess_inner_frame.grid_columnconfigure(0, weight=1)
 
-        # Get the inner frame for adding widgets
         preprocess_parent = self.preprocess_inner_frame.inner_frame
 
-        # Option: Trim Spaces
         self.chk_remove_alignment_tags = ctk.CTkCheckBox(
             preprocess_parent,
             text="Remove Alignment Tags (e.g., {\\an8}, {\\an9})",
@@ -623,7 +768,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.chk_remove_alignment_tags.grid(row=0, column=0, padx=5, pady=5, sticky="w")
 
-        # Option: Trim Spaces
         self.chk_trim_spaces = ctk.CTkCheckBox(
             preprocess_parent,
             text="Trim spaces from beginning and end of lines (Pre-Process)",
@@ -631,7 +775,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.chk_trim_spaces.grid(row=1, column=0, padx=5, pady=5, sticky="w")
 
-        # Option: Fix Misplaced Chars
         self.chk_fix_misplaced_chars = ctk.CTkCheckBox(
             preprocess_parent,
             text="Fix Misplaced Chars (e.g., ؟سلام ➔ سلام؟) - (Triggers Post-Process UTF-8)",
@@ -640,7 +783,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.chk_fix_misplaced_chars.grid(row=2, column=0, padx=5, pady=5, sticky="w")
 
-        # Option: Fix Abbreviations
         self.chk_fix_abbreviations = ctk.CTkCheckBox(
             preprocess_parent,
             text="Fix Abbreviations (e.g., F. B. I. ➔ F.B.I.)  - (Triggers Post-Process UTF-8)",
@@ -649,7 +791,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.chk_fix_abbreviations.grid(row=3, column=0, padx=5, pady=5, sticky="w")
 
-        # Option: Comma Fixes
         self.chk_comma_fixes = ctk.CTkCheckBox(
             preprocess_parent,
             text="Comma Fixes (e.g., سلام , دنیا ➔ سلام، دنیا) - (Triggers Post-Process UTF-8)",
@@ -658,7 +799,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.chk_comma_fixes.grid(row=4, column=0, padx=5, pady=5, sticky="w")
 
-        # Option: Exclamation Mark Fixes
         self.chk_exclamation_fixes = ctk.CTkCheckBox(
             preprocess_parent,
             text="Exclamation Mark Fixes (e.g., سلام ! ➔ سلام!) - (Triggers Post-Process UTF-8)",
@@ -667,7 +807,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.chk_exclamation_fixes.grid(row=5, column=0, padx=5, pady=5, sticky="w")
 
-        # Option: Parentheses Fixes
         self.chk_parentheses_fixes = ctk.CTkCheckBox(
             preprocess_parent,
             text="Parentheses Fixes (e.g., ( متن ) ➔ (متن)) - (Triggers Post-Process UTF-8)",
@@ -676,7 +815,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.chk_parentheses_fixes.grid(row=6, column=0, padx=5, pady=5, sticky="w")
 
-        # Option: Question Mark Fixes
         self.chk_question_mark_fixes = ctk.CTkCheckBox(
             preprocess_parent,
             text="Question Mark Fixes (e.g., چرا ؟؟ ➔ چرا؟) - (Triggers Post-Process UTF-8)",
@@ -685,7 +823,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.chk_question_mark_fixes.grid(row=7, column=0, padx=5, pady=5, sticky="w")
 
-        # Option: Double-Quotes Fixes
         self.chk_double_quotes_fixes = ctk.CTkCheckBox(
             preprocess_parent,
             text='Double-Quotes Fixes (e.g., "سلام" ➔ «سلام») - (Triggers Post-Process UTF-8)',
@@ -694,7 +831,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.chk_double_quotes_fixes.grid(row=8, column=0, padx=5, pady=5, sticky="w")
 
-        # Option: Dash Fixes
         self.chk_dash_fixes = ctk.CTkCheckBox(
             preprocess_parent,
             text="Dash Fixes (e.g., -- ➔ —) - (Triggers Post-Process UTF-8)",
@@ -703,7 +839,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.chk_dash_fixes.grid(row=9, column=0, padx=5, pady=5, sticky="w")
 
-        # Option: Comments Fixes
         self.chk_comments_fixes = ctk.CTkCheckBox(
             preprocess_parent,
             text="Comments Fixes (e.g., [موسیقی] ➔ حذف) - (Triggers Post-Process UTF-8)",
@@ -712,7 +847,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.chk_comments_fixes.grid(row=10, column=0, padx=5, pady=5, sticky="w")
 
-        # Option: Dialog Hyphen Fix
         self.chk_dialog_hyphen_fix = ctk.CTkCheckBox(
             preprocess_parent,
             text="Dialog Hyphen Fix (e.g., -سلام ➔ - سلام) - (Triggers Post-Process UTF-8)",
@@ -721,7 +855,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.chk_dialog_hyphen_fix.grid(row=11, column=0, padx=5, pady=5, sticky="w")
 
-        # Remove standalone dots at start/end of lines
         self.chk_remove_standalone_dots = ctk.CTkCheckBox(
             preprocess_parent,
             text="Remove Standalone Dots at the beginning and end of lines (e.g., .سلام. ➔ سلام)",
@@ -729,7 +862,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.chk_remove_standalone_dots.grid(row=12, column=0, padx=5, pady=5, sticky="w")
 
-        # Option: Remove Unneeded Spaces
         self.chk_remove_unneeded_spaces = ctk.CTkCheckBox(
             preprocess_parent,
             text="Remove Unneeded Spaces (Converts multiple spaces into one)",
@@ -737,7 +869,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.chk_remove_unneeded_spaces.grid(row=13, column=0, padx=5, pady=5, sticky="w")
 
-        # Checkbox for English question mark and comma to Persian conversion
         self.chk_persian_question_mark_and_comma = ctk.CTkCheckBox(
             preprocess_parent,
             text="Convert English Question Marks and Commas to Persian (e.g., ?, ➔ ؟،) - (Triggers Post-Process UTF-8)",
@@ -746,7 +877,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.chk_persian_question_mark_and_comma.grid(row=14, column=0, padx=5, pady=5, sticky="w")
 
-        # Checkbox for Arabic characters to Persian conversion
         self.chk_arabic_char = ctk.CTkCheckBox(
             preprocess_parent,
             text="Convert Arabic Characters to Persian (e.g., ي، ك ➔ ی، ک) - (Triggers Post-Process UTF-8)",
@@ -755,7 +885,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.chk_arabic_char.grid(row=15, column=0, padx=5, pady=5, sticky="w")
 
-        # Checkbox for Arabic numerals to Persian numerals conversion
         self.chk_arabic_num = ctk.CTkCheckBox(
             preprocess_parent,
             text="Convert Arabic Numerals to Persian Numerals (e.g., ٤ ➔ ۴) - (Triggers Post-Process UTF-8)",
@@ -764,7 +893,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.chk_arabic_num.grid(row=16, column=0, padx=5, pady=5, sticky="w")
 
-        # Checkbox for English numerals conditionally
         self.chk_english_num = ctk.CTkCheckBox(
             preprocess_parent,
             text="Convert English Numerals to Persian (e.g., 4 ➔ ۴) (Excludes Tags/Timecodes/Letter-attached numbers) - (Triggers Post-Process UTF-8)",
@@ -773,7 +901,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.chk_english_num.grid(row=17, column=0, padx=5, pady=5, sticky="w")
 
-        # Checkbox for Space to Invisible Space
         self.chk_space_to_invisible_space = ctk.CTkCheckBox(
             preprocess_parent,
             text="Space to Invisible Space (e.g., شود می ➔ می‌شود) - (Triggers Post-Process UTF-8)",
@@ -782,7 +909,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.chk_space_to_invisible_space.grid(row=18, column=0, padx=5, pady=5, sticky="w")
 
-        # Option: Fix Common Hexre Typo Errors
         self.chk_hexre_fixes = ctk.CTkCheckBox(
             preprocess_parent,
             text="Fix Common Hexre Typo Errors (e.g., برایه ➔ برایِ) - (Triggers Post-Process UTF-8)",
@@ -791,7 +917,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.chk_hexre_fixes.grid(row=19, column=0, padx=5, pady=5, sticky="w")
 
-        # Option: Add Missing Spaces
         self.chk_add_missing_spaces = ctk.CTkCheckBox(
             preprocess_parent,
             text="Add Missing Spaces (e.g., word.word ➔ word. word)",
@@ -803,12 +928,10 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         # --- Process Tab ---
         self.process_inner_frame = CTkDualScrollableFrame(self.tab_process)
         self.process_inner_frame.grid(row=0, column=0, padx=0, pady=0, sticky="nsew")
+        self.process_inner_frame.grid_columnconfigure(0, weight=1)
 
         process_parent = self.process_inner_frame.inner_frame
         process_parent.grid_columnconfigure(0, weight=1)
-        process_parent.grid_rowconfigure(1, weight=1)
-        process_parent.grid_rowconfigure(3, weight=1)
-        process_parent.grid_rowconfigure(5, weight=1)
 
         # Bypass List
         self.chk_bypass = ctk.CTkCheckBox(
@@ -817,10 +940,15 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             font=font_bold,
             command=self.toggle_bypass,
         )
-        self.chk_bypass.grid(row=0, column=0, padx=5, pady=(5, 0), sticky="w")
-        self.txt_bypass = ctk.CTkTextbox(process_parent, height=160)
-        self.txt_bypass.grid(row=1, column=0, padx=5, pady=5, sticky="nsew")
-        setup_enhanced_textbox(self.txt_bypass)
+        self.chk_bypass.grid(row=0, column=0, padx=5, pady=(5, 3), sticky="w")
+
+        self.lst_bypass = CTkListboxManager(
+            process_parent,
+            line_count=6,
+            get_icon_callback=lambda: self.iconpath,
+            on_change_callback=self.save_config,
+        )
+        self.lst_bypass.grid(row=1, column=0, padx=5, pady=(0, 10), sticky="ew")
 
         # Remove List
         self.chk_remove = ctk.CTkCheckBox(
@@ -829,10 +957,15 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             font=font_bold,
             command=self.toggle_remove,
         )
-        self.chk_remove.grid(row=2, column=0, padx=5, pady=(15, 0), sticky="w")
-        self.txt_remove = ctk.CTkTextbox(process_parent, height=160)
-        self.txt_remove.grid(row=3, column=0, padx=5, pady=5, sticky="nsew")
-        setup_enhanced_textbox(self.txt_remove)
+        self.chk_remove.grid(row=2, column=0, padx=5, pady=(5, 3), sticky="w")
+
+        self.lst_remove = CTkListboxManager(
+            process_parent,
+            line_count=6,
+            get_icon_callback=lambda: self.iconpath,
+            on_change_callback=self.save_config,
+        )
+        self.lst_remove.grid(row=3, column=0, padx=5, pady=(0, 10), sticky="ew")
 
         # Replace List
         self.chk_replace = ctk.CTkCheckBox(
@@ -841,14 +974,20 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             font=font_bold,
             command=self.toggle_replace,
         )
-        self.chk_replace.grid(row=4, column=0, padx=5, pady=(15, 0), sticky="w")
-        self.txt_replace = ctk.CTkTextbox(process_parent, height=160)
-        self.txt_replace.grid(row=5, column=0, padx=5, pady=5, sticky="nsew")
-        setup_enhanced_textbox(self.txt_replace)
+        self.chk_replace.grid(row=4, column=0, padx=5, pady=(5, 3), sticky="w")
+
+        self.lst_replace = CTkListboxManager(
+            process_parent,
+            line_count=6,
+            get_icon_callback=lambda: self.iconpath,
+            on_change_callback=self.save_config,
+        )
+        self.lst_replace.grid(row=5, column=0, padx=5, pady=(0, 10), sticky="ew")
 
         # --- Post-Process Tab ---
         self.postprocess_inner_frame = CTkDualScrollableFrame(self.tab_postprocess)
         self.postprocess_inner_frame.grid(row=0, column=0, padx=0, pady=0, sticky="nsew")
+        self.postprocess_inner_frame.grid_columnconfigure(0, weight=1)
 
         post_parent = self.postprocess_inner_frame.inner_frame
         post_parent.grid_columnconfigure(0, weight=1)
@@ -860,7 +999,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.chk_post_trim_spaces.grid(row=0, column=0, padx=5, pady=5, sticky="w")
 
-        # Checkbox for Removing Empty HTML Tags
         self.chk_remove_empty_tags = ctk.CTkCheckBox(
             post_parent,
             text="Remove Empty HTML Tags (e.g., <font></font>, <b></b>)",
@@ -868,7 +1006,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.chk_remove_empty_tags.grid(row=1, column=0, padx=5, pady=5, sticky="w")
 
-        # Checkbox for Removing Negative Timecodes
         self.chk_remove_negative_timecodes = ctk.CTkCheckBox(
             post_parent,
             text="Remove Negative Timecodes - (Triggers Reformat & Renumber)",
@@ -877,7 +1014,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.chk_remove_negative_timecodes.grid(row=2, column=0, padx=5, pady=5, sticky="w")
 
-        # Checkbox for Fixing Misplaced Timecodes
         self.chk_fix_misplaced_timecodes = ctk.CTkCheckBox(
             post_parent,
             text="Fix Misplaced Timecodes (Reorder blocks & remove empty ones) - (Triggers Reformat & Renumber)",
@@ -886,7 +1022,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.chk_fix_misplaced_timecodes.grid(row=3, column=0, padx=5, pady=5, sticky="w")
 
-        # Checkbox for Removing Duplicate Subtitles
         self.chk_remove_duplicate_subtitles = ctk.CTkCheckBox(
             post_parent,
             text="Remove Duplicate Subtitles (Removes exact matches of timecode and text) - (Triggers Reformat & Renumber)",
@@ -895,7 +1030,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.chk_remove_duplicate_subtitles.grid(row=4, column=0, padx=5, pady=5, sticky="w")
 
-        # Checkbox for Fixing Overlapping Timecodes
         self.chk_fix_overlapping_timecodes = ctk.CTkCheckBox(
             post_parent,
             text="Fix Overlapping Timecodes (Adjusts end timecode to prevent simultaneous display) - (Triggers Reformat & Renumber)",
@@ -904,7 +1038,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.chk_fix_overlapping_timecodes.grid(row=5, column=0, padx=5, pady=5, sticky="w")
 
-        # Checkbox for Removing Empty Subtitles
         self.chk_remove_empty_subtitles = ctk.CTkCheckBox(
             post_parent,
             text="Remove Empty Subtitles - (Triggers Reformat & Renumber)",
@@ -913,9 +1046,8 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.chk_remove_empty_subtitles.grid(row=6, column=0, padx=5, pady=5, sticky="w")
 
-        # Intro Credit Subtitle Container Frame
         self.intro_credit_frame = ctk.CTkFrame(post_parent, fg_color="transparent")
-        self.intro_credit_frame.grid(row=7, column=0, padx=5, pady=(0, 5), sticky="w")
+        self.intro_credit_frame.grid(row=7, column=0, padx=5, pady=(0, 3), sticky="w")
 
         self.chk_add_intro_credit = ctk.CTkCheckBox(
             self.intro_credit_frame,
@@ -941,11 +1073,15 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         self.opt_intro_credit_duration.grid(row=0, column=2, padx=0, pady=2, sticky="w")
         self.opt_intro_credit_duration.set("8")
 
-        self.txt_intro_credit_text = ctk.CTkTextbox(post_parent, height=55)
-        self.txt_intro_credit_text.grid(row=8, column=0, padx=5, pady=(0, 5), sticky="ew")
-        setup_enhanced_textbox(self.txt_intro_credit_text)
+        self.lst_intro_credit = CTkListboxManager(
+            post_parent,
+            line_count=2,
+            max_items=2,
+            get_icon_callback=lambda: self.iconpath,
+            on_change_callback=self.save_config,
+        )
+        self.lst_intro_credit.grid(row=8, column=0, padx=5, pady=(0, 10), sticky="ew")
 
-        # Checkbox for Reformat & Renumber
         self.chk_reformat_renumber = ctk.CTkCheckBox(
             post_parent,
             text="Reformat and Renumber Subtitles (Fixes numbering order and cleans block spacing)",
@@ -954,7 +1090,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.chk_reformat_renumber.grid(row=9, column=0, padx=5, pady=5, sticky="w")
 
-        # Checkbox for Force RTL
         self.chk_force_rtl = ctk.CTkCheckBox(
             post_parent,
             text="Force RTL (Remove control characters and apply RTL mark) - (Triggers Post-Process UTF-8)",
@@ -963,7 +1098,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.chk_force_rtl.grid(row=10, column=0, padx=5, pady=5, sticky="w")
 
-        # UTF-8 encoding save option
         self.chk_encode_utf8 = ctk.CTkCheckBox(
             post_parent,
             text="Save Final File with UTF-8 Encoding (Required for seamless Persian characters rendering)",
@@ -975,6 +1109,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         # --- Extra Options Tab ---
         self.extra_inner_frame = CTkDualScrollableFrame(self.tab_extra)
         self.extra_inner_frame.grid(row=0, column=0, padx=0, pady=0, sticky="nsew")
+        self.extra_inner_frame.grid_columnconfigure(0, weight=1)
 
         extra_parent = self.extra_inner_frame.inner_frame
         extra_parent.grid_columnconfigure(0, weight=1)
@@ -991,7 +1126,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.chk_detailed_logs.grid(row=1, column=0, padx=5, pady=5, sticky="w")
 
-        # Option: Toggle Drag and Drop feature
         self.chk_enable_dnd = ctk.CTkCheckBox(
             extra_parent,
             text="Enable Drag and Drop for Files and Folders on Process buttons",
@@ -1038,7 +1172,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         self.bottom_container = ctk.CTkFrame(self, fg_color="transparent")
         self.bottom_container.grid(row=3, column=0, padx=10, pady=(0, 10), sticky="nsew")
 
-        # Adjusted columns to fit the new button properly via Grid
         self.bottom_container.grid_columnconfigure(0, weight=3)
         self.bottom_container.grid_columnconfigure(1, weight=3)
         self.bottom_container.grid_columnconfigure(2, weight=2)
@@ -1046,7 +1179,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         self.bottom_container.grid_columnconfigure(4, weight=2)
         self.bottom_container.grid_columnconfigure(5, weight=2)
 
-        # Folder Process Button
         self.start_btn = ctk.CTkButton(
             self.bottom_container,
             text="Folder Process",
@@ -1056,11 +1188,9 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.start_btn.grid(row=0, column=0, padx=(0, 5), pady=5, sticky="ew")
 
-        # Register the Folder Process Button as a Drag and Drop target for folders
         self.start_btn.drop_target_register(DND_FILES)
         self.start_btn.dnd_bind("<<Drop>>", self.on_folder_drop)
 
-        # Single File Process Button
         self.single_process_btn = ctk.CTkButton(
             self.bottom_container,
             text="File Process",
@@ -1072,11 +1202,9 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.single_process_btn.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
 
-        # Register the Single File Process Button as a Drag and Drop target for files
         self.single_process_btn.drop_target_register(DND_FILES)
         self.single_process_btn.dnd_bind("<<Drop>>", self.on_file_drop)
 
-        # Donate Button
         self.donate_button = ctk.CTkButton(
             self.bottom_container,
             text="Donate",
@@ -1091,7 +1219,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.donate_button.grid(row=0, column=2, padx=5, pady=5, sticky="ew")
 
-        # Import Settings Button
         self.import_btn = ctk.CTkButton(
             self.bottom_container,
             text="Import Settings",
@@ -1104,7 +1231,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.import_btn.grid(row=0, column=3, padx=5, pady=5, sticky="ew")
 
-        # Export Settings Button
         self.export_btn = ctk.CTkButton(
             self.bottom_container,
             text="Export Settings",
@@ -1117,7 +1243,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self.export_btn.grid(row=0, column=4, padx=5, pady=5, sticky="ew")
 
-        # Reset Button
         self.reset_button = ctk.CTkButton(
             self.bottom_container,
             text="Reset Settings",
@@ -1157,7 +1282,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
 
     def _update_processing_progress_ui(self, percent):
         value = max(0.0, min(100.0, percent))
-
         self.progress_bar.set(value / 100.0)
         self.progress_status_var.set(f"Processing {value:.1f}%")
 
@@ -1170,7 +1294,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         self.progress_bar.set(1)
         self.progress_status_var.set("100% Completed")
 
-    # --- Feature Dependency Methods ---
     def on_preprocess_dependency_toggle(self):
         """Enforce UTF-8 selection if any character conversion options are enabled."""
         if (
@@ -1244,34 +1367,28 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         self.save_config()
 
     def toggle_intro_credit_state(self):
-        """Enable or disable intro credit duration and text widgets based on checkbox state."""
+        """Enable or disable intro credit duration and listbox widgets based on checkbox state."""
         if self.chk_add_intro_credit.get() == 1:
             self.opt_intro_credit_duration.configure(state="normal")
-            self.txt_intro_credit_text.configure(state="normal")
+            self.lst_intro_credit.set_state(True)
         else:
             self.opt_intro_credit_duration.configure(state="disabled")
-            self.txt_intro_credit_text.configure(state="disabled")
+            self.lst_intro_credit.set_state(False)
 
     # --- Widget Toggles ---
     def toggle_bypass(self):
-        if self.chk_bypass.get() == 1:
-            self.txt_bypass.configure(state="normal")
-        else:
-            self.txt_bypass.configure(state="disabled")
+        is_on = self.chk_bypass.get() == 1
+        self.lst_bypass.set_state(is_on)
         self.save_config()
 
     def toggle_remove(self):
-        if self.chk_remove.get() == 1:
-            self.txt_remove.configure(state="normal")
-        else:
-            self.txt_remove.configure(state="disabled")
+        is_on = self.chk_remove.get() == 1
+        self.lst_remove.set_state(is_on)
         self.save_config()
 
     def toggle_replace(self):
-        if self.chk_replace.get() == 1:
-            self.txt_replace.configure(state="normal")
-        else:
-            self.txt_replace.configure(state="disabled")
+        is_on = self.chk_replace.get() == 1
+        self.lst_replace.set_state(is_on)
         self.save_config()
 
     def resource_path(self, relative_path):
@@ -1284,7 +1401,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         and checks if a process is running before exiting.
         """
         self.write_log("Application closing.")
-        # Save settings on exit
         self.save_config()
         self.lock.release()
         self.destroy()
@@ -1304,17 +1420,14 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
 
         self.geometry(f"{w}x{h}+{x}+{y}")
 
-        # Applying maximized state after rendering with a small delay for Tkinter stability
         if config.get("is_maximized", 0) == 1:
             self.after(200, lambda: self.state("zoomed"))
         else:
             self.after(200, lambda: self.state("normal"))
 
-        # 1. Update Path Entry first (this enables/disables the log switch state)
         folder_path = config.get("folder_path", "")
         self._update_path_entry(folder_path)
 
-        # 2. Update Theme
         theme_mode = config.get("theme_mode", 1)
         if theme_mode == 1:
             self.theme_switch.select()
@@ -1323,8 +1436,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             self.theme_switch.deselect()
             ctk.set_appearance_mode("light")
 
-        # 3. Update Save Logs Toggle
-        # Important: Check if the switch is not disabled by _update_path_entry
         save_logs = config.get("save_logs", 0)
         if self.log_switch.cget("state") == "normal":
             if save_logs == 1:
@@ -1332,10 +1443,8 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             else:
                 self.log_switch.deselect()
         else:
-            # If path is invalid, force deselect regardless of config
             self.log_switch.deselect()
 
-        # 4. Load Tab Configuration Checkboxes States
         if config.get("remove_alignment_tags", 1) == 1:
             self.chk_remove_alignment_tags.select()
         else:
@@ -1442,50 +1551,29 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             self.chk_add_missing_spaces.deselect()
 
         # Process Tab Loading
-        if config.get("bypass_enabled", 1) == 1:
+        bypass_enabled = config.get("bypass_enabled", 1) == 1
+        if bypass_enabled:
             self.chk_bypass.select()
-            self.txt_bypass.configure(state="normal")
         else:
             self.chk_bypass.deselect()
-            self.txt_bypass.configure(state="disabled")
+        self.lst_bypass.set_items_from_text(config.get("bypass_list", ""))
+        self.lst_bypass.set_state(bypass_enabled)
 
-        self.txt_bypass.configure(state="normal")
-        self.txt_bypass.delete("1.0", "end")
-        self.txt_bypass.insert("1.0", config.get("bypass_list", ""))
-        self.txt_bypass._original_text = config.get("bypass_list", "")
-        textbox_focus_out(self.txt_bypass)
-        if config.get("bypass_enabled", 1) == 0:
-            self.txt_bypass.configure(state="disabled")
-
-        if config.get("remove_enabled", 1) == 1:
+        remove_enabled = config.get("remove_enabled", 1) == 1
+        if remove_enabled:
             self.chk_remove.select()
-            self.txt_remove.configure(state="normal")
         else:
             self.chk_remove.deselect()
-            self.txt_remove.configure(state="disabled")
+        self.lst_remove.set_items_from_text(config.get("remove_list", ""))
+        self.lst_remove.set_state(remove_enabled)
 
-        self.txt_remove.configure(state="normal")
-        self.txt_remove.delete("1.0", "end")
-        self.txt_remove.insert("1.0", config.get("remove_list", ""))
-        self.txt_remove._original_text = config.get("remove_list", "")
-        textbox_focus_out(self.txt_remove)
-        if config.get("remove_enabled", 1) == 0:
-            self.txt_remove.configure(state="disabled")
-
-        if config.get("replace_enabled", 1) == 1:
+        replace_enabled = config.get("replace_enabled", 1) == 1
+        if replace_enabled:
             self.chk_replace.select()
-            self.txt_replace.configure(state="normal")
         else:
             self.chk_replace.deselect()
-            self.txt_replace.configure(state="disabled")
-
-        self.txt_replace.configure(state="normal")
-        self.txt_replace.delete("1.0", "end")
-        self.txt_replace.insert("1.0", config.get("replace_list", ""))
-        self.txt_replace._original_text = config.get("replace_list", "")
-        textbox_focus_out(self.txt_replace)
-        if config.get("replace_enabled", 1) == 0:
-            self.txt_replace.configure(state="disabled")
+        self.lst_replace.set_items_from_text(config.get("replace_list", ""))
+        self.lst_replace.set_state(replace_enabled)
 
         # Post-Process Tab Loading
         if config.get("post_trim_spaces", 1) == 1:
@@ -1509,12 +1597,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         else:
             self.opt_intro_credit_duration.set("8")
 
-        self.txt_intro_credit_text.configure(state="normal")
-        self.txt_intro_credit_text.delete("1.0", "end")
-        credit_txt = config.get("intro_credit_text", "")
-        self.txt_intro_credit_text.insert("1.0", credit_txt)
-        self.txt_intro_credit_text._original_text = credit_txt
-        textbox_focus_out(self.txt_intro_credit_text)
+        self.lst_intro_credit.set_items_from_text(config.get("intro_credit_text", ""))
 
         if config.get("force_rtl", 1) == 1:
             self.chk_force_rtl.select()
@@ -1584,7 +1667,12 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
 
         self.toggle_intro_credit_state()
 
-        # 5. Final Logs
+        # Force synchronous theme palette refresh across all listbox managers
+        self.lst_bypass.apply_theme()
+        self.lst_remove.apply_theme()
+        self.lst_replace.apply_theme()
+        self.lst_intro_credit.apply_theme()
+
         sys_info = Logger.get_system_info()
         self.write_log(f"System Info: {sys_info}")
         self.write_log("Application config loaded/reloaded.")
@@ -1602,7 +1690,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         current_width = self.winfo_width()
         current_height = self.winfo_height()
 
-        # Protect default dimensions if window is maximized or incorrectly sized
         if is_max == 1 or current_width < 100 or current_height < 100:
             loaded_config = self.config_manager.load()
             current_width = int(loaded_config.get("window_width", 800))
@@ -1639,16 +1726,16 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             "hexre_fixes": self.chk_hexre_fixes.get(),
             "add_missing_spaces": self.chk_add_missing_spaces.get(),
             "bypass_enabled": self.chk_bypass.get(),
-            "bypass_list": getattr(self.txt_bypass, "_original_text", ""),
+            "bypass_list": self.lst_bypass.get_items_text(),
             "remove_enabled": self.chk_remove.get(),
-            "remove_list": getattr(self.txt_remove, "_original_text", ""),
+            "remove_list": self.lst_remove.get_items_text(),
             "replace_enabled": self.chk_replace.get(),
-            "replace_list": getattr(self.txt_replace, "_original_text", ""),
+            "replace_list": self.lst_replace.get_items_text(),
             "post_trim_spaces": self.chk_post_trim_spaces.get(),
             "remove_empty_tags": self.chk_remove_empty_tags.get(),
             "add_intro_credit": self.chk_add_intro_credit.get(),
             "intro_credit_duration": self.opt_intro_credit_duration.get(),
-            "intro_credit_text": getattr(self.txt_intro_credit_text, "_original_text", ""),
+            "intro_credit_text": self.lst_intro_credit.get_items_text(),
             "force_rtl": self.chk_force_rtl.get(),
             "remove_negative_timecodes": self.chk_remove_negative_timecodes.get(),
             "fix_misplaced_timecodes": self.chk_fix_misplaced_timecodes.get(),
@@ -1718,31 +1805,23 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         self.chk_fix_misplaced_chars.select()
 
         self.chk_bypass.select()
-        self.txt_bypass.configure(state="normal")
-        self.txt_bypass.delete("1.0", "end")
-        self.txt_bypass._original_text = ""
-        check_and_apply_rtl(self.txt_bypass._textbox)
+        self.lst_bypass.set_items([])
+        self.lst_bypass.set_state(True)
 
         self.chk_remove.select()
-        self.txt_remove.configure(state="normal")
-        self.txt_remove.delete("1.0", "end")
-        self.txt_remove._original_text = ""
-        check_and_apply_rtl(self.txt_remove._textbox)
+        self.lst_remove.set_items([])
+        self.lst_remove.set_state(True)
 
         self.chk_replace.select()
-        self.txt_replace.configure(state="normal")
-        self.txt_replace.delete("1.0", "end")
-        self.txt_replace._original_text = ""
-        check_and_apply_rtl(self.txt_replace._textbox)
+        self.lst_replace.set_items([])
+        self.lst_replace.set_state(True)
 
         self.chk_post_trim_spaces.select()
         self.chk_remove_empty_tags.select()
         self.chk_add_intro_credit.deselect()
         self.opt_intro_credit_duration.set("8")
-        self.txt_intro_credit_text.configure(state="normal")
-        self.txt_intro_credit_text.delete("1.0", "end")
-        self.txt_intro_credit_text._original_text = ""
-        check_and_apply_rtl(self.txt_intro_credit_text._textbox)
+        self.lst_intro_credit.set_items([])
+        self.lst_intro_credit.set_state(False)
 
         self.chk_force_rtl.select()
         self.chk_remove_negative_timecodes.select()
@@ -1761,6 +1840,11 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
 
         self.toggle_intro_credit_state()
 
+        self.lst_bypass.apply_theme()
+        self.lst_remove.apply_theme()
+        self.lst_replace.apply_theme()
+        self.lst_intro_credit.apply_theme()
+
     def import_settings(self):
         file_path = filedialog.askopenfilename(title="Select Configuration File", filetypes=[("JSON files", "*.json")])
 
@@ -1771,12 +1855,10 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             with open(file_path, "r", encoding="utf-8") as f:
                 imported_config = json.load(f)
 
-            # Validate app name
             if imported_config.get("app_name") != APP_NAME:
                 messagebox.showerror("Error", "Invalid configuration file for this application.")
                 return
 
-            # Update only valid existing keys (excluding identity keys)
             excluded_keys = ["app_name", "app_version"]
             current_config = self.config_manager.load()
 
@@ -1787,7 +1869,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
                     updated_count += 1
 
             if updated_count > 0:
-                # Save the new config and reload UI
                 self.config_manager.save(current_config)
                 self.load_config()
                 self.write_log(f"Settings imported successfully from: {file_path}")
@@ -1797,7 +1878,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             messagebox.showerror("Error", f"Failed to import settings: \n\n{str(e)}")
 
     def export_settings(self):
-        # Generate unique filename
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
         default_filename = f"PST-{timestamp}.json"
 
@@ -1812,9 +1892,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             return
 
         try:
-            # Save current state first
             self.save_config()
-            # Get latest config from file
             config_data = self.config_manager.load()
 
             with open(file_path, "w", encoding="utf-8") as f:
@@ -1863,10 +1941,13 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         mode = "dark" if self.theme_switch.get() == 1 else "light"
         ctk.set_appearance_mode(mode)
         self.write_log(f"Appearance mode changed to {mode}")
+        self.lst_bypass.apply_theme()
+        self.lst_remove.apply_theme()
+        self.lst_replace.apply_theme()
+        self.lst_intro_credit.apply_theme()
         self.save_config()
 
     def _run_processing_pipeline(self, processor, is_single_file=False):
-        # Executes the common processing and reporting logic
         processor.run()
         successful = getattr(processor, "successful_count", 0)
         failed = getattr(processor, "failed_count", 0)
@@ -1914,7 +1995,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         self.after(0, finish)
 
     def _get_run_options(self):
-        # Helper to collect options dictionary
         return {
             "remove_alignment_tags": self.chk_remove_alignment_tags.get(),
             "trim_spaces": self.chk_trim_spaces.get(),
@@ -1938,16 +2018,16 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             "hexre_fixes": self.chk_hexre_fixes.get(),
             "add_missing_spaces": self.chk_add_missing_spaces.get(),
             "bypass_enabled": self.chk_bypass.get(),
-            "bypass_list": getattr(self.txt_bypass, "_original_text", ""),
+            "bypass_list": self.lst_bypass.get_items_text(),
             "remove_enabled": self.chk_remove.get(),
-            "remove_list": getattr(self.txt_remove, "_original_text", ""),
+            "remove_list": self.lst_remove.get_items_text(),
             "replace_enabled": self.chk_replace.get(),
-            "replace_list": getattr(self.txt_replace, "_original_text", ""),
+            "replace_list": self.lst_replace.get_items_text(),
             "post_trim_spaces": self.chk_post_trim_spaces.get(),
             "remove_empty_tags": self.chk_remove_empty_tags.get(),
             "add_intro_credit": self.chk_add_intro_credit.get(),
             "intro_credit_duration": self.opt_intro_credit_duration.get(),
-            "intro_credit_text": getattr(self.txt_intro_credit_text, "_original_text", ""),
+            "intro_credit_text": self.lst_intro_credit.get_items_text(),
             "force_rtl": self.chk_force_rtl.get(),
             "remove_negative_timecodes": self.chk_remove_negative_timecodes.get(),
             "fix_misplaced_timecodes": self.chk_fix_misplaced_timecodes.get(),
@@ -1974,8 +2054,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
 
         self.attributes("-disabled", True)
         self.reset_progress_ui()
-
-        # Save settings on triggering task execution
         self.save_config()
 
         run_options = self._get_run_options()
@@ -1990,11 +2068,9 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self._run_processing_pipeline(processor, is_single_file=False)
 
-    # Adding thread logic for processing single files smoothly without freezing the UI
     def start_single_process_threaded(self):
         threading.Thread(target=self.start_single_process, daemon=True).start()
 
-    # The actual method handling single file selection and processing
     def start_single_process(self):
         selected_files = filedialog.askopenfilenames(
             title="Select Subtitle Files", filetypes=[("Subtitle Files", "*.srt *.txt *.vtt *.ass")]
@@ -2017,7 +2093,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
 
         run_options = self._get_run_options()
 
-        # Empty string for folder path, passing target_files explicitly
         processor = SubtitleProcessor(
             "",
             options=run_options,
@@ -2029,13 +2104,10 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         )
         self._run_processing_pipeline(processor, is_single_file=True)
 
-    # Drag and Drop event handler logic for dropped folders
     def on_folder_drop(self, event):
-        # Prevent execution if Drag and Drop setting is disabled
         if self.chk_enable_dnd.get() == 0:
             return
 
-        # Safely split list of paths provided by tkinterdnd2 library
         paths = self.tk.splitlist(event.data)
 
         valid_folders = []
@@ -2058,7 +2130,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
                 "Warning", "Some dropped items were ignored.\nFiles are not supported here, please drop folders only."
             )
 
-        # Process the first valid folder
         folder_to_process = valid_folders[0]
 
         confirm = messagebox.askyesno(
@@ -2074,7 +2145,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
 
         run_options = self._get_run_options()
         self.reset_progress_ui()
-        # Initialize SubtitleProcessor with the dropped folder instead of the UI folder
         processor = SubtitleProcessor(
             folder_to_process,
             options=run_options,
@@ -2084,16 +2154,12 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             complete_callback=self.complete_progress,
         )
 
-        # Execute using a background thread so it doesn't freeze the UI
         threading.Thread(target=self._run_processing_pipeline, args=(processor, False), daemon=True).start()
 
-    # Drag and Drop event handler logic for dropped files
     def on_file_drop(self, event):
-        # Prevent execution if Drag and Drop setting is disabled
         if self.chk_enable_dnd.get() == 0:
             return
 
-        # Safely split list of paths provided by tkinterdnd2 library
         paths = self.tk.splitlist(event.data)
 
         valid_files = []
@@ -2140,7 +2206,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             complete_callback=self.complete_progress,
         )
 
-        # Wrapping in a background thread to prevent UI freezing just like start_single_process_threaded
         threading.Thread(target=self._run_processing_pipeline, args=(processor, True), daemon=True).start()
 
     def donate(self):
@@ -2159,24 +2224,18 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
         top.protocol("WM_DELETE_WINDOW", top_on_close)
         top.withdraw()
 
-        # Set icon safely for CTk
         if self.heart_icon:
             top.after(250, lambda: top.iconphoto(False, self.heart_icon))
 
-        # Center the window
         width = 500
         height = 300
         x = (top.winfo_screenwidth() // 2) - (width // 2)
         y = (top.winfo_screenheight() // 2) - (height // 2)
         top.geometry(f"{width}x{height}+{x}+{y}")
 
-        # Configure grid for Toplevel
         top.grid_columnconfigure(0, weight=1)
         top.grid_columnconfigure(1, weight=0)
 
-        # ==== Layout starts ====
-
-        # Donate image (clickable)
         try:
             image_path = self.resource_path(os.path.join("assets", "donate.png"))
             img = Image.open(image_path)
@@ -2195,18 +2254,15 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
 
         donate_button.bind("<Button-1>", open_link)
 
-        # USDT Label
         usdt_label = ctk.CTkLabel(top, text="USDT (Tether) – TRC20 Wallet Address :", font=("Segoe UI", 14, "bold"))
         usdt_label.grid(row=1, column=0, columnspan=2, pady=(30, 5), sticky="w", padx=20)
 
-        # Entry field (readonly)
         wallet_address = "TGoKk5zD3BMSGbmzHnD19m9YLpH5ZP8nQe"
         wallet_entry = ctk.CTkEntry(top, width=300)
         wallet_entry.insert(0, wallet_address)
         wallet_entry.configure(state="readonly")
         wallet_entry.grid(row=2, column=0, padx=(20, 10), pady=5, sticky="ew")
 
-        # Copy button
         copy_btn = ctk.CTkButton(top, text="Copy", width=80)
         copy_btn.grid(row=2, column=1, padx=(0, 20), pady=5, sticky="w")
 
@@ -2218,7 +2274,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             self.clipboard_append(wallet_address)
             self.update()
 
-            # Remove old tooltip if exists
             if tooltip:
                 tooltip.hidetip()
                 tooltip = None
@@ -2226,7 +2281,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             tooltip = Hovertip(copy_btn, "Copied to clipboard!")
             tooltip.showtip()
 
-            # Hide after 2 seconds
             def hide_tip():
                 if tooltip:
                     tooltip.hidetip()
@@ -2234,7 +2288,6 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             top.after(2000, hide_tip)
 
         copy_btn.configure(command=copy_wallet)
-
         top.after(200, top.deiconify)
 
 
