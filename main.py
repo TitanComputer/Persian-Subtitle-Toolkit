@@ -236,7 +236,11 @@ class CTkListboxManager(ctk.CTkFrame):
         self._is_enabled = True
         self._font_size = 12
 
-        self.grid_columnconfigure(0, weight=1)
+        if self.custom_width:
+            self.grid_columnconfigure(0, weight=0)
+        else:
+            self.grid_columnconfigure(0, weight=1)
+
         self.grid_columnconfigure(1, weight=0)
         self.grid_rowconfigure(0, weight=0)
         self.grid_rowconfigure(1, weight=0)
@@ -303,6 +307,7 @@ class CTkListboxManager(ctk.CTkFrame):
             self.scrollbar = None
 
         self.listbox.bind("<Double-Button-1>", lambda event: self.edit_item())
+        self.listbox.bind("<Delete>", lambda event: self.remove_item())
 
         self.apply_theme()
         ctk.AppearanceModeTracker.add(self.apply_theme)
