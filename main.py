@@ -249,40 +249,42 @@ class CTkListboxManager(ctk.CTkFrame):
         self.btn_frame = ctk.CTkFrame(self, fg_color="transparent")
         self.btn_frame.grid(row=0, column=0, columnspan=2, padx=5, pady=(6, 4), sticky="w")
 
-        btn_font = ctk.CTkFont(size=12, weight="bold")
+        app = self.winfo_toplevel()
+        btn_font = app.btn_font_13 if hasattr(app, "btn_font_13") else ctk.CTkFont(size=13, weight="bold")
+
         self.btn_add = ctk.CTkButton(
-            self.btn_frame, text="Add", width=55, height=24, font=btn_font, command=self.add_item
+            self.btn_frame, text="Add", width=60, height=26, font=btn_font, command=self.add_item
         )
-        self.btn_add.grid(row=0, column=0, padx=(0, 4), pady=0)
+        self.btn_add.grid(row=0, column=0, padx=(0, 4), pady=(0, 2))
 
         self.btn_edit = ctk.CTkButton(
-            self.btn_frame, text="Edit", width=55, height=24, font=btn_font, command=self.edit_item
+            self.btn_frame, text="Edit", width=60, height=26, font=btn_font, command=self.edit_item
         )
-        self.btn_edit.grid(row=0, column=1, padx=4, pady=0)
+        self.btn_edit.grid(row=0, column=1, padx=4, pady=(0, 2))
 
         self.btn_remove = ctk.CTkButton(
             self.btn_frame,
             text="Remove",
-            width=62,
-            height=24,
+            width=74,
+            height=26,
             font=btn_font,
             fg_color="#C0392B",
             hover_color="#962D22",
             command=self.remove_item,
         )
-        self.btn_remove.grid(row=0, column=2, padx=4, pady=0)
+        self.btn_remove.grid(row=0, column=2, padx=4, pady=(0, 2))
 
         self.btn_clear = ctk.CTkButton(
             self.btn_frame,
             text="Clear All",
-            width=68,
-            height=24,
+            width=82,
+            height=26,
             font=btn_font,
             fg_color="#7F8C8D",
             hover_color="#626567",
             command=self.clear_all,
         )
-        self.btn_clear.grid(row=0, column=3, padx=4, pady=0)
+        self.btn_clear.grid(row=0, column=3, padx=4, pady=(0, 2))
 
         # Direct Listbox mapping to prevent outer frame sizing issues
         listbox_kwargs = {
@@ -700,7 +702,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             self.lst_bypass.set_font_size(listbox_font_size)
             self.lst_remove.set_font_size(listbox_font_size)
             self.lst_replace.set_font_size(listbox_font_size)
-            self.lst_intro_credit.set_font_size(listbox_font_size)
+            self.lst_intro_credit.set_font_size(12)
 
     def on_tab_changed(self):
         if self.tabview.get() == "Process":
