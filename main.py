@@ -213,7 +213,7 @@ class ItemEditorModal(ctk.CTkToplevel):
 
 
 class CTkListboxManager(ctk.CTkFrame):
-    """Reusable Listbox container with Add, Edit, Remove, Clear All action buttons and alternating row colors."""
+    """Reusable Listbox container with Add, Edit, Remove, Clear All, Filter action buttons and alternating row colors."""
 
     def __init__(
         self,
@@ -222,6 +222,7 @@ class CTkListboxManager(ctk.CTkFrame):
         width=None,
         max_items=None,
         enable_scrollbar=True,
+        enable_filter=False,
         get_icon_callback=None,
         on_change_callback=None,
         **kwargs,
@@ -231,10 +232,15 @@ class CTkListboxManager(ctk.CTkFrame):
         self.line_count = line_count
         self.custom_width = width
         self.enable_scrollbar = enable_scrollbar
+        self.enable_filter = enable_filter
         self.get_icon_callback = get_icon_callback
         self.on_change_callback = on_change_callback
         self._is_enabled = True
         self._font_size = 12
+        self._all_items = []
+        self._is_filter_open = False
+        self._filter_after_id = None
+        self._is_updating_filter = False
 
         if self.custom_width:
             self.grid_columnconfigure(0, weight=0)
@@ -244,6 +250,7 @@ class CTkListboxManager(ctk.CTkFrame):
         self.grid_columnconfigure(1, weight=0)
         self.grid_rowconfigure(0, weight=0)
         self.grid_rowconfigure(1, weight=0)
+        self.grid_rowconfigure(2, weight=0)
 
         # Button toolbar at the top-left of the Listbox
         self.btn_frame = ctk.CTkFrame(self, fg_color="transparent")
@@ -286,6 +293,61 @@ class CTkListboxManager(ctk.CTkFrame):
         )
         self.btn_clear.grid(row=0, column=3, padx=4, pady=(0, 2))
 
+        if self.enable_filter:
+            self.btn_filter = ctk.CTkButton(
+                self.btn_frame,
+                text="Filter",
+                width=62,
+                height=26,
+                font=btn_font,
+                anchor="center",
+                fg_color="#0F6655",
+                hover_color="#0B5042",
+                command=self.toggle_filter_ui,
+            )
+            self.btn_filter.grid(row=0, column=4, padx=4, pady=(0, 2))
+
+            # Filter Search Bar (hidden by default until user clicks Filter)
+            self.filter_frame = ctk.CTkFrame(self, fg_color="transparent")
+            self.filter_frame.grid_columnconfigure(0, weight=1)
+            self.filter_frame.grid_columnconfigure(1, weight=0)
+            self.filter_frame.grid_columnconfigure(2, weight=0)
+
+            self.filter_entry = ctk.CTkEntry(
+                self.filter_frame,
+                placeholder_text="Filter / Search items...",
+                height=26,
+                font=("Segoe UI", 12),
+                justify="right",
+            )
+            self.filter_entry.grid(row=0, column=0, padx=(5, 4), pady=(0, 4), sticky="ew")
+            setup_enhanced_entry(self.filter_entry._entry)
+
+            # Bind only to the internal Tk entry to avoid recursive CustomTkinter callbacks.
+            self.filter_entry._entry.bind("<KeyRelease>", self._on_filter_changed, add="+")
+            self.filter_entry._entry.bind("<Escape>", lambda e: self.toggle_filter_ui(), add="+")
+
+            self.lbl_filter_count = ctk.CTkLabel(
+                self.filter_frame,
+                text="",
+                font=ctk.CTkFont(size=11),
+                text_color="#888888",
+            )
+            self.lbl_filter_count.grid(row=0, column=1, padx=(0, 4), pady=(0, 4))
+
+            self.btn_clear_filter = ctk.CTkButton(
+                self.filter_frame,
+                text="✕",
+                width=24,
+                height=24,
+                font=ctk.CTkFont(size=11, weight="bold"),
+                anchor="center",
+                fg_color="#7F8C8D",
+                hover_color="#626567",
+                command=self.clear_filter,
+            )
+            self.btn_clear_filter.grid(row=0, column=2, padx=(0, 5), pady=(0, 4))
+
         # Direct Listbox mapping to prevent outer frame sizing issues
         listbox_kwargs = {
             "height": self.line_count,
@@ -300,11 +362,12 @@ class CTkListboxManager(ctk.CTkFrame):
             listbox_kwargs["width"] = self.custom_width
 
         self.listbox = tk.Listbox(self, **listbox_kwargs)
-        self.listbox.grid(row=1, column=0, padx=(5, 0), pady=0, sticky="nsew" if not self.custom_width else "w")
+        self.listbox.grid(row=2, column=0, padx=(5, 0), pady=0, sticky="nsew" if not self.custom_width else "w")
 
         if self.enable_scrollbar:
             self.scrollbar = ctk.CTkScrollbar(self, orientation="vertical", command=self.listbox.yview, width=12)
-            self.listbox.configure(yscrollcommand=self._on_scroll)
+            self.scrollbar.grid(row=2, column=1, padx=(2, 5), pady=0, sticky="ns")
+            self.listbox.configure(yscrollcommand=self.scrollbar.set)
         else:
             self.scrollbar = None
 
@@ -314,17 +377,130 @@ class CTkListboxManager(ctk.CTkFrame):
         self.apply_theme()
         ctk.AppearanceModeTracker.add(self.apply_theme)
 
-    def _on_scroll(self, first, last):
-        if not self.enable_scrollbar or not self.scrollbar:
+    def toggle_filter_ui(self):
+        if not self.enable_filter:
             return
-        # Dynamically manage scrollbar visibility: show only when content exceeds visible line count
-        first_val = float(first)
-        last_val = float(last)
-        if first_val <= 0.0 and last_val >= 1.0:
-            self.scrollbar.grid_forget()
+        if self._is_filter_open:
+            self._is_filter_open = False
+            after_id = getattr(self, "_filter_after_id", None)
+            if after_id is not None:
+                try:
+                    self.after_cancel(after_id)
+                except tk.TclError:
+                    pass
+                self._filter_after_id = None
+            try:
+                self.filter_entry._entry.delete(0, "end")
+            except tk.TclError:
+                pass
+            self._update_display_items()
+            self.filter_frame.grid_forget()
+            self.btn_filter.configure(fg_color="#0F6655", hover_color="#0B5042", text="Filter")
         else:
-            self.scrollbar.grid(row=1, column=1, padx=(2, 5), pady=0, sticky="ns")
-            self.scrollbar.set(first, last)
+            self.filter_frame.grid(row=1, column=0, columnspan=2, padx=0, pady=(0, 4), sticky="ew")
+            self._is_filter_open = True
+            try:
+                self.filter_entry._entry.delete(0, "end")
+            except tk.TclError:
+                pass
+            self.btn_filter.configure(fg_color="#16A085", hover_color="#117A65", text="Filter ✓")
+            try:
+                self.filter_entry._entry.focus_set()
+            except Exception:
+                self.filter_entry.focus_set()
+            self.after_idle(self._update_display_items)
+
+    def clear_filter(self):
+        if not self.enable_filter or not hasattr(self, "filter_entry"):
+            return
+        try:
+            self.filter_entry._entry.delete(0, "end")
+        except tk.TclError:
+            return
+        self._schedule_filter_update()
+
+    def _on_filter_changed(self, event=None):
+        if not self.enable_filter or not self._is_filter_open:
+            return
+        self._schedule_filter_update()
+
+    def _schedule_filter_update(self):
+        if not self.enable_filter or not self._is_filter_open:
+            return
+
+        after_id = getattr(self, "_filter_after_id", None)
+        if after_id is not None:
+            try:
+                self.after_cancel(after_id)
+            except tk.TclError:
+                pass
+            finally:
+                self._filter_after_id = None
+
+        self._filter_after_id = self.after_idle(self._update_display_items)
+
+    def _get_filter_query(self):
+        if not self.enable_filter or not self._is_filter_open or not hasattr(self, "filter_entry"):
+            return ""
+        try:
+            query = self.filter_entry._entry.get()
+        except tk.TclError:
+            return ""
+        if not query:
+            return ""
+        return query.strip().lower()
+
+    def _update_display_items(self):
+        self._filter_after_id = None
+
+        if getattr(self, "_is_updating_filter", False):
+            return
+        if not hasattr(self, "listbox"):
+            return
+
+        self._is_updating_filter = True
+        try:
+            query = self._get_filter_query()
+
+            current_sel = None
+            try:
+                selection = self.listbox.curselection()
+                if selection:
+                    current_sel = self.listbox.get(selection[0])
+            except tk.TclError:
+                return
+
+            try:
+                self.listbox.configure(state="normal")
+                self.listbox.delete(0, "end")
+
+                matched = 0
+                restore_idx = None
+                items = tuple(self._all_items)
+                for item in items:
+                    if not isinstance(item, str):
+                        continue
+                    if query and query not in item.lower():
+                        continue
+                    self.listbox.insert("end", item)
+                    if current_sel == item and restore_idx is None:
+                        restore_idx = matched
+                    matched += 1
+
+                if restore_idx is not None:
+                    self.listbox.selection_set(restore_idx)
+
+                self._refresh_colors()
+                if not self._is_enabled:
+                    self.listbox.configure(state="disabled")
+
+                if hasattr(self, "lbl_filter_count") and self._is_filter_open:
+                    total = len(items)
+                    self.lbl_filter_count.configure(text=f"{matched}/{total}" if query else f"{total} items")
+            except tk.TclError:
+                return
+        finally:
+            self._is_updating_filter = False
 
     def apply_theme(self, new_mode=None):
         mode = ctk.get_appearance_mode()
@@ -366,10 +542,9 @@ class CTkListboxManager(ctk.CTkFrame):
             row_bg = self.bg_even if i % 2 == 0 else self.bg_odd
             self.listbox.itemconfigure(i, background=row_bg, foreground=self.fg)
 
-        if self.enable_scrollbar and self.scrollbar:
-            self.after_idle(lambda: self.listbox.yview_scroll(0, "units"))
-
     def set_font_size(self, size):
+        if self.custom_width is not None:
+            return
         self._font_size = size
         self.listbox.configure(font=("Segoe UI", self._font_size))
 
@@ -380,26 +555,29 @@ class CTkListboxManager(ctk.CTkFrame):
         self.btn_edit.configure(state=btn_state)
         self.btn_remove.configure(state=btn_state)
         self.btn_clear.configure(state=btn_state)
+        if hasattr(self, "btn_filter"):
+            self.btn_filter.configure(state=btn_state)
+        if hasattr(self, "filter_entry"):
+            self.filter_entry.configure(state=btn_state)
+        if hasattr(self, "btn_clear_filter"):
+            self.btn_clear_filter.configure(state=btn_state)
         self.listbox.configure(state="normal" if is_enabled else "disabled")
         self._refresh_colors()
 
     def get_items(self):
-        return list(self.listbox.get(0, "end"))
+        return list(self._all_items)
 
     def get_items_text(self):
         return "\n".join(self.get_items())
 
     def set_items(self, items):
-        self.listbox.configure(state="normal")
-        self.listbox.delete(0, "end")
+        self._all_items = []
         for item in items:
             if item.strip():
-                if self.max_items and self.listbox.size() >= self.max_items:
+                if self.max_items and len(self._all_items) >= self.max_items:
                     break
-                self.listbox.insert("end", item.strip())
-        self._refresh_colors()
-        if not self._is_enabled:
-            self.listbox.configure(state="disabled")
+                self._all_items.append(item.strip())
+        self._update_display_items()
 
     def set_items_from_text(self, text):
         items = [line.strip() for line in text.split("\n") if line.strip()]
@@ -408,15 +586,15 @@ class CTkListboxManager(ctk.CTkFrame):
     def add_item(self):
         if not self._is_enabled:
             return
-        if self.max_items and self.listbox.size() >= self.max_items:
+        if self.max_items and len(self._all_items) >= self.max_items:
             messagebox.showwarning("Limit Reached", f"Maximum {self.max_items} item(s) allowed.")
             return
 
         icon = self.get_icon_callback() if self.get_icon_callback else None
         dialog = ItemEditorModal(self.winfo_toplevel(), "Add Item", "", iconpath=icon)
         if dialog.result:
-            self.listbox.insert("end", dialog.result)
-            self._refresh_colors()
+            self._all_items.append(dialog.result)
+            self._update_display_items()
             if self.on_change_callback:
                 self.on_change_callback()
 
@@ -433,9 +611,10 @@ class CTkListboxManager(ctk.CTkFrame):
         icon = self.get_icon_callback() if self.get_icon_callback else None
         dialog = ItemEditorModal(self.winfo_toplevel(), "Edit Item", current_val, iconpath=icon)
         if dialog.result:
-            self.listbox.delete(idx)
-            self.listbox.insert(idx, dialog.result)
-            self._refresh_colors()
+            if current_val in self._all_items:
+                all_idx = self._all_items.index(current_val)
+                self._all_items[all_idx] = dialog.result
+            self._update_display_items()
             if self.on_change_callback:
                 self.on_change_callback()
 
@@ -451,21 +630,22 @@ class CTkListboxManager(ctk.CTkFrame):
         val = self.listbox.get(idx)
         confirm = messagebox.askyesno("Confirm Removal", f'Are you sure you want to remove:\n\n"{val}"?')
         if confirm:
-            self.listbox.delete(idx)
-            self._refresh_colors()
+            if val in self._all_items:
+                self._all_items.remove(val)
+            self._update_display_items()
             if self.on_change_callback:
                 self.on_change_callback()
 
     def clear_all(self):
         if not self._is_enabled:
             return
-        if self.listbox.size() == 0:
+        if len(self._all_items) == 0:
             return
 
         confirm = messagebox.askyesno("Confirm Clear All", "Are you sure you want to remove all items from this list?")
         if confirm:
-            self.listbox.delete(0, "end")
-            self._refresh_colors()
+            self._all_items.clear()
+            self._update_display_items()
             if self.on_change_callback:
                 self.on_change_callback()
 
@@ -537,11 +717,21 @@ class CTkDualScrollableFrame(ctk.CTkFrame):
             self._propagate_appearance(child, mode)
 
     def _update_inner_width(self, canvas_width):
-        content_width = self.inner_frame.winfo_reqwidth()
-        if content_width <= canvas_width:
-            self.canvas.itemconfigure(self.inner_window, width=canvas_width)
-        else:
-            self.canvas.itemconfigure(self.inner_window, width=content_width)
+        if getattr(self, "_is_updating_width", False):
+            return
+        self._is_updating_width = True
+        try:
+            content_width = self.inner_frame.winfo_reqwidth()
+            target_width = canvas_width if content_width <= canvas_width else content_width
+            current_width = self.canvas.itemcget(self.inner_window, "width")
+            try:
+                current_width = int(float(current_width))
+            except (ValueError, TypeError):
+                current_width = -1
+            if current_width != int(target_width):
+                self.canvas.itemconfigure(self.inner_window, width=target_width)
+        finally:
+            self._is_updating_width = False
 
     def _on_frame_configure(self, event=None):
         self._update_inner_width(self.canvas.winfo_width())
@@ -554,36 +744,46 @@ class CTkDualScrollableFrame(ctk.CTkFrame):
         self._check_scrollbars()
 
     def _check_scrollbars(self):
-        self.update_idletasks()
-
-        canvas_w = self.canvas.winfo_width()
-        canvas_h = self.canvas.winfo_height()
-
-        if canvas_w <= 1 or canvas_h <= 1:
+        if getattr(self, "_is_checking_scrollbars", False):
             return
+        self._is_checking_scrollbars = True
+        try:
+            canvas_w = self.canvas.winfo_width()
+            canvas_h = self.canvas.winfo_height()
 
-        content_w = self.inner_frame.winfo_reqwidth()
-        content_h = self.inner_frame.winfo_reqheight()
+            if canvas_w <= 1 or canvas_h <= 1:
+                return
 
-        show_v = content_h > canvas_h
-        show_h = content_w > canvas_w
+            content_w = self.inner_frame.winfo_reqwidth()
+            content_h = self.inner_frame.winfo_reqheight()
 
-        if show_v:
-            self.vsb.grid(row=0, column=1, sticky="ns", padx=0, pady=0)
-        else:
-            self.vsb.grid_forget()
+            show_v = content_h > canvas_h
+            show_h = content_w > canvas_w
 
-        if show_h:
-            self.hsb.grid(row=1, column=0, sticky="ew", padx=0, pady=0)
-        else:
-            self.hsb.grid_forget()
+            is_v_shown = bool(self.vsb.winfo_ismapped())
+            is_h_shown = bool(self.hsb.winfo_ismapped())
 
-        if show_v and show_h:
-            self.corner_fill.grid(row=1, column=1, sticky="nsew")
-        else:
-            self.corner_fill.grid_forget()
+            if show_v and not is_v_shown:
+                self.vsb.grid(row=0, column=1, sticky="ns", padx=0, pady=0)
+            elif not show_v and is_v_shown:
+                self.vsb.grid_forget()
 
-        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+            if show_h and not is_h_shown:
+                self.hsb.grid(row=1, column=0, sticky="ew", padx=0, pady=0)
+            elif not show_h and is_h_shown:
+                self.hsb.grid_forget()
+
+            is_corner_shown = bool(self.corner_fill.winfo_ismapped())
+            if show_v and show_h:
+                if not is_corner_shown:
+                    self.corner_fill.grid(row=1, column=1, sticky="nsew")
+            else:
+                if is_corner_shown:
+                    self.corner_fill.grid_forget()
+
+            self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+        finally:
+            self._is_checking_scrollbars = False
 
     def _bind_mouse_scroll(self, event):
         self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
@@ -978,6 +1178,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             process_parent,
             line_count=4,
             enable_scrollbar=True,
+            enable_filter=True,
             get_icon_callback=lambda: self.iconpath,
             on_change_callback=self.save_config,
         )
@@ -996,6 +1197,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             process_parent,
             line_count=4,
             enable_scrollbar=True,
+            enable_filter=True,
             get_icon_callback=lambda: self.iconpath,
             on_change_callback=self.save_config,
         )
@@ -1014,6 +1216,7 @@ class PersianSubtitleToolkit(CustomTkinterDnD):
             process_parent,
             line_count=4,
             enable_scrollbar=True,
+            enable_filter=True,
             get_icon_callback=lambda: self.iconpath,
             on_change_callback=self.save_config,
         )
