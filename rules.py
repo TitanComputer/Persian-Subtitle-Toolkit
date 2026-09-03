@@ -784,6 +784,12 @@ dash_rules_list = [
 ]
 
 comments_rules_list = [
+    # Normalize comment markers surrounded by dots and spaces
+    (
+        re.compile(r"""(\.{1,3})\s*(::)\s*(.*?)\s*(::)\s*(\.{1,3})"""),
+        r""".:: \g<3> ::.""",
+        True,
+    ),
     (" ::", " ::.", False),
     (": :", " ::.", False),
     (".::", ".:: ", False),
