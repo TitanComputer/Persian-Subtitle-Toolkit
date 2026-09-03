@@ -374,8 +374,49 @@ class CTkListboxManager(ctk.CTkFrame):
         self.listbox.bind("<Double-Button-1>", lambda event: self.edit_item())
         self.listbox.bind("<Delete>", lambda event: self.remove_item())
 
+        # Intercept listbox mouse wheel to propagate scroll to parent frame when listbox cannot scroll
+        self.listbox.bind("<MouseWheel>", self._on_listbox_mousewheel)
+        self.listbox.bind("<Button-4>", self._on_listbox_mousewheel)
+        self.listbox.bind("<Button-5>", self._on_listbox_mousewheel)
+
         self.apply_theme()
         ctk.AppearanceModeTracker.add(self.apply_theme)
+
+    def _find_parent_scrollable_frame(self):
+        """Find the nearest parent CTkDualScrollableFrame."""
+        widget = self.master
+        while widget is not None:
+            if isinstance(widget, CTkDualScrollableFrame):
+                return widget
+            widget = getattr(widget, "master", None)
+        return None
+
+    def _on_listbox_mousewheel(self, event):
+        """Handle mouse wheel on listbox, propagating to parent frame if listbox has no scroll overflow."""
+        try:
+            top, bottom = self.listbox.yview()
+        except Exception:
+            top, bottom = 0.0, 1.0
+
+        is_up = (getattr(event, "num", None) == 4) or (getattr(event, "delta", 0) > 0)
+        is_down = (getattr(event, "num", None) == 5) or (getattr(event, "delta", 0) < 0)
+
+        can_scroll_up = is_up and (top > 0.0)
+        can_scroll_down = is_down and (bottom < 1.0)
+
+        if can_scroll_up or can_scroll_down:
+            units = -1 if is_up else 1
+            if getattr(event, "delta", None):
+                units = int(-1 * (event.delta / 120))
+                if units == 0:
+                    units = -1 if is_up else 1
+            self.listbox.yview_scroll(units, "units")
+            return "break"
+        else:
+            parent_frame = self._find_parent_scrollable_frame()
+            if parent_frame:
+                parent_frame._scroll_canvas(event)
+            return "break"
 
     def toggle_filter_ui(self):
         if not self.enable_filter:
@@ -651,6 +692,9 @@ class CTkListboxManager(ctk.CTkFrame):
 
 
 class CTkDualScrollableFrame(ctk.CTkFrame):
+    _instances = []
+    _mousewheel_bound = False
+
     def __init__(self, master, **kwargs):
         kwargs.setdefault("corner_radius", 0)
         super().__init__(master, **kwargs)
@@ -675,10 +719,13 @@ class CTkDualScrollableFrame(ctk.CTkFrame):
 
         self.inner_frame.bind("<Configure>", self._on_frame_configure)
         self.canvas.bind("<Configure>", self._on_canvas_configure)
-        self.canvas.bind("<Enter>", self._bind_mouse_scroll)
-        self.canvas.bind("<Leave>", self._unbind_mouse_scroll)
-        self.inner_frame.bind("<Enter>", self._bind_mouse_scroll)
-        self.inner_frame.bind("<Leave>", self._unbind_mouse_scroll)
+
+        CTkDualScrollableFrame._instances.append(self)
+        if not CTkDualScrollableFrame._mousewheel_bound:
+            self.canvas.bind_all("<MouseWheel>", CTkDualScrollableFrame._global_mousewheel, add="+")
+            self.canvas.bind_all("<Button-4>", CTkDualScrollableFrame._global_mousewheel, add="+")
+            self.canvas.bind_all("<Button-5>", CTkDualScrollableFrame._global_mousewheel, add="+")
+            CTkDualScrollableFrame._mousewheel_bound = True
 
         ctk.AppearanceModeTracker.add(self._update_canvas_bg)
         self.after_idle(self._update_canvas_bg)
@@ -785,17 +832,27 @@ class CTkDualScrollableFrame(ctk.CTkFrame):
         finally:
             self._is_checking_scrollbars = False
 
-    def _bind_mouse_scroll(self, event):
-        self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
-        self.canvas.bind_all("<Button-4>", self._on_mousewheel)
-        self.canvas.bind_all("<Button-5>", self._on_mousewheel)
+    def _is_mouse_inside(self, event):
+        """Check if event coordinates are inside this frame's visible canvas."""
+        if not self.winfo_exists() or not self.winfo_ismapped():
+            return False
+        if not self.canvas.winfo_exists() or not self.canvas.winfo_ismapped():
+            return False
+        if not self.vsb.winfo_ismapped():
+            return False
+        try:
+            x_root = event.x_root
+            y_root = event.y_root
+            cx = self.canvas.winfo_rootx()
+            cy = self.canvas.winfo_rooty()
+            cw = self.canvas.winfo_width()
+            ch = self.canvas.winfo_height()
+            return (cx <= x_root < cx + cw) and (cy <= y_root < cy + ch)
+        except Exception:
+            return False
 
-    def _unbind_mouse_scroll(self, event):
-        self.canvas.unbind_all("<MouseWheel>")
-        self.canvas.unbind_all("<Button-4>")
-        self.canvas.unbind_all("<Button-5>")
-
-    def _on_mousewheel(self, event):
+    def _scroll_canvas(self, event):
+        """Scroll vertical canvas smoothly based on mouse wheel event."""
         if not self.vsb.winfo_ismapped():
             return
 
@@ -803,10 +860,19 @@ class CTkDualScrollableFrame(ctk.CTkFrame):
             self.canvas.yview_scroll(-1, "units")
         elif getattr(event, "num", None) == 5:
             self.canvas.yview_scroll(1, "units")
-        elif event.delta > 0:
-            self.canvas.yview_scroll(-1, "units")
-        elif event.delta < 0:
-            self.canvas.yview_scroll(1, "units")
+        elif getattr(event, "delta", None):
+            units = int(-1 * (event.delta / 120))
+            if units == 0:
+                units = -1 if event.delta > 0 else 1
+            self.canvas.yview_scroll(units, "units")
+
+    @classmethod
+    def _global_mousewheel(cls, event):
+        """Dispatches mouse wheel event to the currently visible frame under the mouse."""
+        for frame in cls._instances:
+            if frame.winfo_exists() and frame._is_mouse_inside(event):
+                frame._scroll_canvas(event)
+                break
 
 
 class CustomTkinterDnD(ctk.CTk, TkinterDnD.DnDWrapper):
