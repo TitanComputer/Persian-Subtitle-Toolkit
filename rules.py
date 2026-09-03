@@ -902,9 +902,14 @@ dialog_hyphen_fix_list = [
 
 # Detect HTML-wrapped or plain credit/comment lines that should not be processed by Fix Misplaced Chars
 misplaced_chars_comment_pattern = re.compile(
-    r"^(?:<[^<>]+>|[\u200e\u200f\u202a-\u202e\u2066-\u2069\u061c\ufeff\u200b]|\s)*\.:.*?:\.(?:<[^<>]+>|[\u200e\u200f\u202a-\u202e\u2066-\u2069\u061c\ufeff\u200b]|\s)*$"
+    r"^(?:(?:<[^<>]+>)|[\u200e\u200f\u202a-\u202e\u2066-\u2069\u061c\ufeff\u200b]|\s)*"
+    r"(?:"
+    r"\.:.*?:\."
+    r"|"
+    r"(?:\.{3}|…)?\s*::.*?::\s*(?:\.{3}|…)?"
+    r")"
+    r"(?:(?:<[^<>]+>)|[\u200e\u200f\u202a-\u202e\u2066-\u2069\u061c\ufeff\u200b]|\s)*$"
 )
-
 
 # Structure of rule lists for formatting processing parsed exactly from XML files
 misplaced_chars_rules = [
