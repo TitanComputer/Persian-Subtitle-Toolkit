@@ -1327,7 +1327,10 @@ class SubtitleProcessor:
                     if opt_dash_fixes and any(c in current_line for c in "-–—"):
                         before_dash = current_line
                         temp_line = current_line
-                        temp_line = apply_rule_set(temp_line, dash_rules_list)
+
+                        if not misplaced_chars_comment_pattern.fullmatch(temp_line):
+                            temp_line = apply_rule_set(temp_line, dash_rules_list)
+
                         current_line = temp_line
                         if current_line != before_dash:
                             file_has_changes = True
