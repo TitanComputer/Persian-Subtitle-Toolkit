@@ -796,6 +796,12 @@ comments_rules_list = [
         r""".:: \g<1> ::.""",
         True,
     ),
+    # Normalize Beta Team style comment markers
+    (
+        re.compile(r"""-=\:\s*(.*?)\s*\:\=-"""),
+        r""".:: \g<1> ::.""",
+        True,
+    ),
     (" ::", " ::.", False),
     (": :", " ::.", False),
     (".::", ".:: ", False),
