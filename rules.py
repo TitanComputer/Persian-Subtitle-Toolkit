@@ -784,10 +784,16 @@ dash_rules_list = [
 ]
 
 comments_rules_list = [
+    # Normalize guillemet-wrapped comments using plain double-colon markers
+    (
+        re.compile(r"""([«"])\s*::\s*(.*?)\s*::\s*([»"])"""),
+        r"""\g<1>.:: \g<2> ::.\g<3>""",
+        True,
+    ),
     # Normalize comment markers surrounded by dots and spaces
     (
-        re.compile(r"""(\.{1,3})\s*(::)\s*(.*?)\s*(::)\s*(\.{1,3})"""),
-        r""".:: \g<3> ::.""",
+        re.compile(r"""(?:[.:]\s*){4,}(.*?)\s*(?:[.:]\s*){4,}"""),
+        r""".:: \g<1> ::.""",
         True,
     ),
     (" ::", " ::.", False),
@@ -795,9 +801,21 @@ comments_rules_list = [
     (".::", ".:: ", False),
     (".::  ", ".:: ", False),
     ("::...", ".:: ...", False),
-    (re.compile(r"""(\.)*(\:\:)\s*(.*?)\s*(\:\:)(\.)*"""), r""".:: \g<3> ::.""", True),
-    (re.compile(r"""(\.\:\:)( )(\.)( *)"""), r"""\g<1>\g<2>""", True),
-    (re.compile(r"""( *)(\.)( )(\:\:\.)"""), r"""\g<3>\g<4>""", True),
+    (
+        re.compile(r"""(\.)*(\:\:)\s*(.*?)\s*(\:\:)(\.)*"""),
+        r""".:: \g<3> ::.""",
+        True,
+    ),
+    (
+        re.compile(r"""(\.\:\:)( )(\.)( *)"""),
+        r"""\g<1>\g<2>""",
+        True,
+    ),
+    (
+        re.compile(r"""( *)(\.)( )(\:\:\.)"""),
+        r"""\g<3>\g<4>""",
+        True,
+    ),
     (". .::", ".::", False),
     # Remove unclosed comment marker .:: when no closing ::. exists on the line
     (re.compile(r"""\.::(?![^\r\n]*::\.)"""), r"""""", True),
