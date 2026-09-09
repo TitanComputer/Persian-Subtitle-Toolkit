@@ -800,8 +800,15 @@ class SubtitleProcessor:
                 # Pre-parse blocks to identify and isolate valid text lines from timecodes/indexes
                 parsed_blocks_for_index = parse_srt_blocks(lines)
                 valid_text_indices = set()
-                for b in parsed_blocks_for_index:
-                    valid_text_indices.update(b.get("text_indices", []))
+                ordered_text_indices = []
+                text_index_to_pos = {}
+                text_index_to_block_idx = {}
+                for b_idx, b in enumerate(parsed_blocks_for_index):
+                    for t_idx in b.get("text_indices", []):
+                        valid_text_indices.add(t_idx)
+                        text_index_to_pos[t_idx] = len(ordered_text_indices)
+                        text_index_to_block_idx[t_idx] = b_idx
+                        ordered_text_indices.append(t_idx)
 
                 processed_lines = []
                 parentheses_fixed_lines = {}
@@ -981,7 +988,7 @@ class SubtitleProcessor:
                                 detailed_logs_enabled,
                             )
 
-                            # Apply Pre-Process Option: Parentheses Fixes
+                    # Apply Pre-Process Option: Parentheses Fixes
                     # Fast path guard: Check for standard bracket types.
                     if (
                         opt_parentheses_fixes
@@ -1138,9 +1145,30 @@ class SubtitleProcessor:
                                 # Detect a misplaced opening bracket at the start when another opening bracket appears later.
                                 # In this structure, the leading bracket belongs to the sentence ending and the later bracket
                                 # starts the actual parenthesized phrase. Move the leading bracket to the end of the line.
-                                has_matching_bracket_in_next = bool(
-                                    has_valid_next and next_line and closing_char in next_line
-                                )
+                                # Check if the opening bracket has a matching closing bracket in subsequent lines or blocks.
+                                has_matching_bracket_in_next = False
+                                current_text_pos = text_index_to_pos.get(index)
+                                if current_text_pos is not None:
+                                    current_block_idx = text_index_to_block_idx.get(index, 0)
+                                    bracket_balance = body.count(first_char) - body.count(closing_char)
+                                    max_lookahead_blocks = 4
+                                    for lookahead_pos in range(current_text_pos + 1, len(ordered_text_indices)):
+                                        lookahead_idx = ordered_text_indices[lookahead_pos]
+                                        lookahead_block_idx = text_index_to_block_idx.get(lookahead_idx, 0)
+                                        if lookahead_block_idx - current_block_idx > max_lookahead_blocks:
+                                            break
+                                        lookahead_text = lines[lookahead_idx - 1]
+                                        lookahead_stripped = lookahead_text.strip()
+                                        if (
+                                            lookahead_stripped.startswith(first_char)
+                                            and closing_char not in lookahead_stripped
+                                        ):
+                                            break
+                                        bracket_balance += lookahead_text.count(first_char)
+                                        bracket_balance -= lookahead_text.count(closing_char)
+                                        if bracket_balance <= 0:
+                                            has_matching_bracket_in_next = True
+                                            break
 
                                 if (
                                     closing_char not in body
