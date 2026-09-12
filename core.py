@@ -70,6 +70,279 @@ ARABIC_CHAR_TRANS = str.maketrans(arabic_to_persian_chars)
 ARABIC_NUM_TRANS = str.maketrans(arabic_numerals)
 CTRL_CHAR_TRANS = str.maketrans("", "", "\u200e\u200f\u202a\u202b\u202c\u202d\u202e")
 
+PERSIAN_VERB_ENDINGS = {
+    "است",
+    "هست",
+    "نیست",
+    "بود",
+    "نبود",
+    "شد",
+    "نشد",
+    "دارد",
+    "ندارد",
+    "کرد",
+    "نکرد",
+    "گفت",
+    "نگفت",
+    "رفت",
+    "نرفت",
+    "آمد",
+    "نیامد",
+    "نومد",
+    "داد",
+    "نداد",
+    "زد",
+    "نزد",
+    "دید",
+    "ندید",
+    "خواست",
+    "نخواست",
+    "گرفت",
+    "نگرفت",
+    "ماند",
+    "نماند",
+    "رسید",
+    "نرسید",
+    "گذاشت",
+    "نگذاشت",
+    "آورد",
+    "نیاورد",
+    "نشست",
+    "ایستاد",
+    "خواند",
+    "شنید",
+    "خورد",
+    "برد",
+    "فهمید",
+    "نفهمید",
+    "دانست",
+    "توانست",
+    "نتوانست",
+    "افتاد",
+    "فرستاد",
+    "برگشت",
+    "گذشت",
+    "شکست",
+    "بست",
+    "نوشت",
+    "پرسید",
+    "شناخت",
+    "هستم",
+    "هستی",
+    "هستیم",
+    "هستید",
+    "هستند",
+    "نیستم",
+    "نیستی",
+    "نیستیم",
+    "نیستید",
+    "نیستند",
+    "بودم",
+    "بودی",
+    "بودیم",
+    "بودید",
+    "بودند",
+    "نبودم",
+    "نبودی",
+    "نبودیم",
+    "نبودید",
+    "نبودند",
+    "شدم",
+    "شدی",
+    "شدیم",
+    "شدید",
+    "شدند",
+    "نشدم",
+    "نشدی",
+    "نشدیم",
+    "نشدید",
+    "نشدند",
+    "دارم",
+    "داری",
+    "داریم",
+    "دارید",
+    "دارند",
+    "ندارم",
+    "نداری",
+    "نداریم",
+    "ندارید",
+    "ندارند",
+    "کردم",
+    "کردی",
+    "کردیم",
+    "کردید",
+    "کردند",
+    "نکردم",
+    "نکردی",
+    "نکردیم",
+    "نکردید",
+    "نکردند",
+    "گفتم",
+    "گفتی",
+    "گفتیم",
+    "گفتید",
+    "گفتند",
+    "دیدم",
+    "دیدی",
+    "دیدیم",
+    "دیدید",
+    "دیدند",
+    "آمدم",
+    "آمدی",
+    "آمدیم",
+    "آمدید",
+    "آمدند",
+    "رفتم",
+    "رفتی",
+    "رفتیم",
+    "رفتید",
+    "رفتند",
+    "دادم",
+    "دادی",
+    "دادیم",
+    "دادید",
+    "دادند",
+    "زدم",
+    "زدی",
+    "زدیم",
+    "زدید",
+    "زدند",
+    "گرفتم",
+    "گرفتی",
+    "گرفتیم",
+    "گرفتید",
+    "گرفتند",
+    "رسیدم",
+    "رسیدی",
+    "رسیدیم",
+    "رسیدید",
+    "رسیدند",
+    "باش",
+    "نباش",
+    "باشم",
+    "باشی",
+    "باشد",
+    "باشیم",
+    "باشید",
+    "باشند",
+    "بشو",
+    "نشو",
+    "بشم",
+    "بشی",
+    "بشه",
+    "بشیم",
+    "بشید",
+    "بشن",
+    "شوم",
+    "شوی",
+    "شود",
+    "شویم",
+    "شوید",
+    "شوند",
+    "بکن",
+    "نکن",
+    "کنم",
+    "کنی",
+    "کند",
+    "کنیم",
+    "کنید",
+    "کنند",
+    "کنه",
+    "کنن",
+    "بگو",
+    "نگو",
+    "بیا",
+    "نیای",
+    "برو",
+    "نرو",
+    "بده",
+    "نده",
+    "بگیر",
+    "نگیر",
+    "ببین",
+    "نبین",
+    "بدان",
+    "بدون",
+    "بذار",
+    "نذار",
+    "بمون",
+    "نمون",
+    "هستش",
+    "نیستش",
+    "بودش",
+    "نبودش",
+    "شدش",
+    "کردش",
+    "داره",
+    "دارن",
+    "نداره",
+    "ندارن",
+    "میگه",
+    "میگن",
+    "نمیگه",
+    "نمیگن",
+    "میخواد",
+    "میخوان",
+    "نمیخواد",
+    "نمیخوان",
+    "میتونه",
+    "میتونن",
+    "نمیتونه",
+    "نمیتونن",
+    "میره",
+    "میرن",
+    "نمیره",
+    "نمیرن",
+    "میاد",
+    "میان",
+    "نمیاد",
+    "نمیان",
+    "میشه",
+    "میشن",
+    "نمیشه",
+    "نمیشن",
+    "میکنه",
+    "میکنن",
+    "نمیکنه",
+    "نمیکنن",
+    "میدونه",
+    "میدونن",
+    "نمیدونه",
+    "نمیدونن",
+    "کجاست",
+    "چیست",
+    "کیست",
+    "چطور است",
+    "چطوره",
+}
+
+
+def _is_persian_verb(word):
+    """Checks if an individual Persian word is a verb form."""
+    clean_word = re.sub(r"[\u0640\u200c]", "", word).strip()
+    if clean_word in PERSIAN_VERB_ENDINGS:
+        return True
+    if re.match(r"^(?:ن?می‌|ن?می|ب|ن)[\u0600-\u06FF]+(?:م|ی|د|یم|ید|ند|ه|ن)$", clean_word):
+        return True
+    if re.search(r"(?:شده|کرده|رفته|آمده|داده|زده|دیده|گفته|خواسته|گرفته|رسیده)$", clean_word):
+        return True
+    if re.search(
+        r"(?:کرد|گفت|رفت|آمد|داد|زد|دید|خواست|گرفت|ماند|رسید|گذاشت|داشت|آورد|نشست|ایستاد|خورد|برد|فهمید|دانست|توانست|افتاد|فرستاد|برگشت|گذشت|شکست|بست|نوشت|پرسید|شناخت|شدم|شدی|شدیم|شدید|شدند|بودم|بودی|بودیم|بودید|بودند|داشتم|داشتی|داشتیم|داشتید|داشتند|کردم|کردی|کردیم|کردید|کردند|کنم|کنی|کنیم|کنید|کنند)(?:م|ی|یم|ید|ند)?$",
+        clean_word,
+    ):
+        return True
+    return False
+
+
+def is_persian_sentence(text):
+    """Checks if a Persian phrase constitutes a complete sentence containing a verb."""
+    clean = HTML_TAG_RE.sub("", text)
+    clean = re.sub(r"[^\u0600-\u06FF\s]", "", clean).strip()
+    words = clean.split()
+    if not words:
+        return False
+    return any(_is_persian_verb(w) for w in words)
+
 
 def _log_change(index, opt_name, before, after, logs_buffer, detailed_logs_enabled):
     """Standardized logger to keep subtitle tracking uniform and DRY."""
@@ -2026,23 +2299,19 @@ class SubtitleProcessor:
                                             line_stripped = re.sub(
                                                 r"^((?:<[^>]+>\s*)*)([:؛!\?؟])\s*(.*)$", r"\1\3\2", line_stripped
                                             )
-
-                                        # Re-evaluate text_no_tags after punctuation correction
-                                        text_no_tags = HTML_TAG_RE.sub("", line_stripped)
-                                        text_no_tags = ZERO_WIDTH_RE.sub("", text_no_tags).strip()
-
-                                        # Detect if line starts with English letters or digits
-                                        starts_with_english_or_digits = bool(
-                                            re.match(r"^[a-zA-Z0-9\u06F0-\u06F9\u0660-\u0669]", text_no_tags)
-                                        )
+                                            # Re-evaluate text_no_tags after punctuation modification
+                                            text_no_tags = HTML_TAG_RE.sub("", line_stripped)
+                                            text_no_tags = re.sub(
+                                                r"[\u200b\u200c\u200d\ufeff]", "", text_no_tags
+                                            ).strip()
 
                                         # Fix visually misplaced English words at the start of the line
-                                        # Moves leading English phrases that are likely visually misplaced to the end
+                                        # Only moves leading English phrases when they are not at the start of a genuine sentence
+                                        # Lines starting with dialogue hyphens or sentences ending with Persian verbs are preserved
                                         misplaced_eng_match = re.match(
                                             r"^((?:<[^>]+>\s*)*)([-\u2013\u2014]\s+)?([a-zA-Z0-9@._\-+\'#]*[a-zA-Z][a-zA-Z0-9@._\-+\'#]*(?:\s+[a-zA-Z0-9@._\-+\'#]+)*)\s+([\u0600-\u06FF].*?)([.!?؟…]*\s*(?:<[^>]+>\s*)*)$",
                                             line_stripped,
                                         )
-
                                         if misplaced_eng_match:
                                             html_pre, hyphen_part, eng_phrase, persian_rest, punct_suf = (
                                                 misplaced_eng_match.groups()
@@ -2071,9 +2340,9 @@ class SubtitleProcessor:
                                             # an English name/title at the beginning of the sentence.
                                             starts_with_persian_predicate = bool(
                                                 re.match(
-                                                    r"^(?:هست|است|بود|باشد|باشه|شد|شده|شدم|شدی|شدیم|شدید|شدند|می‌شود|میشه|می‌شه|"
-                                                    r"می‌باشد|خواهد|خواهند|دارم|داری|داره|داریم|دارید|دارند|کرد|کردم|کردی|کرده|"
-                                                    r"کن|کنه|کنم|کنی|کنیم|کنید|کنند|آمد|اومد|رفته|رفت|می‌رود|میرود|میاد|آمده|"
+                                                    r"^(?:هست|است|بود|باشد|باشه|شد|شده|شدم|شدی|شدیم|شدید|شدند|میشود|میشه|"
+                                                    r"میباشد|خواهد|خواهند|دارم|داری|داره|داریم|دارید|دارند|داشت|داشته|داشتم|داشتی|داشتیم|داشتید|داشتند|"
+                                                    r"کرد|کردم|کردی|کرده|کن|کنه|کنم|کنی|کنیم|کنید|کنند|آمد|اومد|رفته|رفت|میرود|میاد|آمده|"
                                                     r"دارد|ندارد|نیست|نیستم|نیستی|نیستیم|نیستند)\b",
                                                     persian_rest_clean,
                                                 )
@@ -2085,6 +2354,7 @@ class SubtitleProcessor:
                                                 or is_multiword_title
                                                 or is_all_caps_phrase
                                                 or starts_with_persian_predicate
+                                                or is_persian_sentence(persian_rest_clean)
                                             )
 
                                             # A single English word followed by a substantial Persian phrase
@@ -2097,8 +2367,10 @@ class SubtitleProcessor:
                                                 or (english_word_count <= 2 and has_substantial_persian_rest)
                                             )
 
+                                            # Only move misplaced English phrases (e.g. credits) and never genuine sentences (e.g. "Nimble Boy هست")
                                             if (
-                                                should_move_misplaced_english
+                                                not hyphen_part
+                                                and should_move_misplaced_english
                                                 and not re.search(
                                                     r"[:؛!\?؟،,\-–—]$",
                                                     eng_phrase_clean,
@@ -2112,10 +2384,127 @@ class SubtitleProcessor:
                                                     f"{html_pre}{hyphen_part}{persian_rest_clean} "
                                                     f"{eng_phrase_clean}{punct_suf}"
                                                 )
+                                                text_no_tags = HTML_TAG_RE.sub("", line_stripped)
+                                                text_no_tags = re.sub(
+                                                    r"[\u200b\u200c\u200d\ufeff]", "", text_no_tags
+                                                ).strip()
 
-                                        # Re-evaluate text_no_tags after modification
-                                        text_no_tags = HTML_TAG_RE.sub("", line_stripped)
-                                        text_no_tags = re.sub(r"[\u200b\u200c\u200d\ufeff]", "", text_no_tags).strip()
+                                        # Fix visually misplaced English words at the end of the line
+                                        # Moves trailing English words to the beginning when preceded by subordinate words or Persian verbs
+                                        trailing_eng_match = re.match(
+                                            r"^((?:<[^>]+>\s*)*)([-\u2013\u2014]\s+)?([\u0600-\u06FF].*?)\s+([a-zA-Z0-9@._\-+\'#]*[a-zA-Z][a-zA-Z0-9@._\-+\'#]*(?:\s+[a-zA-Z0-9@._\-+\'#]+)*)([.!?؟…]*\s*(?:<[^>]+>\s*)*)$",
+                                            line_stripped,
+                                        )
+                                        if trailing_eng_match:
+                                            html_pre, hyphen_part, persian_rest, eng_phrase, punct_suf = (
+                                                trailing_eng_match.groups()
+                                            )
+                                            hyphen_part = hyphen_part or ""
+                                            persian_rest_clean = persian_rest.strip()
+                                            eng_phrase_clean = eng_phrase.strip()
+
+                                            ends_with_subordinator = bool(
+                                                re.search(r"(?:^|\s)(?:که|چون|زیرا|اگر)$", persian_rest_clean)
+                                            )
+                                            is_all_caps = bool(re.match(r"^[A-Z0-9'._+\-#]+$", eng_phrase_clean))
+                                            persian_words = re.sub(
+                                                r"[^\u0600-\u06FF\s]", "", persian_rest_clean
+                                            ).split()
+                                            ends_with_verb = bool(persian_words and _is_persian_verb(persian_words[-1]))
+
+                                            if ends_with_subordinator or (is_all_caps and ends_with_verb):
+                                                line_stripped = (
+                                                    f"{html_pre}{hyphen_part}{eng_phrase_clean} "
+                                                    f"{persian_rest_clean}{punct_suf}"
+                                                )
+                                                text_no_tags = HTML_TAG_RE.sub("", line_stripped)
+                                                text_no_tags = re.sub(
+                                                    r"[\u200b\u200c\u200d\ufeff]", "", text_no_tags
+                                                ).strip()
+
+                                        # Fix visually misplaced English words in the middle of the line
+                                        # Swaps Persian pre and post parts around English phrases when inverted
+                                        mid_eng_match = re.match(
+                                            r"^((?:<[^>]+>\s*)*)([-\u2013\u2014]\s+)?([\u0600-\u06FF].*?)\s+([a-zA-Z0-9@._\-+\'#\"«»“”‘’()\[\]]*[a-zA-Z][a-zA-Z0-9@._\-+\'#\"«»“”‘’()\[\]]*(?:\s+[a-zA-Z0-9@._\-+\'#\"«»“”‘’()\[\]]+)*)\s+([\u0600-\u06FF].*?)([.!?؟…]*\s*(?:<[^>]+>\s*)*)$",
+                                            line_stripped,
+                                        )
+                                        if mid_eng_match:
+                                            html_pre, hyphen_part, p1, eng_phrase, p2, punct_suf = (
+                                                mid_eng_match.groups()
+                                            )
+                                            hyphen_part = hyphen_part or ""
+                                            p1_clean = p1.strip()
+                                            eng_phrase_clean = eng_phrase.strip()
+                                            p2_clean = p2.strip()
+
+                                            if not re.search(r"[a-zA-Z]", p1_clean) and not re.search(
+                                                r"[a-zA-Z]", p2_clean
+                                            ):
+                                                quote_starts = ('"', "'", "«", "“", "‘", "(", "[", "{")
+                                                quote_ends = ('"', "'", "»", "”", "’", ")", "]", "}")
+                                                is_quoted = (
+                                                    (
+                                                        eng_phrase_clean.startswith(quote_starts)
+                                                        and eng_phrase_clean.endswith(quote_ends)
+                                                    )
+                                                    or eng_phrase_clean.count('"') >= 2
+                                                    or eng_phrase_clean.count("'") >= 2
+                                                )
+                                                eng_tokens = eng_phrase_clean.split()
+                                                eng_word_count = len(eng_tokens)
+
+                                                is_multiword_title = eng_word_count >= 2 and all(
+                                                    re.match(r"^[A-Z][a-zA-Z0-9'._+\-#]*$", token)
+                                                    for token in eng_tokens
+                                                )
+
+                                                has_internal_punct = bool(re.search(r"[:؛!\?؟،,\-–—]", p2_clean))
+                                                has_punct_sep = (
+                                                    bool(re.search(r"[:؛!\?؟،,\-–—]$", p1_clean))
+                                                    or bool(re.match(r"^[:؛!\?؟،,\-–—]", p2_clean))
+                                                    or has_internal_punct
+                                                )
+
+                                                starts_with_persian_predicate = bool(
+                                                    re.match(
+                                                        r"^(?:هست|است|بود|باشد|باشه|شد|شده|شدم|شدی|شدیم|شدید|شدند|میشود|میشه|"
+                                                        r"میباشد|خواهد|خواهند|دارم|داری|داره|داریم|دارید|دارند|داشت|داشته|داشتم|داشتی|داشتیم|داشتید|داشتند|"
+                                                        r"کرد|کردم|کردی|کرده|کن|کنه|کنم|کنی|کنیم|کنید|کنند|آمد|اومد|رفته|رفت|میرود|میاد|آمده|"
+                                                        r"دارد|ندارد|نیست|نیستم|نیستی|نیستیم|نیستند)\b",
+                                                        p1_clean,
+                                                    )
+                                                )
+
+                                                p1_words = re.sub(r"[^\u0600-\u06FF\s]", "", p1_clean).split()
+                                                p2_words = re.sub(r"[^\u0600-\u06FF\s]", "", p2_clean).split()
+                                                p1_ends_verb = bool(p1_words and _is_persian_verb(p1_words[-1]))
+                                                p2_ends_verb = bool(p2_words and _is_persian_verb(p2_words[-1]))
+
+                                                should_protect = (
+                                                    is_quoted
+                                                    or is_multiword_title
+                                                    or has_punct_sep
+                                                    or (
+                                                        starts_with_persian_predicate
+                                                        and (
+                                                            eng_word_count >= 2
+                                                            or p2_clean.startswith(
+                                                                ("برای", "به", "با", "در", "از", "تا")
+                                                            )
+                                                        )
+                                                    )
+                                                )
+
+                                                should_swap = not should_protect and p1_ends_verb and not p2_ends_verb
+                                                if should_swap:
+                                                    line_stripped = (
+                                                        f"{html_pre}{hyphen_part}{p2_clean} "
+                                                        f"{eng_phrase_clean} {p1_clean}{punct_suf}"
+                                                    )
+                                                    text_no_tags = HTML_TAG_RE.sub("", line_stripped)
+                                                    text_no_tags = re.sub(
+                                                        r"[\u200b\u200c\u200d\ufeff]", "", text_no_tags
+                                                    ).strip()
 
                                         # Check for music symbols before removing them to ensure they trigger RTL formatting
                                         has_music_symbol = bool(MUSIC_SYMBOLS_RE.search(text_no_tags))
@@ -2126,11 +2515,10 @@ class SubtitleProcessor:
                                         has_symbol_start = text_no_tags.startswith(start_symbols)
                                         has_symbol_end = text_no_tags.endswith(end_symbols)
 
-                                        # Re-evaluate start position after any English phrase correction
+                                        # Detect if line starts with English letters or digits (to prevent forcing RTL on visually-encoded LTR lines)
                                         starts_with_english_or_digits = bool(
                                             re.match(r"^[a-zA-Z0-9\u06F0-\u06F9\u0660-\u0669]", text_no_tags)
                                         )
-
                                         rtl_line = line_stripped
 
                                         # Protect English phrases with LRM (\u200e) markers to strictly lock their internal LTR order
@@ -2162,7 +2550,7 @@ class SubtitleProcessor:
                                         has_english = bool(re.search(r"[a-zA-Z]", text_no_tags))
                                         has_digits = bool(re.search(r"\d", text_no_tags))
 
-                                        # Use RLE (\u202b) and PDF (\u202c) to strictly enforce RTL paragraph context
+                                        # Use RLE (\u202b) and PDF (\u202c) to strictly enforce RTL direction
                                         # This forces the internal bidi algorithm to treat English words and digits as embedded inside an RTL context
                                         if (
                                             has_symbol_start
