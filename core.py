@@ -2027,6 +2027,92 @@ class SubtitleProcessor:
                                                 r"^((?:<[^>]+>\s*)*)([:؛!\?؟])\s*(.*)$", r"\1\3\2", line_stripped
                                             )
 
+                                        # Re-evaluate text_no_tags after punctuation correction
+                                        text_no_tags = HTML_TAG_RE.sub("", line_stripped)
+                                        text_no_tags = ZERO_WIDTH_RE.sub("", text_no_tags).strip()
+
+                                        # Detect if line starts with English letters or digits
+                                        starts_with_english_or_digits = bool(
+                                            re.match(r"^[a-zA-Z0-9\u06F0-\u06F9\u0660-\u0669]", text_no_tags)
+                                        )
+
+                                        # Fix visually misplaced English words at the start of the line
+                                        # Moves leading English phrases that are likely visually misplaced to the end
+                                        misplaced_eng_match = re.match(
+                                            r"^((?:<[^>]+>\s*)*)([-\u2013\u2014]\s+)?([a-zA-Z0-9@._\-+\'#]*[a-zA-Z][a-zA-Z0-9@._\-+\'#]*(?:\s+[a-zA-Z0-9@._\-+\'#]+)*)\s+([\u0600-\u06FF].*?)([.!?؟…]*\s*(?:<[^>]+>\s*)*)$",
+                                            line_stripped,
+                                        )
+
+                                        if misplaced_eng_match:
+                                            html_pre, hyphen_part, eng_phrase, persian_rest, punct_suf = (
+                                                misplaced_eng_match.groups()
+                                            )
+                                            hyphen_part = hyphen_part or ""
+
+                                            eng_phrase_clean = eng_phrase.strip()
+                                            persian_rest_clean = persian_rest.strip()
+
+                                            english_tokens = eng_phrase_clean.split()
+                                            english_word_count = len(english_tokens)
+
+                                            # Detect common structures that strongly suggest the English phrase
+                                            # is intentionally placed at the beginning of the sentence.
+                                            has_digit_in_english = bool(re.search(r"\d", eng_phrase_clean))
+                                            is_multiword_title = english_word_count >= 2 and all(
+                                                re.match(r"^[A-Z][a-zA-Z0-9'._+\-#]*$", token)
+                                                for token in english_tokens
+                                            )
+                                            is_all_caps_phrase = english_word_count >= 2 and all(
+                                                re.match(r"^[A-Z0-9][A-Z0-9'._+\-#]*$", token)
+                                                for token in english_tokens
+                                            )
+
+                                            # Detect common Persian predicate starts that naturally follow
+                                            # an English name/title at the beginning of the sentence.
+                                            starts_with_persian_predicate = bool(
+                                                re.match(
+                                                    r"^(?:هست|است|بود|باشد|باشه|شد|شده|شدم|شدی|شدیم|شدید|شدند|می‌شود|میشه|می‌شه|"
+                                                    r"می‌باشد|خواهد|خواهند|دارم|داری|داره|داریم|دارید|دارند|کرد|کردم|کردی|کرده|"
+                                                    r"کن|کنه|کنم|کنی|کنیم|کنید|کنند|آمد|اومد|رفته|رفت|می‌رود|میرود|میاد|آمده|"
+                                                    r"دارد|ندارد|نیست|نیستم|نیستی|نیستیم|نیستند)\b",
+                                                    persian_rest_clean,
+                                                )
+                                            )
+
+                                            # Detect a proper-looking English phrase that is likely a name/title.
+                                            has_protected_english_structure = (
+                                                has_digit_in_english
+                                                or is_multiword_title
+                                                or is_all_caps_phrase
+                                                or starts_with_persian_predicate
+                                            )
+
+                                            # A single English word followed by a substantial Persian phrase
+                                            # is more likely to be visually misplaced unless it has a protected structure.
+                                            persian_word_count = len(persian_rest_clean.split())
+                                            has_substantial_persian_rest = persian_word_count >= 2
+
+                                            should_move_misplaced_english = not has_protected_english_structure and (
+                                                english_word_count == 1
+                                                or (english_word_count <= 2 and has_substantial_persian_rest)
+                                            )
+
+                                            if (
+                                                should_move_misplaced_english
+                                                and not re.search(
+                                                    r"[:؛!\?؟،,\-–—]$",
+                                                    eng_phrase_clean,
+                                                )
+                                                and not re.match(
+                                                    r"^[:؛!\?؟،,\-–—]",
+                                                    persian_rest_clean,
+                                                )
+                                            ):
+                                                line_stripped = (
+                                                    f"{html_pre}{hyphen_part}{persian_rest_clean} "
+                                                    f"{eng_phrase_clean}{punct_suf}"
+                                                )
+
                                         # Re-evaluate text_no_tags after modification
                                         text_no_tags = HTML_TAG_RE.sub("", line_stripped)
                                         text_no_tags = re.sub(r"[\u200b\u200c\u200d\ufeff]", "", text_no_tags).strip()
@@ -2040,10 +2126,11 @@ class SubtitleProcessor:
                                         has_symbol_start = text_no_tags.startswith(start_symbols)
                                         has_symbol_end = text_no_tags.endswith(end_symbols)
 
-                                        # Detect if line starts with English letters or digits (to prevent forcing RTL on visually-encoded LTR lines)
+                                        # Re-evaluate start position after any English phrase correction
                                         starts_with_english_or_digits = bool(
                                             re.match(r"^[a-zA-Z0-9\u06F0-\u06F9\u0660-\u0669]", text_no_tags)
                                         )
+
                                         rtl_line = line_stripped
 
                                         # Protect English phrases with LRM (\u200e) markers to strictly lock their internal LTR order
@@ -2071,13 +2158,19 @@ class SubtitleProcessor:
                                                     parts[i] = eng_pattern.sub(apply_lrm, parts[i])
                                             rtl_line = "".join(parts)
 
-                                        # Use RLE (\u202b) and PDF (\u202c) to strictly enforce RTL direction
+                                        # Detect English words or digits inside the line requiring strict RTL paragraph context
+                                        has_english = bool(re.search(r"[a-zA-Z]", text_no_tags))
+                                        has_digits = bool(re.search(r"\d", text_no_tags))
+
+                                        # Use RLE (\u202b) and PDF (\u202c) to strictly enforce RTL paragraph context
                                         # This forces the internal bidi algorithm to treat English words and digits as embedded inside an RTL context
                                         if (
                                             has_symbol_start
                                             or has_symbol_end
                                             or starts_with_english_or_digits
                                             or has_music_symbol
+                                            or has_english
+                                            or has_digits
                                         ):
                                             # Place Bidi markers inside HTML tags to prevent rendering issues in players
                                             tag_pattern = r"^((?:<[^>]+>\s*)*)(.*?)(\s*(?:<[^>]+>\s*)*)$"
