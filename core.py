@@ -2495,17 +2495,21 @@ class SubtitleProcessor:
                                                     )
                                                 )
 
+                                                p2_starts_obj_marker = bool(re.search(r"^\s*(رو|را)\b", p2_clean))
+
                                                 # Bypass protection heuristics if it's a clear verb-based inversion
-                                                # (p1 ends with a verb, p2 doesn't, and p1 doesn't end with a sentence separator)
                                                 is_clear_inversion = (
-                                                    not is_quoted
-                                                    and p1_ends_verb
+                                                    p1_ends_verb
                                                     and not p2_ends_verb
+                                                    and not p2_starts_obj_marker
                                                     and not bool(re.search(r"[:؛!\?؟\.]$", p1_clean))
                                                 )
 
                                                 should_swap = is_clear_inversion or (
-                                                    not should_protect and p1_ends_verb and not p2_ends_verb
+                                                    not should_protect
+                                                    and p1_ends_verb
+                                                    and not p2_ends_verb
+                                                    and not p2_starts_obj_marker
                                                 )
 
                                                 if should_swap:
