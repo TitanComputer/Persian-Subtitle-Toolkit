@@ -301,7 +301,8 @@ comma_rules_list = [
     (re.compile(r">، \b"), ">،", True),
     (re.compile(r"(،+)"), "،", True),
     (re.compile(r"([a-zA-Z\d])(،)([a-zA-Z\d])"), r"\1 \2\3", True),
-    (re.compile(r"([\u0600-\u06FF\d]+)( *)(،)( *)([\u0600-\u06FF\d]+)"), r"\1\3 \5", True),
+    # Prevent adding space around commas inside numbers (e.g. thousands separators like 1,500)
+    (re.compile(r"(?!\d\s*،\s*\d)([\u0600-\u06FF\d]+)( *)(،)( *)([\u0600-\u06FF\d]+)"), r"\1\3 \5", True),
     (re.compile(r'\b(")( *)([،؟\.!])( *)\b'), r"\1\3 ", True),
     (re.compile(r"([^\u0000-\u007F])( *)(,)( *)([^\u0000-\u007F])"), r"\1، \5", True),
     (re.compile(r'([^\u0000-\u007F])( *)(,)( *)([^-<>" ])'), r"\1، \5", True),
