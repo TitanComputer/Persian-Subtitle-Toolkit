@@ -3117,6 +3117,8 @@ def add_missing_spaces(text):
             return False
         prev_index = previous_visible(index - 1)
         prev_char = text[prev_index] if prev_index is not None else ""
+        if punctuation in ",،" and prev_char.isdigit() and next_char.isdigit():
+            return False
         if punctuation == ":" and prev_char.isdigit() and next_char.isdigit():
             return False
         if punctuation == ":":
@@ -3168,7 +3170,7 @@ def add_missing_spaces(text):
                 i += 1
                 continue
 
-        if char in "!?؟،;:":
+        if char in "!?؟،;:" or char == ",":
             if should_add_after(i, char) and not has_space_after(i):
                 result.append(char)
                 result.append(" ")
