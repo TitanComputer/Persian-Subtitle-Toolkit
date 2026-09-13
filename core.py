@@ -2498,7 +2498,8 @@ class SubtitleProcessor:
                                                 # Bypass protection heuristics if it's a clear verb-based inversion
                                                 # (p1 ends with a verb, p2 doesn't, and p1 doesn't end with a sentence separator)
                                                 is_clear_inversion = (
-                                                    p1_ends_verb
+                                                    not is_quoted
+                                                    and p1_ends_verb
                                                     and not p2_ends_verb
                                                     and not bool(re.search(r"[:؛!\?؟\.]$", p1_clean))
                                                 )
