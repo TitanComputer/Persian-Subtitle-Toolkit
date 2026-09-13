@@ -2495,7 +2495,18 @@ class SubtitleProcessor:
                                                     )
                                                 )
 
-                                                should_swap = not should_protect and p1_ends_verb and not p2_ends_verb
+                                                # Bypass protection heuristics if it's a clear verb-based inversion
+                                                # (p1 ends with a verb, p2 doesn't, and p1 doesn't end with a sentence separator)
+                                                is_clear_inversion = (
+                                                    p1_ends_verb
+                                                    and not p2_ends_verb
+                                                    and not bool(re.search(r"[:؛!\?؟\.]$", p1_clean))
+                                                )
+
+                                                should_swap = is_clear_inversion or (
+                                                    not should_protect and p1_ends_verb and not p2_ends_verb
+                                                )
+
                                                 if should_swap:
                                                     line_stripped = (
                                                         f"{html_pre}{hyphen_part}{p2_clean} "
