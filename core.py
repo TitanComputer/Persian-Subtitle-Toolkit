@@ -2283,7 +2283,16 @@ class SubtitleProcessor:
                                         text_no_tags = MUSIC_SYMBOLS_RE.sub("", text_no_tags).strip()
 
                                         has_symbol_start = text_no_tags.startswith(start_symbols)
-                                        has_symbol_end = text_no_tags.endswith(end_symbols)
+                                        first_double_quote = text_no_tags.find('"')
+                                        has_attached_quoted_question = (
+                                            text_no_tags.count('"') == 2
+                                            and text_no_tags.endswith(('؟"', '?"'))
+                                            and first_double_quote > 0
+                                            and "\u0600" <= text_no_tags[first_double_quote - 1] <= "\u06ff"
+                                        )
+                                        has_symbol_end = (
+                                            text_no_tags.endswith(end_symbols) and not has_attached_quoted_question
+                                        )
 
                                         # Detect if line starts with English letters or digits (to prevent forcing RTL on visually-encoded LTR lines)
                                         starts_with_english_or_digits = bool(
