@@ -2285,6 +2285,11 @@ class SubtitleProcessor:
                                         has_symbol_start = text_no_tags.startswith(start_symbols)
                                         has_symbol_end = text_no_tags.endswith(end_symbols)
 
+                                        # Quotes after the Arabic question mark (a strong RTL char) already render
+                                        # on the correct side, so they must not trigger RTL enforcement
+                                        if has_symbol_end and re.search(r"\u061f[\"'«»“”‘’]+$", text_no_tags):
+                                            has_symbol_end = False
+
                                         # Detect if line starts with English letters or digits (to prevent forcing RTL on visually-encoded LTR lines)
                                         starts_with_english_or_digits = bool(
                                             re.match(r"^[a-zA-Z0-9\u06F0-\u06F9\u0660-\u0669]", text_no_tags)
